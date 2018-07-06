@@ -1,0 +1,524 @@
+unit uComPort;
+
+interface
+
+uses Winapi.Windows, System.SysUtils, System.Classes;
+
+type
+
+  TReadDataEvent = procedure(Sender: TObject; const Data: string) of object;
+
+  TComEvent = (evRxChar, evTxEmpty, evRxFlag, evRing, evBreak, evCTS, evDSR, evError, evRLSD,
+    evRx80Full);
+  TComEvents = set of TComEvent;
+
+  // типы асинхронных вызовов
+  TOperationKind = (okWrite, okRead);
+
+  TAsync = record
+    Overlapped: TOverlapped;
+    Kind: TOperationKind;
+    Data: Pointer;
+    Size: Integer;
+  end;
+
+  PAsync = ^TAsync;
+
+  TComPort = class;
+
+  // поток мониторинга порта
+  TComThread = class(TThread)
+  private
+    FComPort: TComPort;
+    FStopEvent: THandle;
+    FEvents: TComEvents;
+    FReadData: string;
+  protected
+    // procedure DispatchComMsg;
+    // procedure DoEvents;
+    // procedure SendEvents;
+    procedure Execute; override;
+    procedure Stop;
+    function EventsToInt(const Events: TComEvents): Integer;
+    function IntToEvents(Mask: Integer): TComEvents;
+  public
+    constructor Create(AComPort: TComPort);
+    destructor Destroy; override;
+
+    // property ReadData: String read FReadData;
+  end;
+
+  TComPort = class
+    function Open(): boolean;
+    function Close(): boolean;
+  private
+    FEventThread: TComThread;
+    FThreadCreated: boolean;
+    FPort: string;
+    FHandle: NativeUInt;
+    FConnected: boolean;
+    FBufferInputSize: Integer;
+    FBufferOutputSize: Integer;
+    FEvents: TComEvents;
+
+    FOnReadData: TReadDataEvent;
+  protected
+    procedure CreateHandle; virtual;
+    procedure DestroyHandle; virtual;
+    procedure SetupComPort; virtual;
+    procedure ApplyDCB; dynamic;
+    procedure ApplyTimeouts; dynamic;
+    procedure ApplyBuffer; dynamic;
+    procedure InitAsync(var AsyncPtr: PAsync);
+    procedure DoneAsync(var AsyncPtr: PAsync);
+    function WaitForAsync(var AsyncPtr: PAsync): Integer;
+    function ReadAsync(var Buffer; Count: Integer; var AsyncPtr: PAsync): Integer;
+    function Read(var Buffer; Count: Integer): Integer;
+    procedure DoReadData; dynamic;
+  public
+    constructor Create();
+    destructor Destroy;
+    procedure ClearBuffer(Input, Output: boolean);
+    procedure AbortAllAsync;
+
+    property Port: String read FPort write FPort;
+    property Handle: NativeUInt read FHandle;
+    property Connected: boolean read FConnected default False;
+    property Events: TComEvents read FEvents write FEvents;
+    property OnReadData: TReadDataEvent read FOnReadData write FOnReadData;
+  end;
+
+procedure EnumComPorts(Ports: TStrings);
+
+implementation
+
+procedure EnumComPorts(Ports: TStrings);
+var
+  KeyHandle: HKEY;
+  ErrCode, Index: Integer;
+  ValueName, Data: string;
+  ValueLen, DataLen, ValueType: DWORD;
+  TmpPorts: TStringList;
+begin
+  ErrCode := RegOpenKeyEx(HKEY_LOCAL_MACHINE, 'HARDWARE\DEVICEMAP\SERIALCOMM', 0, KEY_READ,
+    KeyHandle);
+
+  if ErrCode <> ERROR_SUCCESS then
+    exit;
+
+  TmpPorts := TStringList.Create;
+  try
+    Index := 0;
+    repeat
+      ValueLen := 256;
+      DataLen := 256;
+      SetLength(ValueName, ValueLen);
+      SetLength(Data, DataLen);
+      ErrCode := RegEnumValue(KeyHandle, Index, PChar(ValueName), Cardinal(ValueLen), nil,
+        @ValueType, PByte(PChar(Data)), @DataLen);
+
+      if ErrCode = ERROR_SUCCESS then
+      begin
+        SetLength(Data, DataLen - 1);
+        TmpPorts.Add(Data);
+        Inc(Index);
+      end
+      else if ErrCode <> ERROR_NO_MORE_ITEMS then
+        break;
+
+    until (ErrCode <> ERROR_SUCCESS);
+
+    TmpPorts.Sort;
+    Ports.Assign(TmpPorts);
+  finally
+    RegCloseKey(KeyHandle);
+    TmpPorts.Free;
+  end;
+end;
+
+{ TComThread }
+
+constructor TComThread.Create(AComPort: TComPort);
+begin
+  inherited Create(False);
+  FStopEvent := CreateEvent(nil, True, False, nil);
+  FComPort := AComPort;
+  Priority := tpNormal;
+  FReadData := '';
+  // Перевод порта в режим приема данных
+  SetCommMask(FComPort.Handle, EventsToInt(FComPort.Events));
+end;
+
+destructor TComThread.Destroy;
+begin
+  Stop;
+  inherited;
+end;
+
+procedure TComThread.Execute;
+var
+  EventHandles: array [0 .. 1] of THandle;
+  Overlapped: TOverlapped;
+  Signaled, BytesTrans, Mask: DWORD;
+
+  Errors: DWORD;
+  ComStat: TComStat;
+  Buffer: array [1 .. 20] of byte;
+  ReadBytes, i: Integer;
+begin
+  FillChar(Overlapped, SizeOf(Overlapped), 0);
+  Overlapped.hEvent := CreateEvent(nil, True, True, nil);
+
+  EventHandles[0] := FStopEvent;
+  EventHandles[1] := Overlapped.hEvent;
+
+  repeat
+    WaitCommEvent(FComPort.Handle, Mask, @Overlapped);
+    Signaled := WaitForMultipleObjects(2, @EventHandles, False, INFINITE);
+    if (Signaled = WAIT_OBJECT_0 + 1) and GetOverlappedResult(FComPort.Handle, Overlapped,
+      BytesTrans, False) then
+    begin
+      FEvents := IntToEvents(Mask);
+
+      FillChar(Buffer, SizeOf(Buffer), 0);
+      ClearCommError(FComPort.Handle, Errors, @ComStat);
+      ReadBytes := FComPort.Read(Buffer, ComStat.cbInQue);
+
+      for i := 1 to ReadBytes do
+        if (Buffer[i] <> 10) and (Buffer[i] <> 13) then
+          FReadData := FReadData + chr(Buffer[i]);
+
+      if evRxFlag in FEvents then
+      begin
+        Synchronize(FComPort.DoReadData);
+        FReadData := '';
+      end;
+    end;
+
+  until Signaled <> (WAIT_OBJECT_0 + 1);
+
+  SetCommMask(FComPort.Handle, 0);
+  PurgeComm(FComPort.Handle, PURGE_TXCLEAR or PURGE_RXCLEAR);
+  CloseHandle(Overlapped.hEvent);
+  CloseHandle(FStopEvent);
+end;
+
+procedure TComThread.Stop;
+begin
+  SetEvent(FStopEvent);
+  Sleep(0);
+end;
+
+function TComThread.EventsToInt(const Events: TComEvents): Integer;
+begin
+  Result := 0;
+  if evRxChar in Events then
+    Result := Result or EV_RXCHAR;
+  if evRxFlag in Events then
+    Result := Result or EV_RXFLAG;
+  if evTxEmpty in Events then
+    Result := Result or EV_TXEMPTY;
+  if evRing in Events then
+    Result := Result or EV_RING;
+  if evCTS in Events then
+    Result := Result or EV_CTS;
+  if evDSR in Events then
+    Result := Result or EV_DSR;
+  if evRLSD in Events then
+    Result := Result or EV_RLSD;
+  if evError in Events then
+    Result := Result or EV_ERR;
+  if evBreak in Events then
+    Result := Result or EV_BREAK;
+  if evRx80Full in Events then
+    Result := Result or EV_RX80FULL;
+end;
+
+function TComThread.IntToEvents(Mask: Integer): TComEvents;
+begin
+  Result := [];
+  if (EV_RXCHAR and Mask) <> 0 then
+    Result := Result + [evRxChar];
+  if (EV_TXEMPTY and Mask) <> 0 then
+    Result := Result + [evTxEmpty];
+  if (EV_BREAK and Mask) <> 0 then
+    Result := Result + [evBreak];
+  if (EV_RING and Mask) <> 0 then
+    Result := Result + [evRing];
+  if (EV_CTS and Mask) <> 0 then
+    Result := Result + [evCTS];
+  if (EV_DSR and Mask) <> 0 then
+    Result := Result + [evDSR];
+  if (EV_RXFLAG and Mask) <> 0 then
+    Result := Result + [evRxFlag];
+  if (EV_RLSD and Mask) <> 0 then
+    Result := Result + [evRLSD];
+  if (EV_ERR and Mask) <> 0 then
+    Result := Result + [evError];
+  if (EV_RX80FULL and Mask) <> 0 then
+    Result := Result + [evRx80Full];
+end;
+
+{ TComPort }
+
+constructor TComPort.Create();
+begin
+  FPort := 'COM1';
+  FHandle := INVALID_HANDLE_VALUE;
+  FConnected := False;
+  FBufferInputSize := 1024;
+  FBufferOutputSize := 1024;
+  FEvents := [evRxChar, evTxEmpty, evRxFlag, evRing, evBreak, evCTS, evDSR, evError, evRLSD,
+    evRx80Full];
+end;
+
+destructor TComPort.Destroy;
+begin
+  if FConnected then
+    DestroyHandle;
+end;
+
+procedure TComPort.ClearBuffer(Input, Output: boolean);
+var
+  Flag: DWORD;
+begin
+  Flag := 0;
+  if Input then
+    Flag := PURGE_RXCLEAR;
+  if Output then
+    Flag := Flag or PURGE_TXCLEAR;
+
+  if not PurgeComm(FHandle, Flag) then
+    raise Exception.Create('Ошибка очистки буфера: ' + SysErrorMessage(GetLastError));
+end;
+
+procedure TComPort.AbortAllAsync;
+begin
+  if not PurgeComm(FHandle, PURGE_TXABORT or PURGE_RXABORT) then
+    raise Exception.Create('Ошибка отмены всех задач: ' + SysErrorMessage(GetLastError));
+end;
+
+procedure TComPort.CreateHandle;
+begin
+  FHandle := CreateFile(PChar('\\.\' + FPort), GENERIC_READ or GENERIC_WRITE, 0, nil, OPEN_EXISTING,
+    FILE_FLAG_OVERLAPPED, 0);
+
+  if FHandle = INVALID_HANDLE_VALUE then
+    raise Exception.Create('Ошибка открытия COM порта: ' + SysErrorMessage(GetLastError));
+end;
+
+procedure TComPort.DestroyHandle;
+begin
+  if FHandle <> INVALID_HANDLE_VALUE then
+  begin
+    if CloseHandle(FHandle) then
+      FHandle := INVALID_HANDLE_VALUE;
+  end;
+end;
+
+function TComPort.Open: boolean;
+begin
+  // Если соединеие уже установленно, ничего не делаем
+  if not FConnected then
+  begin
+    // открытие порта
+    CreateHandle;
+    FConnected := True;
+    try
+      // Параметры порта
+      SetupComPort;
+      // Очистка буфера порта
+      ClearBuffer(True, True);
+    except
+      DestroyHandle;
+      FConnected := False;
+      raise;
+    end;
+    FEventThread := TComThread.Create(Self);
+    FThreadCreated := True;
+  end;
+
+end;
+
+function TComPort.Close: boolean;
+begin
+  if FConnected then
+  begin
+    AbortAllAsync;
+    // Остановка потока
+    if FThreadCreated then
+    begin
+      FEventThread.Free;
+      FThreadCreated := False;
+    end;
+    // Закрытие порта
+    DestroyHandle;
+    FConnected := False;
+  end;
+end;
+
+procedure TComPort.ApplyBuffer;
+begin
+  if FConnected then
+    if not SetupComm(FHandle, FBufferInputSize, FBufferOutputSize) then
+      raise Exception.Create('Ошибка установки буфера: ' + SysErrorMessage(GetLastError));
+end;
+
+procedure TComPort.ApplyDCB;
+var
+  Dcb: TDcb;
+begin
+  if FConnected then
+  begin
+    FillChar(Dcb, SizeOf(Dcb), 0);
+    if not GetCommState(FHandle, Dcb) then
+      raise Exception.Create('Ошибка чтения параметров COM порта: ' +
+        SysErrorMessage(GetLastError));
+
+    // Dcb.DCBlength := SizeOf(TDcb);
+    // Dcb.XonLim := FBufferInputSize div 4;
+    // Dcb.XoffLim := Dcb.XonLim;
+    // Dcb.EvtChar := AnsiChar(FEventChar);
+    // Dcb.Flags := $00000001;
+
+    Dcb.BaudRate := CBR_9600;
+    Dcb.Parity := NOPARITY;
+    Dcb.ByteSize := 8;
+    Dcb.StopBits := ONESTOPBIT;
+    Dcb.EvtChar := chr(13);
+
+    if not SetCommState(FHandle, Dcb) then
+      raise Exception.Create('Ошибка установки параметров: ' + SysErrorMessage(GetLastError));
+  end;
+end;
+
+procedure TComPort.ApplyTimeouts;
+var
+  Timeouts: TCommTimeouts;
+
+  function GetTOValue(const Value: Integer): DWORD;
+  begin
+    if Value = -1 then
+      Result := MAXDWORD
+    else
+      Result := Value;
+  end;
+
+begin
+  if FConnected then
+  begin
+    // Timeouts.ReadIntervalTimeout := GetTOValue(50);
+    // Timeouts.ReadTotalTimeoutMultiplier := GetTOValue(70);
+    // Timeouts.ReadTotalTimeoutConstant := GetTOValue(100);
+    // Timeouts.WriteTotalTimeoutMultiplier := GetTOValue(60);
+    // Timeouts.WriteTotalTimeoutConstant := GetTOValue(100);
+
+    // Timeouts.ReadIntervalTimeout := GetTOValue(20);
+    // Timeouts.ReadTotalTimeoutMultiplier := GetTOValue(10);
+    // Timeouts.ReadTotalTimeoutConstant := GetTOValue(100);
+    // Timeouts.WriteTotalTimeoutMultiplier := GetTOValue(10);
+    // Timeouts.WriteTotalTimeoutConstant := GetTOValue(100);
+
+    // apply settings
+    if not SetCommTimeouts(FHandle, Timeouts) then
+      raise Exception.Create('Ошибка установки таймаутов: ' + SysErrorMessage(GetLastError));
+  end;
+end;
+
+procedure TComPort.SetupComPort;
+begin
+  ApplyBuffer;
+  ApplyDCB;
+  ApplyTimeouts;
+end;
+
+function TComPort.Read(var Buffer; Count: Integer): Integer;
+var
+  AsyncPtr: PAsync;
+begin
+  InitAsync(AsyncPtr);
+  try
+    ReadAsync(Buffer, Count, AsyncPtr);
+    Result := WaitForAsync(AsyncPtr);
+  finally
+    DoneAsync(AsyncPtr);
+  end;
+end;
+
+function TComPort.ReadAsync(var Buffer; Count: Integer; var AsyncPtr: PAsync): Integer;
+var
+  Success: boolean;
+  BytesTrans: DWORD;
+begin
+  if AsyncPtr = nil then
+    raise Exception.Create('Неправильные параметры Async: ' + SysErrorMessage(GetLastError));
+
+  AsyncPtr^.Kind := okRead;
+  if FHandle = INVALID_HANDLE_VALUE then
+    raise Exception.Create('Порт не открыт: ' + SysErrorMessage(GetLastError));
+
+  Success := ReadFile(FHandle, Buffer, Count, BytesTrans, @AsyncPtr^.Overlapped) or
+    (GetLastError = ERROR_IO_PENDING);
+
+  if not Success then
+    raise Exception.Create('Ошибка чтения: ' + SysErrorMessage(GetLastError));
+
+  Result := BytesTrans;
+end;
+
+function TComPort.WaitForAsync(var AsyncPtr: PAsync): Integer;
+var
+  BytesTrans, Signaled: DWORD;
+  Success: boolean;
+begin
+  if AsyncPtr = nil then
+    // raise EComPort.CreateNoWinCode
+    raise Exception.Create('Неправильные параметры Async: ' + SysErrorMessage(GetLastError));
+
+  Signaled := WaitForSingleObject(AsyncPtr^.Overlapped.hEvent, INFINITE);
+  Success := (Signaled = WAIT_OBJECT_0) and
+    (GetOverlappedResult(FHandle, AsyncPtr^.Overlapped, BytesTrans, False));
+
+  if not Success then
+    raise Exception.Create('Ошибка Async: ' + SysErrorMessage(GetLastError));
+
+  // if (AsyncPtr^.Kind = okRead) and (InputCount = 0) then
+  // SendSignalToLink(leRx, False)
+  // else if AsyncPtr^.Data <> nil then
+  // TxNotifyLink(AsyncPtr^.Data^, AsyncPtr^.Size);
+
+  Result := BytesTrans;
+end;
+
+procedure TComPort.InitAsync(var AsyncPtr: PAsync);
+begin
+  New(AsyncPtr);
+  with AsyncPtr^ do
+  begin
+    FillChar(Overlapped, SizeOf(TOverlapped), 0);
+    Overlapped.hEvent := CreateEvent(nil, True, True, nil);
+    Data := nil;
+    Size := 0;
+  end;
+end;
+
+procedure TComPort.DoneAsync(var AsyncPtr: PAsync);
+begin
+  with AsyncPtr^ do
+  begin
+    CloseHandle(Overlapped.hEvent);
+    if Data <> nil then
+      FreeMem(Data);
+  end;
+  Dispose(AsyncPtr);
+  AsyncPtr := nil;
+end;
+
+procedure TComPort.DoReadData;
+begin
+  if Assigned(FOnReadData) then
+    FOnReadData(Self, FEventThread.FReadData);
+end;
+
+end.
+
