@@ -89,6 +89,7 @@ type
   end;
 
 procedure EnumComPorts(Ports: TStrings);
+procedure EnumComPortsSpeed(Speed: TStrings);
 
 implementation
 
@@ -134,6 +135,28 @@ begin
     RegCloseKey(KeyHandle);
     TmpPorts.Free;
   end;
+end;
+
+procedure EnumComPortsSpeed(Speed: TStrings);
+begin
+  Speed.Add('75');
+  Speed.Add('110');
+  Speed.Add('134');
+  Speed.Add('150');
+  Speed.Add('300');
+  Speed.Add('600');
+  Speed.Add('1200');
+  Speed.Add('1800');
+  Speed.Add('2400');
+  Speed.Add('4800');
+  Speed.Add('7200');
+  Speed.Add('9600');
+  Speed.Add('14400');
+  Speed.Add('19200');
+  Speed.Add('38400');
+  Speed.Add('57600');
+  Speed.Add('115200');
+  Speed.Add('128000');
 end;
 
 { TComThread }
@@ -521,4 +544,3 @@ begin
 end;
 
 end.
-
