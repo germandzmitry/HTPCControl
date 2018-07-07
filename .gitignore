@@ -65,6 +65,9 @@ __recovery/
 # Folder
 Win32/
 
+# Setting
+Application/Setting.ini
+
 # Castalia statistics file (since XE7 Castalia is distributed with Delphi)
 *.stat
 *.png
