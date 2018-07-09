@@ -9,9 +9,32 @@ uses
 const
   lngRus: string = 'Russian';
 
+function GetLanguageText(AMsg: string; ASelectedLanguage: string = ''): string; overload;
 procedure UpdateLanguage(AForm: TForm; ASelectedLanguage: string = ''); overload;
 
 implementation
+
+function GetLanguageText(AMsg: string; ASelectedLanguage: string = ''): string;
+var
+  s: string;
+  lng: TIniFile;
+  LLanguagePath: string;
+begin
+  if ASelectedLanguage = '' then
+    Exit;
+
+  LLanguagePath := IncludeTrailingPathDelimiter(ExtractFilePath(ParamStr(0)) + 'Languages');
+
+  if not DirectoryExists(LLanguagePath) then
+    Exit;
+
+  lng := TIniFile.Create(LLanguagePath + ASelectedLanguage + '.lng');
+  try
+    Result := lng.ReadString('Message', AMsg, 'Message text not found');
+  finally
+    lng.Free;
+  end;
+end;
 
 procedure UpdateLanguage(AForm: TForm; ASelectedLanguage: string = '');
 var
@@ -41,7 +64,10 @@ begin
       begin
         s := lng.ReadString(AForm.Name, TButton(AForm.Components[i]).Name, '');
         if s <> '' then
-          TButton(AForm.Components[i]).Caption := s
+          TButton(AForm.Components[i]).Caption := s;
+        s := lng.ReadString(AForm.Name, TButton(AForm.Components[i]).Name + ':h', '');
+        if s <> '' then
+          TButton(AForm.Components[i]).Hint := s;
       end
       { SpeedButton }
       else if AForm.Components[i] is TSpeedButton then
@@ -79,7 +105,10 @@ begin
       begin
         s := lng.ReadString(AForm.Name, TLinkLabel(AForm.Components[i]).Name, '');
         if s <> '' then
-          TLinkLabel(AForm.Components[i]).Caption := s
+          TLinkLabel(AForm.Components[i]).Caption := s;
+        s := lng.ReadString(AForm.Name, TLinkLabel(AForm.Components[i]).Name + ':h', '');
+        if s <> '' then
+          TLinkLabel(AForm.Components[i]).Hint := s;
       end
       { Panel }
       else if AForm.Components[i] is TPanel then

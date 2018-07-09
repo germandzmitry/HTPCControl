@@ -6,9 +6,9 @@ uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
   Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.ComCtrls, Vcl.ExtCtrls, Vcl.StdCtrls,
   Vcl.ToolWin, Vcl.ActnMan, Vcl.ActnCtrls, Vcl.ActnList, System.Win.Registry,
-  Vcl.PlatformDefaultStyleActnCtrls, System.Actions, UCustomPageControl,
+  Vcl.PlatformDefaultStyleActnCtrls, System.Actions, UCustomPageControl, System.UITypes,
   System.ImageList, Vcl.ImgList, Winapi.shellApi, System.IniFiles, uEventApplication,
-  uSettings;
+  uSettings, uDataBase, uEventKodi;
 
 type
   TMain = class(TForm)
@@ -24,17 +24,23 @@ type
     ActToolsDeviceManager: TAction;
     ActionManager: TActionManager;
     ActionToolBar: TActionToolBar;
-    ListView1: TListView;
+    ActAccessOpenDB: TAction;
+    Button1: TButton;
     procedure FormCreate(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure FormShow(Sender: TObject);
     procedure ActHelpAboutExecute(Sender: TObject);
     procedure ActToolsSettingExecute(Sender: TObject);
     procedure ActToolsDeviceManagerExecute(Sender: TObject);
+    procedure ActAccessOpenDBExecute(Sender: TObject);
+    procedure Button1Click(Sender: TObject);
   private
     { Private declarations }
     lvEventApplication: TListView;
+    lvEventKodi: TListView;
 
+    FKodi: TKodi;
+    FDataBase: TDataBase;
     FEventApplication: TEventApplications;
     FSetting: TSetting;
 
@@ -45,6 +51,12 @@ type
 
     procedure OnWindowsHook(Sender: TObject; const HSHELL: NativeInt;
       const ApplicationData: TEXEVersionData);
+    procedure onKodiTerminate(Sender: TObject);
+    procedure onKodiPlayer(Player: string);
+    procedure onKodiPlayerState(Player, State: string);
+
+    procedure ConnectDataBase();
+    procedure DisconnectDataBase();
   public
     { Public declarations }
   end;
@@ -70,9 +82,8 @@ procedure TMain.FormCreate(Sender: TObject);
   end;
 
 var
-  tabEventApplication: TTabSheet;
+  tabEventApplication, tabEventKodi: TTabSheet;
   LColumn: TListColumn;
-  LItem: TListItem;
 
 begin
   LoadWindowSetting;
@@ -130,7 +141,31 @@ begin
     LColumn.AutoSize := True;
   end;
 
-  CreateTab(FPageClient, 'TabKodi');
+  // Вкладка - EventKodi
+  tabEventKodi := CreateTab(FPageClient, 'TabEventKodi');
+  lvEventKodi := TListView.Create(tabEventKodi);
+  with lvEventKodi do
+  begin
+    Left := 10;
+    Top := 10;
+    Width := 20;
+    Height := 20;
+    Parent := tabEventKodi;
+    Align := alClient;
+    BorderStyle := bsNone;
+    ViewStyle := vsReport;
+    ReadOnly := True;
+    RowSelect := True;
+    ColumnClick := False;
+
+    LColumn := Columns.Add;
+    LColumn.Caption := 'Плеер';
+    LColumn.Width := 100;
+
+    LColumn := Columns.Add;
+    LColumn.Caption := 'Состояние';
+    LColumn.AutoSize := True;
+  end;
 
   // События приложений
   FEventApplication := TEventApplications.Create(Main);
@@ -154,9 +189,21 @@ procedure TMain.FormClose(Sender: TObject; var Action: TCloseAction);
 begin
   SaveWindowSetting;
 
+  lvEventKodi.Free;
   lvEventApplication.Free;
   FPageClient.Free;
+
+  if Assigned(FKodi) then
+    FKodi.Terminate;
+  FDataBase.Free;
   FEventApplication.Free;
+end;
+
+procedure TMain.ActAccessOpenDBExecute(Sender: TObject);
+begin
+  if FileExists(FSetting.DB.FileName) then
+    ShellExecute(Main.Handle, 'open', PWideChar(WideString(FSetting.DB.FileName)), nil, nil,
+      SW_SHOWNORMAL);
 end;
 
 procedure TMain.ActHelpAboutExecute(Sender: TObject);
@@ -187,6 +234,18 @@ begin
     LSettings.Free;
     FSetting := uSettings.getSetting();
   end;
+end;
+
+procedure TMain.Button1Click(Sender: TObject);
+var
+  k: integer;
+begin
+  FKodi := TKodi.Create(FSetting.Kodi.IP, FSetting.Kodi.port, FSetting.Kodi.User,
+    FSetting.Kodi.Password);
+  FKodi.Priority := tpNormal;
+  FKodi.OnTerminate := onKodiTerminate;
+  FKodi.OnPlayer := onKodiPlayer;
+  FKodi.OnPlayerState := onKodiPlayerState;
 end;
 
 procedure TMain.LoadWindowSetting;
@@ -241,6 +300,28 @@ begin
   LItem.SubItems.Add(ApplicationData.FileName);
 end;
 
+procedure TMain.onKodiPlayer(Player: string);
+var
+  LItem: TListItem;
+begin
+  LItem := lvEventKodi.Items.Add;
+  LItem.Caption := Player;
+end;
+
+procedure TMain.onKodiPlayerState(Player, State: string);
+var
+  LItem: TListItem;
+begin
+  LItem := lvEventKodi.Items.Add;
+  LItem.Caption := Player;
+  LItem.SubItems.Add(State);
+end;
+
+procedure TMain.onKodiTerminate(Sender: TObject);
+begin
+  // FKodi := nil;
+end;
+
 procedure TMain.SaveWindowSetting();
 var
   IniFile: TIniFile;
@@ -260,6 +341,30 @@ begin
     IniFile.WriteInteger('Window', 'Splitter', Main.pComPort.Width);
   finally
     IniFile.Free;
+  end;
+end;
+
+procedure TMain.ConnectDataBase();
+begin
+  try
+    if not Assigned(FDataBase) then
+      FDataBase := TDataBase.Create(FSetting.DB.FileName);
+
+    if not FDataBase.Connected then
+      FDataBase.Connect;
+  except
+    DisconnectDataBase;
+    raise;
+  end;
+end;
+
+procedure TMain.DisconnectDataBase();
+begin
+  try
+    if Assigned(FDataBase) then
+      FDataBase.Disconnect;
+  finally
+    FreeAndNil(FDataBase);
   end;
 end;
 

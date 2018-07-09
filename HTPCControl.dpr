@@ -11,7 +11,9 @@ uses
   uLanguage in 'Units\uLanguage.pas',
   uEventApplication in 'Units\uEventApplication.pas',
   uTypes in 'Units\uTypes.pas',
-  uSuperObject in 'Customs\uSuperObject.pas';
+  uSuperObject in 'Customs\uSuperObject.pas',
+  uDataBase in 'Units\uDataBase.pas',
+  uEventKodi in 'Units\uEventKodi.pas';
 
 {$R *.res}
 

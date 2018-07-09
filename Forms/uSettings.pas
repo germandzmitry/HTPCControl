@@ -6,7 +6,8 @@ uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
   Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.ComCtrls, Vcl.ExtCtrls, Vcl.StdCtrls,
   Vcl.CheckLst, System.Win.Registry, System.IniFiles, Data.DB, Data.Win.ADODB,
-  IdBaseComponent, IdComponent, IdTCPConnection, IdTCPClient, IdHTTP, IdStack, uSuperObject;
+  IdBaseComponent, IdComponent, IdTCPConnection, IdTCPClient, IdHTTP, IdStack, uSuperObject,
+  Vcl.Buttons, System.ImageList, Vcl.ImgList, ShellAPI;
 
 type
   TApplication = Record
@@ -15,6 +16,9 @@ type
   End;
 
   TComPort = Record
+    OpenRun: boolean;
+    Port: string;
+    Speed: integer;
     procedure Default;
   End;
 
@@ -35,10 +39,13 @@ type
   End;
 
   TDB = Record
+    FileName: string;
     procedure Default;
   End;
 
   TKodi = Record
+    FileName: string;
+    Using: boolean;
     IP: string;
     Port: integer;
     User: string;
@@ -71,7 +78,7 @@ type
     gbEventApplication: TGroupBox;
     clbEventApplication: TCheckListBox;
     cbEventAppicationUsing: TCheckBox;
-    gbMediaPlayer: TGroupBox;
+    gbKodiConnect: TGroupBox;
     edKodiIP: TEdit;
     edKodiPort: TEdit;
     edKodiUser: TEdit;
@@ -89,12 +96,36 @@ type
     cbComPortOpenRun: TCheckBox;
     lComPortPort: TLabel;
     lComPortSpeed: TLabel;
+    btnApply: TButton;
+    gbDBAccess: TGroupBox;
+    edDBFileName: TEdit;
+    lDBFilleName: TLabel;
+    ilButton: TImageList;
+    btnDBSelectFile: TButton;
+    btnDBCreate: TButton;
+    btnDBTestConnection: TButton;
+    lDBTestConnection: TLabel;
+    gbDBHelp: TGroupBox;
+    llDBDriver1: TLinkLabel;
+    llDBDriver2: TLinkLabel;
+    cbKodiUsing: TCheckBox;
+    gbKodi: TGroupBox;
+    lKodiFileName: TLabel;
+    edKodiFileName: TEdit;
+    btnKodiSelectFile: TButton;
     procedure btnCloseClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure FormShow(Sender: TObject);
     procedure cbEventAppicationUsingClick(Sender: TObject);
     procedure btnSaveClick(Sender: TObject);
     procedure btnKodiTestConnectClick(Sender: TObject);
+    procedure btnApplyClick(Sender: TObject);
+    procedure btnDBSelectFileClick(Sender: TObject);
+    procedure btnDBTestConnectionClick(Sender: TObject);
+    procedure llDBDriverClick(Sender: TObject);
+    procedure btnDBCreateClick(Sender: TObject);
+    procedure cbKodiUsingClick(Sender: TObject);
+    procedure btnKodiSelectFileClick(Sender: TObject);
   private
     procedure saveSetting();
   public
@@ -109,7 +140,7 @@ implementation
 
 {$R *.dfm}
 
-uses uLanguage, uTypes, uComPort;
+uses uLanguage, uTypes, uComPort, uDataBase;
 
 function getSetting(): TSetting;
 var
@@ -121,9 +152,6 @@ begin
   IniFile := TIniFile.Create(ExtractFileDir(Application.ExeName) + '\' + FileSetting);
   try
 
-    // // Com порт
-    // FComPort := IniFile.ReadString('Com', 'COM', 'COM1');
-    // FComRunOpen := IniFile.ReadBool('Com', 'RunOpenCom', false);
     // // Общие
     // FAutoRun := IniFile.ReadBool('General', 'AutoRun', false);
     // FAutoRunTray := IniFile.ReadBool('General', 'AutoRunTray', false);
@@ -132,14 +160,21 @@ begin
     // FTurnTray := IniFile.ReadBool('General', 'TurnTray', false);
     // FCloseTray := IniFile.ReadBool('General', 'CloseTray', false);
 
+    // Com порт
+    Result.ComPort.OpenRun := IniFile.ReadBool('Com', 'OpenRun', Result.ComPort.OpenRun);
+    Result.ComPort.Port := IniFile.ReadString('Com', 'COM', Result.ComPort.Port);
+    Result.ComPort.Speed := IniFile.ReadInteger('Com', 'Speed', Result.ComPort.Speed);
+
     // События приложений
-    Result.EventApplication.Using := IniFile.readBool('EventApplication', 'Using',
+    Result.EventApplication.Using := IniFile.ReadBool('EventApplication', 'Using',
       Result.EventApplication.Using);
 
-    // // База данных
-    // FPathDB := IniFile.ReadString('DB', 'PathDB', '');
+    // База данных
+    Result.DB.FileName := IniFile.ReadString('DB', 'FileName', Result.DB.FileName);
 
     // Kodi
+    Result.Kodi.FileName := IniFile.ReadString('Kodi', 'FileName', Result.Kodi.FileName);
+    Result.Kodi.Using := IniFile.ReadBool('Kodi', 'Using', Result.Kodi.Using);
     Result.Kodi.IP := IniFile.ReadString('Kodi', 'IP', Result.Kodi.IP);
     Result.Kodi.Port := IniFile.ReadInteger('Kodi', 'Port', Result.Kodi.Port);
     Result.Kodi.User := IniFile.ReadString('Kodi', 'User', Result.Kodi.User);
@@ -155,27 +190,27 @@ begin
     if Reg.OpenKeyReadOnly('\SOFTWARE\HTPCControl') then
     begin
       if Reg.ValueExists('WINDOWCREATED') then
-        Result.EventApplication.WINDOWCREATED := Reg.readBool('WINDOWCREATED');
+        Result.EventApplication.WINDOWCREATED := Reg.ReadBool('WINDOWCREATED');
       if Reg.ValueExists('WINDOWDESTROYED') then
-        Result.EventApplication.WINDOWDESTROYED := Reg.readBool('WINDOWDESTROYED');
+        Result.EventApplication.WINDOWDESTROYED := Reg.ReadBool('WINDOWDESTROYED');
       if Reg.ValueExists('ACTIVATESHELLWINDOW') then
-        Result.EventApplication.ACTIVATESHELLWINDOW := Reg.readBool('ACTIVATESHELLWINDOW');
+        Result.EventApplication.ACTIVATESHELLWINDOW := Reg.ReadBool('ACTIVATESHELLWINDOW');
       if Reg.ValueExists('WINDOWACTIVATED') then
-        Result.EventApplication.WINDOWACTIVATED := Reg.readBool('WINDOWACTIVATED');
+        Result.EventApplication.WINDOWACTIVATED := Reg.ReadBool('WINDOWACTIVATED');
       if Reg.ValueExists('GETMINRECT') then
-        Result.EventApplication.GETMINRECT := Reg.readBool('GETMINRECT');
+        Result.EventApplication.GETMINRECT := Reg.ReadBool('GETMINRECT');
       if Reg.ValueExists('REDRAW') then
-        Result.EventApplication.REDRAW := Reg.readBool('REDRAW');
+        Result.EventApplication.REDRAW := Reg.ReadBool('REDRAW');
       if Reg.ValueExists('TASKMAN') then
-        Result.EventApplication.TASKMAN := Reg.readBool('TASKMAN');
+        Result.EventApplication.TASKMAN := Reg.ReadBool('TASKMAN');
       if Reg.ValueExists('LANGUAGE') then
-        Result.EventApplication.LANGUAGE := Reg.readBool('LANGUAGE');
+        Result.EventApplication.LANGUAGE := Reg.ReadBool('LANGUAGE');
       if Reg.ValueExists('ACCESSIBILITYSTATE') then
-        Result.EventApplication.ACCESSIBILITYSTATE := Reg.readBool('ACCESSIBILITYSTATE');
+        Result.EventApplication.ACCESSIBILITYSTATE := Reg.ReadBool('ACCESSIBILITYSTATE');
       if Reg.ValueExists('APPCOMMAND') then
-        Result.EventApplication.APPCOMMAND := Reg.readBool('APPCOMMAND');
+        Result.EventApplication.APPCOMMAND := Reg.ReadBool('APPCOMMAND');
       if Reg.ValueExists('WINDOWREPLACED') then
-        Result.EventApplication.WINDOWREPLACED := Reg.readBool('WINDOWREPLACED');
+        Result.EventApplication.WINDOWREPLACED := Reg.ReadBool('WINDOWREPLACED');
     end;
   finally
     Reg.Free;
@@ -193,7 +228,9 @@ end;
 
 procedure TComPort.Default;
 begin
-  //
+  self.OpenRun := false;
+  self.Port := '';
+  self.Speed := 9600;
 end;
 
 { TEventApplication }
@@ -218,13 +255,15 @@ end;
 
 procedure TDB.Default;
 begin
-
+  self.FileName := '';
 end;
 
 { TKodi }
 
 procedure TKodi.Default;
 begin
+  self.FileName := '';
+  self.Using := false;
   self.IP := '127.0.0.1';
   self.Port := 8080;
   self.User := 'kodi';
@@ -250,11 +289,18 @@ var
   i: integer;
 begin
 
-  // чистим все Label
+  // чистим контролы
   for i := 0 to self.ComponentCount - 1 do
   begin
+    // Label
     if self.Components[i] is TLabel then
       TLabel(self.Components[i]).Caption := '';
+    // Edit
+    if self.Components[i] is TEdit then
+      TEdit(self.Components[i]).Text := '';
+    // Button
+    if self.Components[i] is TButton then
+      TButton(self.Components[i]).Caption := '';
   end;
 
   cbComPortPort.Style := csDropDownList;
@@ -265,7 +311,7 @@ begin
 
   UpdateLanguage(self, lngRus);
 
-  pcSettings.ActivePageIndex := 1;
+  pcSettings.ActivePageIndex := 0;
 
   with clbEventApplication do
   begin
@@ -292,7 +338,10 @@ begin
   // Приложение
   cbApplicationAutoRun.Checked := LSetting.Application.AutoRun;
 
-  // ComPort
+  // Com порт
+  cbComPortOpenRun.Checked := LSetting.ComPort.OpenRun;
+  cbComPortPort.ItemIndex := cbComPortPort.Items.IndexOf(LSetting.ComPort.Port);
+  cbComPortSpeed.ItemIndex := cbComPortSpeed.Items.IndexOf(IntToStr(LSetting.ComPort.Speed));
 
   // События приложений
   cbEventAppicationUsing.Checked := LSetting.EventApplication.Using;
@@ -320,7 +369,12 @@ begin
   if LSetting.EventApplication.WINDOWREPLACED then
     clbEventApplication.State[clbEventApplication.Items.IndexOf('WINDOWREPLACED')] := cbChecked;
 
+  // База данных
+  edDBFileName.Text := LSetting.DB.FileName;
+
   // Kodi
+  edKodiFileName.Text := LSetting.Kodi.FileName;
+  cbKodiUsing.Checked := LSetting.Kodi.Using;
   edKodiIP.Text := LSetting.Kodi.IP;
   edKodiPort.Text := IntToStr(LSetting.Kodi.Port);
   edKodiUser.Text := LSetting.Kodi.User;
@@ -330,6 +384,12 @@ end;
 procedure TSettings.FormShow(Sender: TObject);
 begin
   cbEventAppicationUsingClick(cbEventAppicationUsing.Owner);
+  cbKodiUsingClick(cbKodiUsing.Owner);
+end;
+
+procedure TSettings.llDBDriverClick(Sender: TObject);
+begin
+  ShellExecute(self.handle, 'open', PCHAR(TLinkLabel(Sender).Hint), nil, nil, SW_SHOW);
 end;
 
 procedure TSettings.saveSetting;
@@ -340,10 +400,20 @@ begin
   IniFile := TIniFile.Create(ExtractFileDir(Application.ExeName) + '\' + FileSetting);
   try
 
+    // Com порт
+    IniFile.WriteBool('Com', 'OpenRun', cbComPortOpenRun.Checked);
+    IniFile.WriteString('Com', 'COM', cbComPortPort.Text);
+    IniFile.WriteInteger('Com', 'Speed', StrToInt(cbComPortSpeed.Text));
+
     // События приложений
-    IniFile.writeBool('EventApplication', 'Using', cbEventAppicationUsing.Checked);
+    IniFile.WriteBool('EventApplication', 'Using', cbEventAppicationUsing.Checked);
+
+    // База данных
+    IniFile.WriteString('DB', 'FileName', edDBFileName.Text);
 
     // Kodi
+    IniFile.WriteString('Kodi', 'FileName', edKodiFileName.Text);
+    IniFile.WriteBool('Kodi', 'Using', cbKodiUsing.Checked);
     IniFile.WriteString('Kodi', 'IP', edKodiIP.Text);
     IniFile.WriteInteger('Kodi', 'Port', StrToInt(edKodiPort.Text));
     IniFile.WriteString('Kodi', 'User', edKodiUser.Text);
@@ -358,27 +428,27 @@ begin
     Reg.RootKey := HKEY_CURRENT_USER;
     if Reg.OpenKey('\SOFTWARE\HTPCControl', true) then
     begin
-      Reg.writeBool('WINDOWCREATED', clbEventApplication.Checked
+      Reg.WriteBool('WINDOWCREATED', clbEventApplication.Checked
         [clbEventApplication.Items.IndexOf('WINDOWCREATED')]);
-      Reg.writeBool('WINDOWDESTROYED', clbEventApplication.Checked
+      Reg.WriteBool('WINDOWDESTROYED', clbEventApplication.Checked
         [clbEventApplication.Items.IndexOf('WINDOWDESTROYED')]);
-      Reg.writeBool('ACTIVATESHELLWINDOW', clbEventApplication.Checked
+      Reg.WriteBool('ACTIVATESHELLWINDOW', clbEventApplication.Checked
         [clbEventApplication.Items.IndexOf('ACTIVATESHELLWINDOW')]);
-      Reg.writeBool('WINDOWACTIVATED', clbEventApplication.Checked
+      Reg.WriteBool('WINDOWACTIVATED', clbEventApplication.Checked
         [clbEventApplication.Items.IndexOf('WINDOWACTIVATED')]);
-      Reg.writeBool('GETMINRECT', clbEventApplication.Checked
+      Reg.WriteBool('GETMINRECT', clbEventApplication.Checked
         [clbEventApplication.Items.IndexOf('GETMINRECT')]);
-      Reg.writeBool('REDRAW', clbEventApplication.Checked
+      Reg.WriteBool('REDRAW', clbEventApplication.Checked
         [clbEventApplication.Items.IndexOf('REDRAW')]);
-      Reg.writeBool('TASKMAN', clbEventApplication.Checked
+      Reg.WriteBool('TASKMAN', clbEventApplication.Checked
         [clbEventApplication.Items.IndexOf('TASKMAN')]);
-      Reg.writeBool('LANGUAGE', clbEventApplication.Checked
+      Reg.WriteBool('LANGUAGE', clbEventApplication.Checked
         [clbEventApplication.Items.IndexOf('LANGUAGE')]);
-      Reg.writeBool('ACCESSIBILITYSTATE', clbEventApplication.Checked
+      Reg.WriteBool('ACCESSIBILITYSTATE', clbEventApplication.Checked
         [clbEventApplication.Items.IndexOf('ACCESSIBILITYSTATE')]);
-      Reg.writeBool('APPCOMMAND', clbEventApplication.Checked
+      Reg.WriteBool('APPCOMMAND', clbEventApplication.Checked
         [clbEventApplication.Items.IndexOf('APPCOMMAND')]);
-      Reg.writeBool('WINDOWREPLACED', clbEventApplication.Checked
+      Reg.WriteBool('WINDOWREPLACED', clbEventApplication.Checked
         [clbEventApplication.Items.IndexOf('WINDOWREPLACED')]);
     end;
   finally
@@ -389,6 +459,35 @@ end;
 procedure TSettings.cbEventAppicationUsingClick(Sender: TObject);
 begin
   clbEventApplication.Enabled := cbEventAppicationUsing.Checked;
+end;
+
+procedure TSettings.cbKodiUsingClick(Sender: TObject);
+begin
+  edKodiIP.Enabled := cbKodiUsing.Checked;
+  edKodiPort.Enabled := cbKodiUsing.Checked;
+  edKodiUser.Enabled := cbKodiUsing.Checked;
+  edKodiPassword.Enabled := cbKodiUsing.Checked;
+  btnKodiTestConnect.Enabled := cbKodiUsing.Checked;
+end;
+
+procedure TSettings.btnKodiSelectFileClick(Sender: TObject);
+var
+  OpenDialog: TOpenDialog;
+begin
+  OpenDialog := TOpenDialog.Create(self);
+  try
+    if FileExists(edKodiFileName.Text) then
+      OpenDialog.InitialDir := ExtractFileDir(edKodiFileName.Text)
+    else
+      OpenDialog.InitialDir := ExtractFileDir(Application.ExeName);
+
+    OpenDialog.Filter := 'Приложения|*.exe';
+
+    if (OpenDialog.Execute) and (FileExists(OpenDialog.FileName)) then
+      edKodiFileName.Text := OpenDialog.FileName;
+  finally
+    OpenDialog.Free;
+  end;
 end;
 
 procedure TSettings.btnKodiTestConnectClick(Sender: TObject);
@@ -447,11 +546,90 @@ end;
 procedure TSettings.btnSaveClick(Sender: TObject);
 begin
   saveSetting;
+  self.Close;
+end;
+
+procedure TSettings.btnApplyClick(Sender: TObject);
+begin
+  saveSetting;
 end;
 
 procedure TSettings.btnCloseClick(Sender: TObject);
 begin
   self.Close;
+end;
+
+procedure TSettings.btnDBCreateClick(Sender: TObject);
+var
+  DBSaveDialog: TSaveDialog;
+begin
+  DBSaveDialog := TSaveDialog.Create(self);
+  try
+    DBSaveDialog.Filter := 'Базы данных Microsoft Access 2007-2013|*.accdb';
+    DBSaveDialog.DefaultExt := '*.accdb';
+    DBSaveDialog.FileName := 'db';
+    DBSaveDialog.InitialDir := ExtractFilePath(Application.ExeName);
+
+    if DBSaveDialog.Execute then
+      try
+        uDataBase.CreateDB(DBSaveDialog.FileName);
+        edDBFileName.Text := DBSaveDialog.FileName;
+      except
+        on E: Exception do
+          MessageDlg(E.Message, mtWarning, [mbOK], 0);
+      end;
+
+  finally
+    DBSaveDialog.Free;
+  end;
+end;
+
+procedure TSettings.btnDBSelectFileClick(Sender: TObject);
+var
+  OpenDialog: TOpenDialog;
+begin
+  OpenDialog := TOpenDialog.Create(self);
+  try
+    if FileExists(edDBFileName.Text) then
+      OpenDialog.InitialDir := ExtractFileDir(edDBFileName.Text)
+    else
+      OpenDialog.InitialDir := ExtractFileDir(Application.ExeName);
+
+    OpenDialog.Filter :=
+      'Базы данных Microsoft Access 2007-2013|*.accdb|Базы данных Microsoft Access 2003|*.mdb';
+
+    if (OpenDialog.Execute) and (FileExists(OpenDialog.FileName)) then
+      edDBFileName.Text := OpenDialog.FileName;
+  finally
+    OpenDialog.Free;
+  end;
+end;
+
+procedure TSettings.btnDBTestConnectionClick(Sender: TObject);
+var
+  Con: TADOConnection;
+begin
+  lDBTestConnection.Caption := '';
+  Con := TADOConnection.Create(nil);
+  try
+    Con.ConnectionString := 'Provider=Microsoft.ACE.OLEDB.12.0;Data Source=' + edDBFileName.Text +
+      ';Persist Security Info=False';
+    try
+      Con.Connected := true;
+      lDBTestConnection.Font.Color := clBlue;
+      lDBTestConnection.Caption := 'Соединение успешно установлено.';
+      Con.Connected := false;
+    except
+      on E: Exception do
+      begin
+        lDBTestConnection.Font.Color := clRed;
+        lDBTestConnection.Caption := E.Message;
+        // MessageDlg(E.Message, mtWarning, [mbOK], 0);
+      end;
+    end;
+  finally
+    Con.Free;
+  end;
 end;
 
 end.
