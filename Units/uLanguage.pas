@@ -9,12 +9,18 @@ uses
 const
   lngRus: string = 'Russian';
 
-function GetLanguageText(AMsg: string; ASelectedLanguage: string = ''): string; overload;
+function GetLanguageText(ASection, AMsg: string; ASelectedLanguage: string): string; overload;
+function GetLanguageText(AMsg: string; ASelectedLanguage: string): string; overload;
 procedure UpdateLanguage(AForm: TForm; ASelectedLanguage: string = ''); overload;
 
 implementation
 
-function GetLanguageText(AMsg: string; ASelectedLanguage: string = ''): string;
+function GetLanguageText(AMsg: string; ASelectedLanguage: string): string;
+begin
+  result := GetLanguageText('Text', AMsg, ASelectedLanguage);
+end;
+
+function GetLanguageText(ASection, AMsg: string; ASelectedLanguage: string): string;
 var
   s: string;
   lng: TIniFile;
@@ -30,7 +36,7 @@ begin
 
   lng := TIniFile.Create(LLanguagePath + ASelectedLanguage + '.lng');
   try
-    Result := lng.ReadString('Message', AMsg, 'Message text not found');
+    result := lng.ReadString(ASection, AMsg, 'Text not found');
   finally
     lng.Free;
   end;

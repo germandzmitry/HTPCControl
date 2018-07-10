@@ -4,7 +4,7 @@ interface
 
 uses
   Winapi.Messages, Winapi.windows, System.SysUtils, System.Classes, Winapi.PsApi,
-  Vcl.Controls, Vcl.Forms, Vcl.Graphics;
+  Vcl.Controls, Vcl.Forms, Vcl.Graphics, uLanguage;
 
 const
   WM_EventApplication = WM_USER + 177;
@@ -28,6 +28,7 @@ type
     SpecialBuild: string;
   end;
 
+  TAppRunningEvent = procedure(Running: boolean) of object;
   TAppEvent = procedure(Sender: TObject; const ApplicationData: TEXEVersionData) of object;
   TAppEvents = procedure(Sender: TObject; const HSHELL: NativeInt;
     const ApplicationData: TEXEVersionData) of object;
@@ -38,7 +39,6 @@ type
   TEventApplications = class(TWinControl)
     procedure Start();
     procedure Stop();
-    procedure Test();
     function Starting(): boolean;
   private
     FHook: THandle;
@@ -47,6 +47,7 @@ type
     SetHook: function(Wnd: HWND): BOOL; stdcall;
     RemoveHook: function(): BOOL; stdcall;
 
+    FOnRunning: TAppRunningEvent;
     FOnWindowsHook: TAppEvents;
     FOnWindowCreated: TAppEvent;
     FOnWindowDestroyed: TAppEvent;
@@ -62,6 +63,7 @@ type
 
     procedure EventApplication(var Msg: TMessage); message WM_EventApplication;
 
+    procedure DoRunning(Running: boolean); dynamic;
     procedure DoWindowsHook(HSHELL: NativeInt; ApplicationData: TEXEVersionData); dynamic;
     procedure DoWindowCreated(ApplicationData: TEXEVersionData); dynamic;
     procedure DoWindowDestroyed(ApplicationData: TEXEVersionData); dynamic;
@@ -82,6 +84,7 @@ type
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
 
+    property OnRunning: TAppRunningEvent read FOnRunning write FOnRunning;
     property OnWindowsHook: TAppEvents read FOnWindowsHook write FOnWindowsHook;
     property OnWindowCreated: TAppEvent read FOnWindowCreated write FOnWindowCreated;
     property OnWindowDestroyed: TAppEvent read FOnWindowDestroyed write FOnWindowDestroyed;
@@ -108,13 +111,6 @@ begin
   inherited Create(AOwner);
   Parent := TWinControl(AOwner);
   FHook := INVALID_HANDLE_VALUE;
-end;
-
-procedure TEventApplications.Test;
-var
-  ApplicationData: TEXEVersionData;
-begin
-  DoWindowCreated(ApplicationData);
 end;
 
 destructor TEventApplications.Destroy;
@@ -158,6 +154,12 @@ procedure TEventApplications.DoReDraw(ApplicationData: TEXEVersionData);
 begin
   if Assigned(FOnReDraw) then
     FOnReDraw(Self, ApplicationData);
+end;
+
+procedure TEventApplications.DoRunning(Running: boolean);
+begin
+  if Assigned(FOnRunning) then
+    FOnRunning(Running);
 end;
 
 procedure TEventApplications.DoTaskMan(ApplicationData: TEXEVersionData);
@@ -205,14 +207,16 @@ begin
     begin
       @SetHook := GetProcAddress(FHook, 'SetHook');
       if (@SetHook <> nil) and (SetHook(Self.Handle)) then
+        DoRunning(true)
       else
-        raise Exception.Create('Не удалось установить Hook!');
+        raise Exception.Create(GetLanguageText('ErrorEventAppLoadHook', lngRus));
     end
     else
-      raise Exception.Create('Файл EventApplicationHook.dll ненайден!');
+      raise Exception.CreateFmt(GetLanguageText('ErrorEventAppFileNotFound', lngRus),
+        ['EventApplicationHook.dll']);
   end
   else
-    raise Exception.Create('Хук уже установлен!');
+    raise Exception.Create(GetLanguageText('ErrorEventAppHookIsLoad', lngRus));
 end;
 
 function TEventApplications.Starting: boolean;
@@ -231,14 +235,16 @@ begin
     if @RemoveHook <> nil then
       if RemoveHook then
       begin
+        DoRunning(false);
         FreeLibrary(FHook);
         FHook := INVALID_HANDLE_VALUE;
       end
       else
-        raise Exception.Create('Не удалось удалить Hook!');
+        raise Exception.Create(GetLanguageText('ErrorEventAppUnloadHook', lngRus));
   end
   else
-    raise Exception.Create('Файл EventApplicationHook.dll ненайден!');
+    raise Exception.CreateFmt(GetLanguageText('ErrorEventAppFileNotFound', lngRus),
+      ['EventApplicationHook.dll']);
 end;
 
 procedure TEventApplications.EventApplication(var Msg: TMessage);

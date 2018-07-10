@@ -13,7 +13,8 @@ uses
   uTypes in 'Units\uTypes.pas',
   uSuperObject in 'Customs\uSuperObject.pas',
   uDataBase in 'Units\uDataBase.pas',
-  uEventKodi in 'Units\uEventKodi.pas';
+  uEventKodi in 'Units\uEventKodi.pas',
+  uControlCommand in 'Forms\uControlCommand.pas' {ControlCommand};
 
 {$R *.res}
 

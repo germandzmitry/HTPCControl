@@ -46,6 +46,7 @@ type
   TKodi = Record
     FileName: string;
     Using: boolean;
+    UpdateInterval: integer;
     IP: string;
     Port: integer;
     User: string;
@@ -113,6 +114,9 @@ type
     lKodiFileName: TLabel;
     edKodiFileName: TEdit;
     btnKodiSelectFile: TButton;
+    lKodiUpdateInterval: TLabel;
+    edKodiUpdateInterval: TEdit;
+    udKodiUpdateInterval: TUpDown;
     procedure btnCloseClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure FormShow(Sender: TObject);
@@ -175,6 +179,8 @@ begin
     // Kodi
     Result.Kodi.FileName := IniFile.ReadString('Kodi', 'FileName', Result.Kodi.FileName);
     Result.Kodi.Using := IniFile.ReadBool('Kodi', 'Using', Result.Kodi.Using);
+    Result.Kodi.UpdateInterval := IniFile.ReadInteger('Kodi', 'UpdateInterval',
+      Result.Kodi.UpdateInterval);
     Result.Kodi.IP := IniFile.ReadString('Kodi', 'IP', Result.Kodi.IP);
     Result.Kodi.Port := IniFile.ReadInteger('Kodi', 'Port', Result.Kodi.Port);
     Result.Kodi.User := IniFile.ReadString('Kodi', 'User', Result.Kodi.User);
@@ -264,6 +270,7 @@ procedure TKodi.Default;
 begin
   self.FileName := '';
   self.Using := false;
+  self.UpdateInterval := 5;
   self.IP := '127.0.0.1';
   self.Port := 8080;
   self.User := 'kodi';
@@ -375,6 +382,7 @@ begin
   // Kodi
   edKodiFileName.Text := LSetting.Kodi.FileName;
   cbKodiUsing.Checked := LSetting.Kodi.Using;
+  udKodiUpdateInterval.Position := LSetting.Kodi.UpdateInterval;
   edKodiIP.Text := LSetting.Kodi.IP;
   edKodiPort.Text := IntToStr(LSetting.Kodi.Port);
   edKodiUser.Text := LSetting.Kodi.User;
@@ -414,6 +422,7 @@ begin
     // Kodi
     IniFile.WriteString('Kodi', 'FileName', edKodiFileName.Text);
     IniFile.WriteBool('Kodi', 'Using', cbKodiUsing.Checked);
+    IniFile.WriteInteger('Kodi', 'UpdateInterval', udKodiUpdateInterval.Position);
     IniFile.WriteString('Kodi', 'IP', edKodiIP.Text);
     IniFile.WriteInteger('Kodi', 'Port', StrToInt(edKodiPort.Text));
     IniFile.WriteString('Kodi', 'User', edKodiUser.Text);
@@ -463,6 +472,8 @@ end;
 
 procedure TSettings.cbKodiUsingClick(Sender: TObject);
 begin
+  edKodiUpdateInterval.Enabled := cbKodiUsing.Checked;
+  udKodiUpdateInterval.Enabled := cbKodiUsing.Checked;
   edKodiIP.Enabled := cbKodiUsing.Checked;
   edKodiPort.Enabled := cbKodiUsing.Checked;
   edKodiUser.Enabled := cbKodiUsing.Checked;

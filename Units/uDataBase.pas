@@ -7,18 +7,31 @@ uses
   uLanguage, uTypes;
 
 type
+  PRemoteCommand = ^TRemoteCommand;
+
+  TRemoteCommand = record
+    Command: string;
+    Description: string;
+  end;
+
+type
   TDataBase = class
     procedure Connect;
     procedure Disconnect;
 
-    function Connected: boolean;
+    function CommandExists(const ACommand: string; var Command: TRemoteCommand): boolean;
+
   private
     FConnection: TADOConnection;
     FFileName: string;
+
+    function GetConnected: boolean;
   public
     constructor Create; overload;
     constructor Create(FileName: string); overload;
     destructor Destroy; override;
+
+    property Connected: boolean read GetConnected;
   end;
 
 procedure CreateDB(FileName: string);
@@ -27,10 +40,10 @@ implementation
 
 procedure CreateDB(FileName: string);
 
-  procedure addButtobPc(Query: TADOQuery; Key: integer; description: string; Group: integer);
+  procedure addButtobPc(Query: TADOQuery; Key: integer; Description: string; Group: integer);
   begin
     Query.Sql.Text := 'insert into Keyboard([key], [description], [group]) values (' + inttostr(Key)
-      + ', ' + '''' + description + ''', ' + inttostr(Group) + ')';
+      + ', ' + '''' + Description + ''', ' + inttostr(Group) + ')';
     Query.ExecSQL;
   end;
 
@@ -57,7 +70,7 @@ begin
     Connection := TADOConnection.Create(nil);
     Connection.ConnectionString := 'Provider=Microsoft.ACE.OLEDB.12.0;Data Source=' + FileName +
       ';Persist Security Info=False';
-    Connection.Connected := true;
+    Connection.Connected := True;
 
     {
       Создаем таблицы
@@ -71,19 +84,19 @@ begin
     Query.ExecSQL;
 
     // Справочник - Кнопки пульта
-    Query.Sql.Text := 'CREATE TABLE RemoteControl(' + '[command] string(100) primary key, ' +
+    Query.Sql.Text := 'CREATE TABLE RemoteCommand(' + '[command] string(100) primary key, ' +
       '[description] string(255))';
     Query.ExecSQL;
 
     // Запуск приложений
     Query.Sql.Text := 'CREATE TABLE RunApplication(' + '[id] counter primary key, ' +
-      '[command] string(100) references RemoteControl([command]), ' + '[application] string(255), '
+      '[command] string(100) references RemoteCommand([command]), ' + '[application] string(255), '
       + '[description] string(255))';
     Query.ExecSQL;
 
     // Запуск приложений
     Query.Sql.Text := 'CREATE TABLE PressKeyKeyboard(' + '[id] counter primary key, ' +
-      '[command] string(100) references RemoteControl([command]), ' +
+      '[command] string(100) references RemoteCommand([command]), ' +
       '[key1] integer references Keyboard([key]), ' + '[key2] integer references Keyboard([key]), '
       + '[repeat] bit, ' + '[for_application] string(255), ' + '[description] string(255))';
     Query.ExecSQL;
@@ -180,11 +193,11 @@ begin
     addButtobPc(Query, 221, ']', 2);
     addButtobPc(Query, 222, '''''', 2);
 
-    Connection.Connected := false;
+    Connection.Connected := False;
     Query.Free;
     Connection.Free;
   except
-    Connection.Connected := false;
+    Connection.Connected := False;
     Query.Free;
     Connection.Free;
     raise;
@@ -209,7 +222,7 @@ end;
 
 destructor TDataBase.Destroy;
 begin
-  if Connected then
+  if FConnection.Connected then
     Disconnect;
   FConnection.Free;
 
@@ -218,7 +231,7 @@ end;
 
 procedure TDataBase.Connect;
 begin
-  if not Connected then
+  if not FConnection.Connected then
   begin
     try
       FConnection.ConnectionString := 'Provider=Microsoft.ACE.OLEDB.12.0;Data Source=' + FFileName +
@@ -232,13 +245,43 @@ end;
 
 procedure TDataBase.Disconnect;
 begin
-  if Connected then
+  if FConnection.Connected then
     FConnection.Close;
 end;
 
-function TDataBase.Connected: boolean;
+function TDataBase.GetConnected: boolean;
 begin
-  result := FConnection.Connected;
+  Result := FConnection.Connected;
+end;
+
+function TDataBase.CommandExists(const ACommand: string; var Command: TRemoteCommand): boolean;
+var
+  Query: TADOQuery;
+begin
+  Result := False;
+  if not FConnection.Connected then
+    exit;
+
+  try
+    Query := TADOQuery.Create(nil);
+    Query.Connection := FConnection;
+    Query.Sql.Clear;
+    Query.Sql.Text := 'select command, description from RemoteCommand where command = "' +
+      ACommand + '"';
+    Query.ExecSQL;
+    Query.Active := True;
+    if Query.RecordCount > 0 then
+    begin
+      Query.First;
+
+      Result := True;
+      Command.Command := Query.FieldByName('command').AsString;
+      Command.Description := Query.FieldByName('description').AsString;
+    end;
+  finally
+    Query.Active := False;
+    Query.Free;
+  end;
 end;
 
 end.

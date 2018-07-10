@@ -1,5 +1,7 @@
 unit uMain;
 
+// https://sourceforge.net/projects/comport/?source=typ_redirect
+
 interface
 
 uses
@@ -8,7 +10,7 @@ uses
   Vcl.ToolWin, Vcl.ActnMan, Vcl.ActnCtrls, Vcl.ActnList, System.Win.Registry,
   Vcl.PlatformDefaultStyleActnCtrls, System.Actions, UCustomPageControl, System.UITypes,
   System.ImageList, Vcl.ImgList, Winapi.shellApi, System.IniFiles, uEventApplication,
-  uSettings, uDataBase, uEventKodi;
+  uSettings, uDataBase, uEventKodi, uComPort, Vcl.Menus, Vcl.ActnPopup, CommCtrl;
 
 type
   TMain = class(TForm)
@@ -16,7 +18,6 @@ type
     pComPort: TPanel;
     Splitter: TSplitter;
     pClient: TPanel;
-    mReadComPort: TMemo;
     ActionList: TActionList;
     ActHelpAbout: TAction;
     ilSmall: TImageList;
@@ -24,21 +25,43 @@ type
     ActToolsDeviceManager: TAction;
     ActionManager: TActionManager;
     ActionToolBar: TActionToolBar;
-    ActAccessOpenDB: TAction;
+    ActDBOpenAccess: TAction;
     Button1: TButton;
+    ActComPortOpen: TAction;
+    ActComPortSend: TAction;
+    ActComPortClose: TAction;
+    ActComPortOpenClose: TAction;
+    lvReadComPort: TListView;
+    PopupActReadComPort: TPopupActionBar;
+    ActDBAdd: TAction;
+    ActDBEdit: TAction;
+    ActDBDelete: TAction;
+    ActAccessAdd1: TMenuItem;
+    ActAccessEdit1: TMenuItem;
+    ActAccessDelete1: TMenuItem;
     procedure FormCreate(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure FormShow(Sender: TObject);
     procedure ActHelpAboutExecute(Sender: TObject);
     procedure ActToolsSettingExecute(Sender: TObject);
     procedure ActToolsDeviceManagerExecute(Sender: TObject);
-    procedure ActAccessOpenDBExecute(Sender: TObject);
+    procedure ActDBOpenAccessExecute(Sender: TObject);
     procedure Button1Click(Sender: TObject);
+    procedure ActComPortOpenExecute(Sender: TObject);
+    procedure ActComPortSendExecute(Sender: TObject);
+    procedure ActComPortCloseExecute(Sender: TObject);
+    procedure ActComPortOpenCloseExecute(Sender: TObject);
+    procedure ActDBAddExecute(Sender: TObject);
+    procedure ActDBEditExecute(Sender: TObject);
+    procedure ActDBDeleteExecute(Sender: TObject);
+    procedure lvReadComPortContextPopup(Sender: TObject; MousePos: TPoint; var Handled: Boolean);
   private
     { Private declarations }
+    lvRemoteControl: TListView;
     lvEventApplication: TListView;
     lvEventKodi: TListView;
 
+    FArduino: TComPort;
     FKodi: TKodi;
     FDataBase: TDataBase;
     FEventApplication: TEventApplications;
@@ -49,14 +72,18 @@ type
     procedure LoadWindowSetting();
     procedure SaveWindowSetting();
 
+    procedure onComPortOpen(Sender: TObject);
+    procedure onComPortClose(Sender: TObject);
+    procedure onComPortReadData(Sender: TObject; const Data: string);
+
     procedure OnWindowsHook(Sender: TObject; const HSHELL: NativeInt;
       const ApplicationData: TEXEVersionData);
-    procedure onKodiTerminate(Sender: TObject);
+
+    procedure onAppRunning(Running: Boolean);
+
+    procedure onKodiRunning(Running: Boolean);
     procedure onKodiPlayer(Player: string);
     procedure onKodiPlayerState(Player, State: string);
-
-    procedure ConnectDataBase();
-    procedure DisconnectDataBase();
   public
     { Public declarations }
   end;
@@ -68,7 +95,7 @@ implementation
 
 {$R *.dfm}
 
-uses uAbout, uLanguage, uTypes;
+uses uAbout, uControlCommand, uLanguage, uTypes;
 
 procedure TMain.FormCreate(Sender: TObject);
 
@@ -82,7 +109,7 @@ procedure TMain.FormCreate(Sender: TObject);
   end;
 
 var
-  tabEventApplication, tabEventKodi: TTabSheet;
+  tabRemoteControl, tabEventApplication, tabEventKodi: TTabSheet;
   LColumn: TListColumn;
 
 begin
@@ -90,7 +117,9 @@ begin
   FSetting := uSettings.getSetting();
 
   Main.Caption := Application.Title;
-  Main.mReadComPort.Align := alClient;
+
+  SendMessage(lvReadComPort.Handle, WM_UPDATEUISTATE, MakeLong(UIS_SET, UISF_HIDEFOCUS), 0);
+  Main.lvReadComPort.Align := alClient;
 
   // Панель
   FPageClient := TCustomPageControl.Create(self);
@@ -109,11 +138,36 @@ begin
     TabPosition := TTabPosition.tpTop;
     TextFormat := [tfCenter];
     DoubleBuffered := True;
-
     Style := tsButtons;
+    TabHeight := 24;
   end;
   SendMessage(FPageClient.Handle, WM_UPDATEUISTATE, MakeLong(UIS_SET, UISF_HIDEFOCUS), 0);
-  CreateTab(FPageClient, 'TabRemoteControl');
+
+  // Вкладка - RemoteControl
+  tabRemoteControl := CreateTab(FPageClient, 'TabRemoteControl');
+  lvRemoteControl := TListView.Create(tabRemoteControl);
+  with lvRemoteControl do
+  begin
+    Left := 10;
+    Top := 10;
+    Width := 20;
+    Height := 20;
+    Parent := tabRemoteControl;
+    Align := alClient;
+    BorderStyle := bsNone;
+    ViewStyle := vsReport;
+    ReadOnly := True;
+    RowSelect := True;
+    ColumnClick := False;
+
+    LColumn := Columns.Add;
+    LColumn.Caption := 'Команда';
+    LColumn.Width := 100;
+
+    LColumn := Columns.Add;
+    LColumn.Caption := 'Операция';
+    LColumn.AutoSize := True;
+  end;
 
   // Вкладка - EventApplication
   tabEventApplication := CreateTab(FPageClient, 'TabEventApplication');
@@ -169,6 +223,7 @@ begin
 
   // События приложений
   FEventApplication := TEventApplications.Create(Main);
+  FEventApplication.OnRunning := onAppRunning;
   FEventApplication.OnWindowsHook := OnWindowsHook;
 
   UpdateLanguage(self, lngRus);
@@ -176,6 +231,11 @@ end;
 
 procedure TMain.FormShow(Sender: TObject);
 begin
+
+  onComPortClose(nil);
+  onAppRunning(False);
+  onKodiRunning(False);
+
   if FSetting.EventApplication.Using then
     try
       FEventApplication.Start();
@@ -187,23 +247,132 @@ end;
 
 procedure TMain.FormClose(Sender: TObject; var Action: TCloseAction);
 begin
-  SaveWindowSetting;
 
-  lvEventKodi.Free;
-  lvEventApplication.Free;
-  FPageClient.Free;
+  if Assigned(FArduino) then
+  begin
+    if FArduino.Connected then
+      FArduino.Close;
+    FArduino.Free;
+  end;
 
   if Assigned(FKodi) then
     FKodi.Terminate;
-  FDataBase.Free;
-  FEventApplication.Free;
+
+  if Assigned(FDataBase) then
+    FDataBase.Free;
+
+  if Assigned(FEventApplication) then
+  begin
+    if FEventApplication.Starting then
+      FEventApplication.Stop;
+    FEventApplication.Free;
+  end;
+
+  SaveWindowSetting;
+
+  if Assigned(lvRemoteControl) then
+    lvRemoteControl.Free;
+  if Assigned(lvEventApplication) then
+    lvEventApplication.Free;
+  if Assigned(lvEventKodi) then
+    lvEventKodi.Free;
+  FPageClient.Free;
 end;
 
-procedure TMain.ActAccessOpenDBExecute(Sender: TObject);
+procedure TMain.ActDBAddExecute(Sender: TObject);
+var
+  LCC: TControlCommand;
+begin
+  LCC := TControlCommand.Create(self);
+  try
+    LCC.Caption := 'Добавить команду';
+    LCC.ShowModal;
+  finally
+    LCC.Free;
+    // FSetting := uSettings.getSetting();
+  end;
+end;
+
+procedure TMain.ActDBDeleteExecute(Sender: TObject);
+begin
+  //
+end;
+
+procedure TMain.ActDBEditExecute(Sender: TObject);
+begin
+  //
+end;
+
+procedure TMain.ActDBOpenAccessExecute(Sender: TObject);
 begin
   if FileExists(FSetting.DB.FileName) then
     ShellExecute(Main.Handle, 'open', PWideChar(WideString(FSetting.DB.FileName)), nil, nil,
       SW_SHOWNORMAL);
+end;
+
+procedure TMain.ActComPortOpenCloseExecute(Sender: TObject);
+begin
+  if not Assigned(FArduino) or not FArduino.Connected then
+    try
+      FArduino := TComPort.Create();
+      FArduino.onAfterOpen := onComPortOpen;
+      FArduino.onAfterClose := onComPortClose;
+      FArduino.onReadData := onComPortReadData;
+      FArduino.Port := FSetting.ComPort.Port;
+      FArduino.Open;
+    except
+      on E: Exception do
+      begin
+        FreeAndNil(FArduino);
+        MessageDlg(E.Message, mtWarning, [mbOK], 0);
+      end;
+    end
+  else if FArduino.Connected then
+    try
+      FArduino.Close;
+    finally
+      FreeAndNil(FArduino);
+    end;
+end;
+
+procedure TMain.ActComPortOpenExecute(Sender: TObject);
+begin
+  if not Assigned(FArduino) or not FArduino.Connected then
+    try
+      FArduino := TComPort.Create();
+      FArduino.onAfterOpen := onComPortOpen;
+      FArduino.onAfterClose := onComPortClose;
+      FArduino.onReadData := onComPortReadData;
+      FArduino.Port := FSetting.ComPort.Port;
+      FArduino.Open;
+    except
+      on E: Exception do
+      begin
+        FreeAndNil(FArduino);
+        MessageDlg(E.Message, mtWarning, [mbOK], 0);
+      end;
+    end
+end;
+
+procedure TMain.ActComPortCloseExecute(Sender: TObject);
+begin
+  if Assigned(FArduino) and FArduino.Connected then
+    try
+      FArduino.Close;
+    finally
+      FreeAndNil(FArduino);
+    end;
+end;
+
+procedure TMain.ActComPortSendExecute(Sender: TObject);
+begin
+  if Assigned(FArduino) and FArduino.Connected then
+    try
+      FArduino.WriteStr('test' + #13);
+    except
+      on E: Exception do
+        MessageDlg(E.Message, mtWarning, [mbOK], 0);
+    end
 end;
 
 procedure TMain.ActHelpAboutExecute(Sender: TObject);
@@ -237,15 +406,8 @@ begin
 end;
 
 procedure TMain.Button1Click(Sender: TObject);
-var
-  k: integer;
 begin
-  FKodi := TKodi.Create(FSetting.Kodi.IP, FSetting.Kodi.port, FSetting.Kodi.User,
-    FSetting.Kodi.Password);
-  FKodi.Priority := tpNormal;
-  FKodi.OnTerminate := onKodiTerminate;
-  FKodi.OnPlayer := onKodiPlayer;
-  FKodi.OnPlayerState := onKodiPlayerState;
+  onComPortReadData(nil, '259784151');
 end;
 
 procedure TMain.LoadWindowSetting;
@@ -266,6 +428,33 @@ begin
   end;
 end;
 
+procedure TMain.lvReadComPortContextPopup(Sender: TObject; MousePos: TPoint; var Handled: Boolean);
+var
+  HeaderRect: TRect;
+  Pos: TPoint;
+begin
+  GetWindowRect(ListView_GetHeader(lvReadComPort.Handle), HeaderRect);
+  Pos := lvReadComPort.ClientToScreen(MousePos);
+  if (not PtInRect(HeaderRect, Pos)) and (lvReadComPort.Selected <> nil) then
+  begin
+
+    if lvReadComPort.Selected.Data = nil then
+    begin
+      ActDBAdd.Enabled := True;
+      ActDBEdit.Enabled := False;
+      ActDBDelete.Enabled := False;
+    end
+    else
+    begin
+      ActDBAdd.Enabled := False;
+      ActDBEdit.Enabled := True;
+      ActDBDelete.Enabled := True;
+    end;
+
+    PopupActReadComPort.Popup(Pos.X, Pos.Y);
+  end;
+end;
+
 procedure TMain.OnWindowsHook(Sender: TObject; const HSHELL: NativeInt;
   const ApplicationData: TEXEVersionData);
 var
@@ -274,7 +463,20 @@ begin
   LItem := lvEventApplication.Items.Add;
   case HSHELL of
     HSHELL_WINDOWCREATED:
-      LItem.Caption := 'WindowCreated';
+      begin
+        LItem.Caption := 'WindowCreated';
+        if (FSetting.Kodi.Using) and (ApplicationData.FileName = FSetting.Kodi.FileName) and
+          not Assigned(FKodi) then
+        begin
+          FKodi := TKodi.Create(FSetting.Kodi.UpdateInterval, FSetting.Kodi.IP, FSetting.Kodi.Port,
+            FSetting.Kodi.User, FSetting.Kodi.Password);
+
+          FKodi.Priority := tpNormal;
+          FKodi.OnRunning := onKodiRunning;
+          FKodi.OnPlayer := onKodiPlayer;
+          FKodi.OnPlayerState := onKodiPlayerState;
+        end;
+      end;
     HSHELL_WINDOWDESTROYED:
       LItem.Caption := 'WindowDestroyed';
     HSHELL_ACTIVATESHELLWINDOW:
@@ -300,6 +502,79 @@ begin
   LItem.SubItems.Add(ApplicationData.FileName);
 end;
 
+procedure TMain.onAppRunning(Running: Boolean);
+begin
+  if Running then
+    StatusBar.Panels[1].Text := GetLanguageText('SatusBarAppWorking', lngRus)
+  else
+    StatusBar.Panels[1].Text := GetLanguageText('SatusBarAppNotWorking', lngRus);
+end;
+
+procedure TMain.onComPortOpen(Sender: TObject);
+begin
+  ActComPortOpenClose.ImageIndex := 4;
+  ActComPortOpenClose.Caption := GetLanguageText(Main.Name, 'ActComPortClose', lngRus);
+  ActComPortOpen.Enabled := False;
+  ActComPortSend.Enabled := True;
+  ActComPortClose.Enabled := True;
+
+  lvReadComPort.Items.Clear;
+  StatusBar.Panels[0].Text := GetLanguageText('SatusBarComPortConnected', lngRus);
+
+  { try
+    if not Assigned(FDataBase) then
+    FDataBase := TDataBase.Create(FSetting.DB.FileName);
+
+    if not FDataBase.Connected then
+    FDataBase.Connect;
+    except
+    on E: Exception do
+    MessageDlg(E.Message, mtWarning, [mbOK], 0);
+    end; }
+
+end;
+
+procedure TMain.onComPortClose(Sender: TObject);
+begin
+  ActComPortOpenClose.ImageIndex := 3;
+  ActComPortOpenClose.Caption := GetLanguageText(Main.Name, 'ActComPortOpen', lngRus);
+  ActComPortOpen.Enabled := True;
+  ActComPortSend.Enabled := False;
+  ActComPortClose.Enabled := False;
+
+  StatusBar.Panels[0].Text := GetLanguageText('SatusBarComPortNotConnected', lngRus);
+
+  { try
+    if Assigned(FDataBase) and FDataBase.Connected then
+    FDataBase.Disconnect;
+    finally
+    FreeAndNil(FDataBase);
+    end; }
+
+end;
+
+procedure TMain.onComPortReadData(Sender: TObject; const Data: string);
+var
+  LItem: TListItem;
+  RCommand: TRemoteCommand;
+  PRCommand: PRemoteCommand;
+begin
+  LItem := lvReadComPort.Items.Add;
+  LItem.Caption := IntToStr(lvReadComPort.Items.Count);
+  LItem.SubItems.Add(Data);
+
+  lvReadComPort.Selected := LItem;
+  lvReadComPort.Items[lvReadComPort.Items.Count - 1].MakeVisible(True);
+
+  { if FDataBase.Connected and FDataBase.CommandExists(Data, RCommand) then
+    begin
+    New(PRCommand);
+    PRCommand^ := RCommand;
+    LItem.Data := PRCommand;
+    end; }
+
+end;
+
 procedure TMain.onKodiPlayer(Player: string);
 var
   LItem: TListItem;
@@ -317,9 +592,12 @@ begin
   LItem.SubItems.Add(State);
 end;
 
-procedure TMain.onKodiTerminate(Sender: TObject);
+procedure TMain.onKodiRunning(Running: Boolean);
 begin
-  // FKodi := nil;
+  if Running then
+    StatusBar.Panels[2].Text := GetLanguageText('SatusBarKodiWorking', lngRus)
+  else
+    StatusBar.Panels[2].Text := GetLanguageText('SatusBarKodiNotWorking', lngRus);
 end;
 
 procedure TMain.SaveWindowSetting();
@@ -341,30 +619,6 @@ begin
     IniFile.WriteInteger('Window', 'Splitter', Main.pComPort.Width);
   finally
     IniFile.Free;
-  end;
-end;
-
-procedure TMain.ConnectDataBase();
-begin
-  try
-    if not Assigned(FDataBase) then
-      FDataBase := TDataBase.Create(FSetting.DB.FileName);
-
-    if not FDataBase.Connected then
-      FDataBase.Connect;
-  except
-    DisconnectDataBase;
-    raise;
-  end;
-end;
-
-procedure TMain.DisconnectDataBase();
-begin
-  try
-    if Assigned(FDataBase) then
-      FDataBase.Disconnect;
-  finally
-    FreeAndNil(FDataBase);
   end;
 end;
 

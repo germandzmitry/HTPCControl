@@ -34,9 +34,6 @@ type
     FEvents: TComEvents;
     FReadData: string;
   protected
-    // procedure DispatchComMsg;
-    // procedure DoEvents;
-    // procedure SendEvents;
     procedure Execute; override;
     procedure Stop;
     function EventsToInt(const Events: TComEvents): Integer;
@@ -44,13 +41,12 @@ type
   public
     constructor Create(AComPort: TComPort);
     destructor Destroy; override;
-
-    // property ReadData: String read FReadData;
   end;
 
   TComPort = class
     function Open(): boolean;
     function Close(): boolean;
+    function WriteStr(Str: string): Integer;
   private
     FEventThread: TComThread;
     FThreadCreated: boolean;
@@ -61,6 +57,8 @@ type
     FBufferOutputSize: Integer;
     FEvents: TComEvents;
 
+    FOnAfterOpen: TNotifyEvent;
+    FOnAfterClose: TNotifyEvent;
     FOnReadData: TReadDataEvent;
   protected
     procedure CreateHandle; virtual;
@@ -72,9 +70,17 @@ type
     procedure InitAsync(var AsyncPtr: PAsync);
     procedure DoneAsync(var AsyncPtr: PAsync);
     function WaitForAsync(var AsyncPtr: PAsync): Integer;
-    function ReadAsync(var Buffer; Count: Integer; var AsyncPtr: PAsync): Integer;
+
     function Read(var Buffer; Count: Integer): Integer;
+    function ReadStr(var Str: string; Count: Integer): Integer;
+    function ReadAsync(var Buffer; Count: Integer; var AsyncPtr: PAsync): Integer;
+    function ReadStrAsync(var Str: Ansistring; Count: Integer; var AsyncPtr: PAsync): Integer;
+    function WriteAsync(const Buffer; Count: Integer; var AsyncPtr: PAsync): Integer;
+    function WriteStrAsync(var Str: string; var AsyncPtr: PAsync): Integer;
+
     procedure DoReadData; dynamic;
+    procedure DoAfterOpen; dynamic;
+    procedure DoAfterClose; dynamic;
   public
     constructor Create();
     destructor Destroy;
@@ -86,6 +92,9 @@ type
     property Connected: boolean read FConnected default False;
     property Events: TComEvents read FEvents write FEvents;
     property OnReadData: TReadDataEvent read FOnReadData write FOnReadData;
+
+    property onAfterOpen: TNotifyEvent read FOnAfterOpen write FOnAfterOpen;
+    property onAfterClose: TNotifyEvent read FOnAfterClose write FOnAfterClose;
   end;
 
 procedure EnumComPorts(Ports: TStrings);
@@ -177,6 +186,51 @@ begin
   Stop;
   inherited;
 end;
+
+{ procedure TComThread.Execute;
+  var
+  EventHandles: array [0 .. 1] of THandle;
+  Overlapped: TOverlapped;
+  Signaled, BytesTrans, Mask: DWORD;
+
+  Errors: DWORD;
+  ComStat: TComStat;
+  Buffer: String;
+  ReadBytes, i: Integer;
+  begin
+  FillChar(Overlapped, SizeOf(Overlapped), 0);
+  Overlapped.hEvent := CreateEvent(nil, True, True, nil);
+
+  EventHandles[0] := FStopEvent;
+  EventHandles[1] := Overlapped.hEvent;
+
+  repeat
+  WaitCommEvent(FComPort.Handle, Mask, @Overlapped);
+  Signaled := WaitForMultipleObjects(2, @EventHandles, False, INFINITE);
+  if (Signaled = WAIT_OBJECT_0 + 1) and GetOverlappedResult(FComPort.Handle, Overlapped,
+  BytesTrans, False) then
+  begin
+  FEvents := IntToEvents(Mask);
+
+  FillChar(Buffer, SizeOf(Buffer), 0);
+  ClearCommError(FComPort.Handle, Errors, @ComStat);
+  ReadBytes := FComPort.ReadStr(Buffer, ComStat.cbInQue);
+  FReadData := FReadData + Buffer;
+
+  if evRxFlag in FEvents then
+  begin
+  Synchronize(FComPort.DoReadData);
+  FReadData := '';
+  end;
+  end;
+
+  until Signaled <> (WAIT_OBJECT_0 + 1);
+
+  SetCommMask(FComPort.Handle, 0);
+  PurgeComm(FComPort.Handle, PURGE_TXCLEAR or PURGE_RXCLEAR);
+  CloseHandle(Overlapped.hEvent);
+  CloseHandle(FStopEvent);
+  end; }
 
 procedure TComThread.Execute;
 var
@@ -357,10 +411,12 @@ begin
       FConnected := False;
       raise;
     end;
+
     FEventThread := TComThread.Create(Self);
     FThreadCreated := True;
-  end;
 
+    DoAfterOpen;
+  end;
 end;
 
 function TComPort.Close: boolean;
@@ -377,6 +433,8 @@ begin
     // Закрытие порта
     DestroyHandle;
     FConnected := False;
+
+    DoAfterClose;
   end;
 end;
 
@@ -489,6 +547,39 @@ begin
   Result := BytesTrans;
 end;
 
+function TComPort.ReadStr(var Str: string; Count: Integer): Integer;
+var
+  AsyncPtr: PAsync;
+  sa: Ansistring;
+  i: Integer;
+begin
+  InitAsync(AsyncPtr);
+  try
+    ReadStrAsync(sa, Count, AsyncPtr);
+    Result := WaitForAsync(AsyncPtr);
+    SetLength(sa, Result);
+    SetLength(Str, Result);
+{$IFDEF Unicode}
+    if length(sa) > 0 then
+      for i := 1 to length(sa) do
+        Str[i] := char(byte(sa[i]))
+{$ELSE}
+    Str := sa;
+{$ENDIF}
+  finally
+    DoneAsync(AsyncPtr);
+  end;
+end;
+
+function TComPort.ReadStrAsync(var Str: Ansistring; Count: Integer; var AsyncPtr: PAsync): Integer;
+begin
+  SetLength(Str, Count);
+  if Count > 0 then
+    Result := ReadAsync(Str[1], Count, AsyncPtr)
+  else
+    Result := 0;
+end;
+
 function TComPort.WaitForAsync(var AsyncPtr: PAsync): Integer;
 var
   BytesTrans, Signaled: DWORD;
@@ -505,12 +596,79 @@ begin
   if not Success then
     raise Exception.Create('Ошибка Async: ' + SysErrorMessage(GetLastError));
 
-  // if (AsyncPtr^.Kind = okRead) and (InputCount = 0) then
-  // SendSignalToLink(leRx, False)
-  // else if AsyncPtr^.Data <> nil then
-  // TxNotifyLink(AsyncPtr^.Data^, AsyncPtr^.Size);
+  Result := BytesTrans;
+end;
+
+// prepare PAsync variable for read/write operation
+procedure PrepareAsync(AKind: TOperationKind; const Buffer; Count: Integer; AsyncPtr: PAsync);
+begin
+  with AsyncPtr^ do
+  begin
+    Kind := AKind;
+    if Data <> nil then
+      FreeMem(Data);
+    GetMem(Data, Count);
+    Move(Buffer, Data^, Count);
+    Size := Count;
+  end;
+end;
+
+function TComPort.WriteAsync(const Buffer; Count: Integer; var AsyncPtr: PAsync): Integer;
+var
+  Success: boolean;
+  BytesTrans: DWORD;
+begin
+  if AsyncPtr = nil then
+    raise Exception.Create('Неправильные параметры Async: ' + SysErrorMessage(GetLastError));
+
+  if FHandle = INVALID_HANDLE_VALUE then
+    raise Exception.Create('Порт не открыт: ' + SysErrorMessage(GetLastError));
+
+  PrepareAsync(okWrite, Buffer, Count, AsyncPtr);
+
+  Success := WriteFile(FHandle, Buffer, Count, BytesTrans, @AsyncPtr^.Overlapped) or
+    (GetLastError = ERROR_IO_PENDING);
+
+  if not Success then
+    raise Exception.Create('Ошибка записи: ' + SysErrorMessage(GetLastError));
 
   Result := BytesTrans;
+end;
+
+function TComPort.WriteStr(Str: string): Integer;
+var
+  AsyncPtr: PAsync;
+begin
+  InitAsync(AsyncPtr);
+  try
+    WriteStrAsync(Str, AsyncPtr);
+    Result := WaitForAsync(AsyncPtr);
+  finally
+    DoneAsync(AsyncPtr);
+  end;
+end;
+
+function TComPort.WriteStrAsync(var Str: string; var AsyncPtr: PAsync): Integer;
+var
+  sa: Ansistring;
+var
+  i: Integer;
+begin
+  if length(Str) > 0 then
+  begin
+    SetLength(sa, length(Str));
+{$IFDEF Unicode}
+    if length(sa) > 0 then
+    begin
+      for i := 1 to length(Str) do
+        sa[i] := ansichar(byte(Str[i]));
+      Move(sa[1], Str[1], length(sa));
+    end;
+{$ENDIF}
+    Result := WriteAsync(Str[1], length(Str), AsyncPtr)
+  end
+  else
+    Result := 0;
 end;
 
 procedure TComPort.InitAsync(var AsyncPtr: PAsync);
@@ -523,6 +681,18 @@ begin
     Data := nil;
     Size := 0;
   end;
+end;
+
+procedure TComPort.DoAfterClose;
+begin
+  if Assigned(FOnAfterClose) then
+    FOnAfterClose(Self);
+end;
+
+procedure TComPort.DoAfterOpen;
+begin
+  if Assigned(FOnAfterOpen) then
+    FOnAfterOpen(Self);
 end;
 
 procedure TComPort.DoneAsync(var AsyncPtr: PAsync);
