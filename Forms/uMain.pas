@@ -524,7 +524,7 @@ end;
 
 procedure TMain.Button1Click(Sender: TObject);
 begin
-  onComPortReadData(nil, Edit1.Text);
+  // onComPortReadData(nil, Edit1.Text);
 end;
 
 procedure TMain.ListViewWndProc(var Msg: TMessage);
