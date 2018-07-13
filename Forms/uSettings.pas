@@ -12,6 +12,11 @@ uses
 type
   TApplication = Record
     AutoRun: boolean;
+    AutoRunTray: boolean;
+    AutoRunSetVolume: boolean;
+    Volume: integer;
+    TurnTray: boolean;
+    CloseTray: boolean;
     procedure Default;
   End;
 
@@ -117,6 +122,12 @@ type
     lKodiUpdateInterval: TLabel;
     edKodiUpdateInterval: TEdit;
     udKodiUpdateInterval: TUpDown;
+    cbApplicationAutoRunTray: TCheckBox;
+    cbApplicationAutoRunSetVolume: TCheckBox;
+    cbApplicationTurnTray: TCheckBox;
+    cbApplicationCloseTray: TCheckBox;
+    edApplicationAutoRunVolume: TEdit;
+    udApplicationAutoRunVolume: TUpDown;
     procedure btnCloseClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure FormShow(Sender: TObject);
@@ -130,8 +141,11 @@ type
     procedure btnDBCreateClick(Sender: TObject);
     procedure cbKodiUsingClick(Sender: TObject);
     procedure btnKodiSelectFileClick(Sender: TObject);
+    procedure cbApplicationAutoRunClick(Sender: TObject);
+    procedure cbApplicationAutoRunSetVolumeClick(Sender: TObject);
   private
     procedure saveSetting();
+    procedure setAutorun(AutoRun: boolean);
   public
   end;
 
@@ -156,13 +170,19 @@ begin
   IniFile := TIniFile.Create(ExtractFileDir(Application.ExeName) + '\' + FileSetting);
   try
 
-    // // Общие
-    // FAutoRun := IniFile.ReadBool('General', 'AutoRun', false);
-    // FAutoRunTray := IniFile.ReadBool('General', 'AutoRunTray', false);
-    // FAutoRunSetVolume := IniFile.ReadBool('General', 'AutoRunSetVolume', false);
-    // FAutoRunVolume := IniFile.ReadInteger('General', 'AutoRunVolume', 10);
-    // FTurnTray := IniFile.ReadBool('General', 'TurnTray', false);
-    // FCloseTray := IniFile.ReadBool('General', 'CloseTray', false);
+    // Приложение
+    Result.Application.AutoRun := IniFile.ReadBool('Application', 'AutoRun',
+      Result.Application.AutoRun);
+    Result.Application.AutoRunTray := IniFile.ReadBool('Application', 'AutoRunTray',
+      Result.Application.AutoRunTray);
+    Result.Application.AutoRunSetVolume := IniFile.ReadBool('Application', 'AutoRunSetVolume',
+      Result.Application.AutoRunSetVolume);
+    Result.Application.Volume := IniFile.ReadInteger('Application', 'Volume',
+      Result.Application.Volume);
+    Result.Application.TurnTray := IniFile.ReadBool('Application', 'TurnTray',
+      Result.Application.TurnTray);
+    Result.Application.CloseTray := IniFile.ReadBool('Application', 'CloseTray',
+      Result.Application.CloseTray);
 
     // Com порт
     Result.ComPort.OpenRun := IniFile.ReadBool('Com', 'OpenRun', Result.ComPort.OpenRun);
@@ -228,6 +248,11 @@ end;
 procedure TApplication.Default;
 begin
   self.AutoRun := false;
+  self.AutoRunTray := false;
+  self.AutoRunSetVolume := false;
+  self.Volume := 10;
+  self.TurnTray := false;
+  self.CloseTray := false;
 end;
 
 { TComPort }
@@ -344,6 +369,11 @@ begin
 
   // Приложение
   cbApplicationAutoRun.Checked := LSetting.Application.AutoRun;
+  cbApplicationAutoRunTray.Checked := LSetting.Application.AutoRunTray;
+  cbApplicationAutoRunSetVolume.Checked := LSetting.Application.AutoRunSetVolume;
+  udApplicationAutoRunVolume.Position := LSetting.Application.Volume;
+  cbApplicationTurnTray.Checked := LSetting.Application.TurnTray;
+  cbApplicationCloseTray.Checked := LSetting.Application.CloseTray;
 
   // Com порт
   cbComPortOpenRun.Checked := LSetting.ComPort.OpenRun;
@@ -391,8 +421,9 @@ end;
 
 procedure TSettings.FormShow(Sender: TObject);
 begin
-  cbEventAppicationUsingClick(cbEventAppicationUsing.Owner);
-  cbKodiUsingClick(cbKodiUsing.Owner);
+  cbApplicationAutoRunClick(cbApplicationAutoRun);
+  cbEventAppicationUsingClick(cbEventAppicationUsing);
+  cbKodiUsingClick(cbKodiUsing);
 end;
 
 procedure TSettings.llDBDriverClick(Sender: TObject);
@@ -405,8 +436,19 @@ var
   IniFile: TIniFile;
   Reg: TRegistry;
 begin
+
+  setAutorun(cbApplicationAutoRun.Checked);
+
   IniFile := TIniFile.Create(ExtractFileDir(Application.ExeName) + '\' + FileSetting);
   try
+
+    // Приложение
+    IniFile.WriteBool('Application', 'AutoRun', cbApplicationAutoRun.Checked);
+    IniFile.WriteBool('Application', 'AutoRunTray', cbApplicationAutoRunTray.Checked);
+    IniFile.WriteBool('Application', 'AutoRunSetVolume', cbApplicationAutoRunSetVolume.Checked);
+    IniFile.WriteInteger('Application', 'Volume', udApplicationAutoRunVolume.Position);
+    IniFile.WriteBool('Application', 'TurnTray', cbApplicationTurnTray.Checked);
+    IniFile.WriteBool('Application', 'CloseTray', cbApplicationCloseTray.Checked);
 
     // Com порт
     IniFile.WriteBool('Com', 'OpenRun', cbComPortOpenRun.Checked);
@@ -435,7 +477,7 @@ begin
   Reg := TRegistry.Create;
   try
     Reg.RootKey := HKEY_CURRENT_USER;
-    if Reg.OpenKey('\SOFTWARE\HTPCControl', true) then
+    if Reg.OpenKey('\SOFTWARE\' + Application.Title, true) then
     begin
       Reg.WriteBool('WINDOWCREATED', clbEventApplication.Checked
         [clbEventApplication.Items.IndexOf('WINDOWCREATED')]);
@@ -463,6 +505,46 @@ begin
   finally
     Reg.Free;
   end;
+end;
+
+procedure TSettings.setAutorun(AutoRun: boolean);
+var
+  Reg: TRegistry;
+  AddPath: string;
+begin
+  if AutoRun then
+  begin
+    Reg := TRegistry.Create;
+    Reg.RootKey := HKEY_CURRENT_USER;
+    Reg.OpenKey('\SOFTWARE\Microsoft\Windows\CurrentVersion\Run', false);
+    Reg.WriteString(Application.Title, '"' + Application.ExeName + '" -autorun');
+    Reg.Free;
+  end
+  else
+  begin
+    Reg := TRegistry.Create;
+    Reg.RootKey := HKEY_CURRENT_USER;
+    Reg.OpenKey('\SOFTWARE\Microsoft\Windows\CurrentVersion\Run', false);
+    Reg.DeleteValue(Application.Title);
+    Reg.Free;
+  end;
+end;
+
+procedure TSettings.cbApplicationAutoRunClick(Sender: TObject);
+begin
+  cbApplicationAutoRunTray.Enabled := cbApplicationAutoRun.Checked;
+  cbApplicationAutoRunSetVolume.Enabled := cbApplicationAutoRun.Checked;
+  edApplicationAutoRunVolume.Enabled := cbApplicationAutoRun.Checked;
+  udApplicationAutoRunVolume.Enabled := cbApplicationAutoRun.Checked;
+
+  if cbApplicationAutoRun.Checked then
+    cbApplicationAutoRunSetVolumeClick(cbApplicationAutoRunSetVolume);
+end;
+
+procedure TSettings.cbApplicationAutoRunSetVolumeClick(Sender: TObject);
+begin
+  edApplicationAutoRunVolume.Enabled := cbApplicationAutoRunSetVolume.Checked;
+  udApplicationAutoRunVolume.Enabled := cbApplicationAutoRunSetVolume.Checked;
 end;
 
 procedure TSettings.cbEventAppicationUsingClick(Sender: TObject);

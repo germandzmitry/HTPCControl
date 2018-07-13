@@ -82,12 +82,12 @@ type
     procedure DoAfterOpen; dynamic;
     procedure DoAfterClose; dynamic;
   public
-    constructor Create();
+    constructor Create(Port: string);
     destructor Destroy;
     procedure ClearBuffer(Input, Output: boolean);
     procedure AbortAllAsync;
 
-    property Port: String read FPort write FPort;
+    property Port: String read FPort;
     property Handle: NativeUInt read FHandle;
     property Connected: boolean read FConnected default False;
     property Events: TComEvents read FEvents write FEvents;
@@ -338,9 +338,9 @@ end;
 
 { TComPort }
 
-constructor TComPort.Create();
+constructor TComPort.Create(Port: string);
 begin
-  FPort := 'COM1';
+  FPort := Port;
   FHandle := INVALID_HANDLE_VALUE;
   FConnected := False;
   FBufferInputSize := 1024;
@@ -351,8 +351,10 @@ end;
 
 destructor TComPort.Destroy;
 begin
-  if FConnected then
-    DestroyHandle;
+  { if FConnected then
+    DestroyHandle; }
+  Close;
+  inherited Destroy;
 end;
 
 procedure TComPort.ClearBuffer(Input, Output: boolean);
@@ -427,7 +429,10 @@ begin
     // Остановка потока
     if FThreadCreated then
     begin
+      // Очистка буфера порта
+      ClearBuffer(True, True);
       FEventThread.Free;
+      // Sleep(2000);
       FThreadCreated := False;
     end;
     // Закрытие порта

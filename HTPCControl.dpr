@@ -14,13 +14,17 @@ uses
   uSuperObject in 'Customs\uSuperObject.pas',
   uDataBase in 'Units\uDataBase.pas',
   uEventKodi in 'Units\uEventKodi.pas',
-  uControlCommand in 'Forms\uControlCommand.pas' {ControlCommand};
+  uControlCommand in 'Forms\uControlCommand.pas' {ControlCommand},
+  uAllCommand in 'Forms\uAllCommand.pas' {AllCommand},
+  uExecuteCommand in 'Units\uExecuteCommand.pas',
+  MMDevApi in 'Units\MMDevApi.pas';
 
 {$R *.res}
 
 begin
   Application.Initialize;
   Application.MainFormOnTaskbar := True;
+  Application.Title := 'HTPC Control';
   Application.CreateForm(TMain, Main);
   Application.Run;
 end.

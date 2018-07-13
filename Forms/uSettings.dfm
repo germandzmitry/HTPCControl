@@ -23,7 +23,7 @@ object Settings: TSettings
     Top = 3
     Width = 460
     Height = 362
-    ActivePage = TabKodi
+    ActivePage = TabApplication
     Align = alClient
     TabOrder = 0
     object TabApplication: TTabSheet
@@ -35,13 +35,13 @@ object Settings: TSettings
         Left = 3
         Top = 3
         Width = 446
-        Height = 54
+        Height = 214
         Anchors = [akLeft, akTop, akRight]
         Caption = 'gbAplication'
         TabOrder = 0
         DesignSize = (
           446
-          54)
+          214)
         object cbApplicationAutoRun: TCheckBox
           Left = 16
           Top = 24
@@ -50,6 +50,62 @@ object Settings: TSettings
           Anchors = [akLeft, akTop, akRight]
           Caption = 'cbApplicationAutoRun'
           TabOrder = 0
+          OnClick = cbApplicationAutoRunClick
+        end
+        object cbApplicationAutoRunTray: TCheckBox
+          Left = 32
+          Top = 47
+          Width = 396
+          Height = 17
+          Anchors = [akLeft, akTop, akRight]
+          Caption = 'cbApplicationAutoRunTray'
+          TabOrder = 1
+        end
+        object cbApplicationAutoRunSetVolume: TCheckBox
+          Left = 32
+          Top = 70
+          Width = 297
+          Height = 17
+          Anchors = [akLeft, akTop, akRight]
+          Caption = 'cbApplicationAutoRunSetVolume'
+          TabOrder = 2
+          OnClick = cbApplicationAutoRunSetVolumeClick
+        end
+        object cbApplicationTurnTray: TCheckBox
+          Left = 16
+          Top = 93
+          Width = 412
+          Height = 17
+          Anchors = [akLeft, akTop, akRight]
+          Caption = 'cbApplicationTurnTray'
+          TabOrder = 3
+        end
+        object cbApplicationCloseTray: TCheckBox
+          Left = 16
+          Top = 116
+          Width = 412
+          Height = 17
+          Anchors = [akLeft, akTop, akRight]
+          Caption = 'cbApplicationCloseTray'
+          TabOrder = 4
+        end
+        object edApplicationAutoRunVolume: TEdit
+          Left = 374
+          Top = 68
+          Width = 38
+          Height = 21
+          Anchors = [akTop, akRight]
+          TabOrder = 5
+          Text = '0'
+        end
+        object udApplicationAutoRunVolume: TUpDown
+          Left = 412
+          Top = 68
+          Width = 16
+          Height = 21
+          Anchors = [akTop, akRight]
+          Associate = edApplicationAutoRunVolume
+          TabOrder = 6
         end
       end
     end
@@ -482,6 +538,7 @@ object Settings: TSettings
       Height = 25
       Anchors = [akRight, akBottom]
       Caption = 'btnClose'
+      Default = True
       TabOrder = 0
       OnClick = btnCloseClick
     end
@@ -510,7 +567,7 @@ object Settings: TSettings
     Left = 16
     Top = 344
     Bitmap = {
-      494C0101010008001C0010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
+      494C010101000800280010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000001000000001002000000000000010
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000
