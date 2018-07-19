@@ -74,7 +74,7 @@ object ControlCommand: TControlCommand
     object rbCCPressKeyKeyboard: TRadioButton
       Left = 11
       Top = 8
-      Width = 370
+      Width = 366
       Height = 17
       Anchors = [akLeft, akTop, akRight]
       Caption = 'rbCCPressKeyKeyboard'
@@ -84,19 +84,19 @@ object ControlCommand: TControlCommand
     object pKeyboard: TPanel
       Left = -2
       Top = 31
-      Width = 395
+      Width = 391
       Height = 194
       Anchors = [akLeft, akTop, akRight]
       BevelOuter = bvNone
       Caption = 'pKeyboard'
       TabOrder = 1
       DesignSize = (
-        395
+        391
         194)
       object lCCKeyKeyboardHelp: TLabel
         Left = 40
         Top = 23
-        Width = 343
+        Width = 339
         Height = 13
         Anchors = [akLeft, akTop, akRight]
         AutoSize = False
@@ -128,7 +128,7 @@ object ControlCommand: TControlCommand
       object rbCCKeyKeyboard: TRadioButton
         Left = 26
         Top = 0
-        Width = 357
+        Width = 353
         Height = 17
         Anchors = [akLeft, akTop, akRight]
         Caption = 'rbCCKeyKeyboard'
@@ -138,7 +138,7 @@ object ControlCommand: TControlCommand
       object rbCCKeyManual: TRadioButton
         Left = 26
         Top = 69
-        Width = 357
+        Width = 353
         Height = 17
         Anchors = [akLeft, akTop, akRight]
         Caption = 'rbCCKeyManual'
@@ -148,7 +148,7 @@ object ControlCommand: TControlCommand
       object cbCCKeyRepeat: TCheckBox
         Left = 26
         Top = 168
-        Width = 357
+        Width = 353
         Height = 17
         Anchors = [akLeft, akTop, akRight]
         Caption = 'cbCCKeyRepeat'
@@ -157,7 +157,7 @@ object ControlCommand: TControlCommand
       object edCCKeyKeyboard: TEdit
         Left = 40
         Top = 42
-        Width = 343
+        Width = 339
         Height = 21
         Anchors = [akLeft, akTop, akRight]
         ReadOnly = True
@@ -169,7 +169,7 @@ object ControlCommand: TControlCommand
       object cbCCKeyManualKey1: TComboBox
         Left = 152
         Top = 92
-        Width = 231
+        Width = 227
         Height = 21
         Style = csDropDownList
         Anchors = [akLeft, akTop, akRight]
@@ -179,7 +179,7 @@ object ControlCommand: TControlCommand
       object cbCCKeyManualKey2: TComboBox
         Left = 152
         Top = 119
-        Width = 231
+        Width = 227
         Height = 21
         Style = csDropDownList
         Anchors = [akLeft, akTop, akRight]
@@ -189,7 +189,7 @@ object ControlCommand: TControlCommand
       object cbCCKeyManualKey3: TComboBox
         Left = 152
         Top = 146
-        Width = 231
+        Width = 227
         Height = 21
         Style = csDropDownList
         Anchors = [akLeft, akTop, akRight]
@@ -208,7 +208,6 @@ object ControlCommand: TControlCommand
     Default = True
     TabOrder = 3
     OnClick = btnCancelClick
-    ExplicitTop = 389
   end
   object btnSave: TButton
     Left = 256
@@ -219,7 +218,6 @@ object ControlCommand: TControlCommand
     Caption = 'btnSave'
     TabOrder = 4
     OnClick = btnSaveClick
-    ExplicitTop = 389
   end
   object pApplication: TPanel
     Left = 8
@@ -246,7 +244,7 @@ object ControlCommand: TControlCommand
       ExplicitWidth = 78
     end
     object btnCCAppFileName: TButton
-      Left = 358
+      Left = 354
       Top = 47
       Width = 23
       Height = 25
@@ -260,7 +258,7 @@ object ControlCommand: TControlCommand
     object edCCAppFileName: TEdit
       Left = 70
       Top = 49
-      Width = 282
+      Width = 278
       Height = 21
       Anchors = [akLeft, akTop, akRight]
       ReadOnly = True
@@ -297,7 +295,7 @@ object ControlCommand: TControlCommand
     object rbCCRunApplication: TRadioButton
       Left = 11
       Top = 7
-      Width = 370
+      Width = 366
       Height = 17
       Anchors = [akLeft, akTop, akRight]
       Caption = 'rbCCRunApplication'
@@ -323,7 +321,7 @@ object ControlCommand: TControlCommand
     object rbCCRepeat: TRadioButton
       Left = 11
       Top = 8
-      Width = 370
+      Width = 366
       Height = 17
       Anchors = [akLeft, akTop, akRight]
       Caption = 'rbCCRepeat'

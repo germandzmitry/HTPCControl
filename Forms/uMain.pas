@@ -168,6 +168,8 @@ begin
   FListViewWndProc := lvReadComPort.WindowProc;
   lvReadComPort.WindowProc := ListViewWndProc;
 
+  Tray.Icon := Application.Icon;
+
   // Панель
   FPageClient := TCustomPageControl.Create(self);
   with FPageClient do
