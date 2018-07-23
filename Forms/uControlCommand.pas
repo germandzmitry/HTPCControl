@@ -5,16 +5,17 @@ interface
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants,
   System.Classes, Vcl.Graphics, Vcl.Controls, Vcl.Forms, Vcl.Dialogs,
-  Vcl.StdCtrls, Vcl.ExtCtrls, Winapi.Shellapi, uDataBase;
+  Vcl.StdCtrls, Vcl.ExtCtrls, Winapi.Shellapi, uDataBase, Vcl.ComCtrls;
 
 type
-  TControlCommand = class(TForm)
+  TccType = (ccNew, ccAdd, ccEdit);
+
+type
+  TfrmControlCommand = class(TForm)
     lCCCommand: TLabel;
     lCCDescription: TLabel;
     edCCCommand: TEdit;
     edCCDescription: TEdit;
-    rbCCPressKeyKeyboard: TRadioButton;
-    rbCCRunApplication: TRadioButton;
     edCCAppFileName: TEdit;
     lCCAppFileName: TLabel;
     btnCCAppFileName: TButton;
@@ -22,8 +23,6 @@ type
     pImageApplication: TPanel;
     btnCancel: TButton;
     btnSave: TButton;
-    pClient: TPanel;
-    pKeyboard: TPanel;
     rbCCKeyKeyboard: TRadioButton;
     rbCCKeyManual: TRadioButton;
     cbCCKeyRepeat: TCheckBox;
@@ -35,12 +34,20 @@ type
     cbCCKeyManualKey1: TComboBox;
     cbCCKeyManualKey2: TComboBox;
     cbCCKeyManualKey3: TComboBox;
-    pApplication: TPanel;
-    pRepeat: TPanel;
-    rbCCRepeat: TRadioButton;
+    pcControlCommand: TPageControl;
+    TabKeyboard: TTabSheet;
+    TabApplication: TTabSheet;
+    TabRepeat: TTabSheet;
+    cbCommandRepeat: TCheckBox;
+    lKeyboard: TLabel;
+    lApplication: TLabel;
+    lRepeat: TLabel;
+    pTabRepeat: TPanel;
+    pTabApplication: TPanel;
+    pTabKeyboard: TPanel;
+    lCCKeyManualPlus1: TLabel;
+    lCCKeyManualPlus2: TLabel;
     procedure FormCreate(Sender: TObject);
-    procedure rbCCPressKeyKeyboardClick(Sender: TObject);
-    procedure rbCCRunApplicationClick(Sender: TObject);
     procedure btnCCAppFileNameClick(Sender: TObject);
     procedure btnSaveClick(Sender: TObject);
     procedure rbCCKeyKeyboardClick(Sender: TObject);
@@ -51,7 +58,7 @@ type
     procedure cbCCKeyManualKey1Select(Sender: TObject);
     procedure cbCCKeyManualKey2Select(Sender: TObject);
     procedure cbCCKeyManualKey3Select(Sender: TObject);
-    procedure rbCCRepeatClick(Sender: TObject);
+    procedure FormShow(Sender: TObject);
   private
     { Private declarations }
 
@@ -59,13 +66,16 @@ type
     FKey2: PKeyKeyboard;
     FKey3: PKeyKeyboard;
 
+    FCType: TccType;
+
     procedure LoadIcon(FileName: String; Image: TImage);
   public
     { Public declarations }
+    property cType: TccType read FCType write FCType;
   end;
 
 var
-  ControlCommand: TControlCommand;
+  frmControlCommand: TfrmControlCommand;
 
 implementation
 
@@ -73,19 +83,22 @@ implementation
 
 uses uMain, uLanguage, uTypes;
 
-procedure TControlCommand.btnCancelClick(Sender: TObject);
+procedure TfrmControlCommand.btnCancelClick(Sender: TObject);
 begin
   self.Close;
 end;
 
-procedure TControlCommand.btnCCAppFileNameClick(Sender: TObject);
+procedure TfrmControlCommand.btnCCAppFileNameClick(Sender: TObject);
 var
   OpenDialog: TOpenDialog;
 begin
   OpenDialog := TOpenDialog.Create(self);
   try
-    OpenDialog.InitialDir := ExtractFileDir(Application.ExeName);
     OpenDialog.Filter := 'Приложения|*.exe';
+    if FileExists(edCCAppFileName.Text) then
+      OpenDialog.InitialDir := ExtractFileDir(edCCAppFileName.Text)
+    else
+      OpenDialog.InitialDir := ExtractFileDir(Application.ExeName);
 
     if (OpenDialog.Execute) and (FileExists(OpenDialog.FileName)) then
     begin
@@ -97,7 +110,7 @@ begin
   end;
 end;
 
-procedure TControlCommand.btnSaveClick(Sender: TObject);
+procedure TfrmControlCommand.btnSaveClick(Sender: TObject);
 var
   RCommand: TRemoteCommand;
   Key1, Key2, Key3: integer;
@@ -105,26 +118,16 @@ begin
 
   if not Assigned(Main.DataBase) or not Main.DataBase.Connected then
   begin
-    MessageDlg(uLanguage.GetLanguageText('ErrorDBNotConnected', lngRus), mtWarning, [mbOK], 0);
+    MessageDlg(uLanguage.GetLanguageMsg('msgDBNotConnected', lngRus), mtWarning, [mbOK], 0);
     exit;
   end;
 
   RCommand.Command := edCCCommand.Text;
   RCommand.Desc := edCCDescription.Text;
 
-  // Запуск приложения
-  if rbCCRunApplication.Checked then
-    try
-      if Main.DataBase.CreateRunApplication(RCommand, edCCAppFileName.Text) then
-        self.Close;
-    except
-      on E: Exception do
-        MessageDlg(E.Message, mtWarning, [mbOK], 0);
-    end;
-
-  // Эмуляция клавиатуры
-  if rbCCPressKeyKeyboard.Checked then
-
+  // TabKeyboard
+  if pcControlCommand.ActivePage = TabKeyboard then
+  begin
     try
       Key1 := 0;
       Key2 := 0;
@@ -137,45 +140,67 @@ begin
       if FKey3 <> nil then
         Key3 := FKey3.Key;
 
-      if Main.DataBase.CreatePressKeyKeyboard(RCommand, Key1, Key2, cbCCKeyRepeat.Checked) then
-        self.Close;
+      if FCType in [ccNew, ccAdd] then
+        Main.DataBase.CreatePressKeyKeyboard(RCommand, Key1, Key2, cbCCKeyRepeat.Checked)
+      else
+        Main.DataBase.UpdatePressKeyKeyboard(RCommand, Key1, Key2, cbCCKeyRepeat.Checked);
 
-    except
-      on E: Exception do
-        MessageDlg(E.Message, mtWarning, [mbOK], 0);
-    end;
-
-  // Повтор предыдущей команды
-  if rbCCRepeat.Checked then
-    try
-      Main.DataBase.CreateRemoteCommand(RCommand.Command, RCommand.Desc, rbCCRepeat.Checked);
       self.Close;
     except
       on E: Exception do
         MessageDlg(E.Message, mtWarning, [mbOK], 0);
     end;
+  end
+  // TabApplication
+  else if pcControlCommand.ActivePage = TabApplication then
+  begin
+    try
+      if FCType in [ccNew, ccAdd] then
+        Main.DataBase.CreateRunApplication(RCommand, edCCAppFileName.Text)
+      else
+        Main.DataBase.UpdateRunApplication(RCommand, edCCAppFileName.Text);
+      self.Close;
+    except
+      on E: Exception do
+        MessageDlg(E.Message, mtWarning, [mbOK], 0);
+    end;
+  end
+  // TabRepeat
+  else if pcControlCommand.ActivePage = TabRepeat then
+  begin
+    try
+      if FCType in [ccNew, ccAdd] then
+        Main.DataBase.CreateRemoteCommand(RCommand.Command, RCommand.Desc, cbCommandRepeat.Checked)
+      else
+        Main.DataBase.UpdateRemoteCommand(RCommand.Command, RCommand.Desc, cbCommandRepeat.Checked);
+      self.Close;
+    except
+      on E: Exception do
+        MessageDlg(E.Message, mtWarning, [mbOK], 0);
+    end;
+  end;
 
 end;
 
-procedure TControlCommand.cbCCKeyManualKey1Select(Sender: TObject);
+procedure TfrmControlCommand.cbCCKeyManualKey1Select(Sender: TObject);
 begin
   FKey1 := Main.DataBase.GetKeyboardKey
     (integer(cbCCKeyManualKey1.Items.Objects[cbCCKeyManualKey1.ItemIndex]));
 end;
 
-procedure TControlCommand.cbCCKeyManualKey2Select(Sender: TObject);
+procedure TfrmControlCommand.cbCCKeyManualKey2Select(Sender: TObject);
 begin
   FKey2 := Main.DataBase.GetKeyboardKey
     (integer(cbCCKeyManualKey2.Items.Objects[cbCCKeyManualKey2.ItemIndex]));
 end;
 
-procedure TControlCommand.cbCCKeyManualKey3Select(Sender: TObject);
+procedure TfrmControlCommand.cbCCKeyManualKey3Select(Sender: TObject);
 begin
   FKey3 := Main.DataBase.GetKeyboardKey
     (integer(cbCCKeyManualKey3.Items.Objects[cbCCKeyManualKey3.ItemIndex]));
 end;
 
-procedure TControlCommand.edCCKeyKeyboardKeyDown(Sender: TObject; var Key: Word;
+procedure TfrmControlCommand.edCCKeyKeyboardKeyDown(Sender: TObject; var Key: Word;
   Shift: TShiftState);
 var
   btn: string;
@@ -230,12 +255,13 @@ begin
     edCCKeyKeyboard.Text := edCCKeyKeyboard.Text + ' + ' + FKey3.Desc;
 end;
 
-procedure TControlCommand.edCCKeyKeyboardKeyUp(Sender: TObject; var Key: Word; Shift: TShiftState);
+procedure TfrmControlCommand.edCCKeyKeyboardKeyUp(Sender: TObject; var Key: Word;
+  Shift: TShiftState);
 begin
   HideCaret(TEdit(Sender).Handle);
 end;
 
-procedure TControlCommand.FormCreate(Sender: TObject);
+procedure TfrmControlCommand.FormCreate(Sender: TObject);
 var
   i: integer;
   Keyboards: TKeyboards;
@@ -258,8 +284,7 @@ begin
       TPanel(self.Components[i]).Caption := '';
   end;
 
-  rbCCPressKeyKeyboard.Checked := True;
-  rbCCPressKeyKeyboardClick(rbCCPressKeyKeyboard);
+  pcControlCommand.ActivePageIndex := 0;
   rbCCKeyKeyboard.Checked := True;
   rbCCKeyKeyboardClick(rbCCKeyKeyboard);
 
@@ -274,7 +299,75 @@ begin
   end;
 end;
 
-procedure TControlCommand.LoadIcon(FileName: String; Image: TImage);
+procedure TfrmControlCommand.FormShow(Sender: TObject);
+var
+  RCommand: TRemoteCommand;
+  ECommand: TECommand;
+  ECommands: TECommands;
+begin
+  case FCType of
+    ccNew: // Новая команда
+      begin
+        edCCCommand.ReadOnly := False;
+        edCCCommand.SetFocus;
+      end;
+    ccAdd: // Добавляем принятую команду из COM порта
+      begin
+        edCCCommand.ReadOnly := True;
+        edCCDescription.SetFocus;
+      end;
+    ccEdit: // Изменить команду
+      begin
+        edCCCommand.ReadOnly := True;
+        edCCDescription.SetFocus;
+
+        TabKeyboard.TabVisible := False;
+        TabApplication.TabVisible := False;
+        TabRepeat.TabVisible := False;
+
+        RCommand := Main.DataBase.GetCommand(edCCCommand.Text);
+        ECommands := Main.DataBase.getExecuteCommands(edCCCommand.Text);
+        edCCDescription.Text := RCommand.Desc;
+
+        if RCommand.Rep or (length(ECommands) = 0) then
+        begin
+          pcControlCommand.ActivePage := TabRepeat;
+          cbCommandRepeat.Checked := RCommand.Rep;
+          exit;
+        end;
+
+        ECommand := ECommands[0];
+        if ECommand.cType = tcApplication then
+        begin
+          pcControlCommand.ActivePage := TabApplication;
+          edCCAppFileName.Text := ECommand.Application;
+          LoadIcon(ECommand.Application, ImageCCApp);
+        end
+        else if ECommand.cType = tcKeyboard then
+        begin
+          pcControlCommand.ActivePage := TabKeyboard;
+
+          rbCCKeyManual.Checked := True;
+          rbCCKeyManualClick(rbCCKeyManual);
+
+          cbCCKeyManualKey1.ItemIndex := cbCCKeyManualKey1.Items.IndexOfObject
+            (TObject(ECommand.Key1));
+          cbCCKeyManualKey1Select(cbCCKeyManualKey1);
+
+          if ECommand.Key2 > 0 then
+          begin
+            cbCCKeyManualKey2.ItemIndex := cbCCKeyManualKey2.Items.IndexOfObject
+              (TObject(ECommand.Key2));
+            cbCCKeyManualKey2Select(cbCCKeyManualKey2);
+          end;
+
+          cbCCKeyRepeat.Checked := ECommand.Rep;
+        end;
+      end;
+  end;
+end;
+
+procedure TfrmControlCommand.LoadIcon(FileName: String; Image: TImage);
 var
   Icon: TIcon;
   FileInfo: SHFILEINFO;
@@ -292,7 +385,7 @@ begin
   end;
 end;
 
-procedure TControlCommand.rbCCKeyKeyboardClick(Sender: TObject);
+procedure TfrmControlCommand.rbCCKeyKeyboardClick(Sender: TObject);
 begin
   lCCKeyKeyboardHelp.Font.Color := clWindowText;
   edCCKeyKeyboard.Enabled := True;
@@ -311,7 +404,7 @@ begin
 
 end;
 
-procedure TControlCommand.rbCCKeyManualClick(Sender: TObject);
+procedure TfrmControlCommand.rbCCKeyManualClick(Sender: TObject);
 begin
   lCCKeyKeyboardHelp.Font.Color := clGrayText;
   edCCKeyKeyboard.Enabled := False;
@@ -329,82 +422,6 @@ begin
   cbCCKeyManualKey1.ItemIndex := -1;
   cbCCKeyManualKey2.ItemIndex := -1;
   cbCCKeyManualKey3.ItemIndex := -1;
-end;
-
-procedure TControlCommand.rbCCPressKeyKeyboardClick(Sender: TObject);
-begin
-  rbCCRunApplication.Checked := False;
-  rbCCRepeat.Checked := False;
-
-  // Клавиатура
-  rbCCKeyKeyboard.Enabled := True;
-  rbCCKeyManual.Enabled := True;
-  cbCCKeyRepeat.Enabled := True;
-
-  if rbCCKeyKeyboard.Checked then
-    rbCCKeyKeyboardClick(rbCCKeyKeyboard);
-  if rbCCKeyManual.Checked then
-    rbCCKeyManualClick(rbCCKeyManual);
-
-  // Приложение
-  lCCAppFileName.Font.Color := clGrayText;
-  edCCAppFileName.Enabled := False;
-  btnCCAppFileName.Enabled := False;
-  ImageCCApp.Enabled := False;
-end;
-
-procedure TControlCommand.rbCCRunApplicationClick(Sender: TObject);
-begin
-  rbCCPressKeyKeyboard.Checked := False;
-  rbCCRepeat.Checked := False;
-
-  // Клавиатура
-  rbCCKeyKeyboard.Enabled := False;
-  lCCKeyKeyboardHelp.Font.Color := clGrayText;
-  edCCKeyKeyboard.Enabled := False;
-
-  rbCCKeyManual.Enabled := False;
-  lCCKeyManualKey1.Font.Color := clGrayText;
-  lCCKeyManualKey2.Font.Color := clGrayText;
-  lCCKeyManualKey3.Font.Color := clGrayText;
-  cbCCKeyManualKey1.Enabled := False;
-  cbCCKeyManualKey2.Enabled := False;
-  cbCCKeyManualKey3.Enabled := False;
-
-  cbCCKeyRepeat.Enabled := False;
-
-  // Приложение
-  lCCAppFileName.Font.Color := clWindowText;
-  edCCAppFileName.Enabled := True;
-  btnCCAppFileName.Enabled := True;
-  ImageCCApp.Enabled := False;
-end;
-
-procedure TControlCommand.rbCCRepeatClick(Sender: TObject);
-begin
-  rbCCPressKeyKeyboard.Checked := False;
-  rbCCRunApplication.Checked := False;
-
-  // Клавиатура
-  rbCCKeyKeyboard.Enabled := False;
-  lCCKeyKeyboardHelp.Font.Color := clGrayText;
-  edCCKeyKeyboard.Enabled := False;
-
-  rbCCKeyManual.Enabled := False;
-  lCCKeyManualKey1.Font.Color := clGrayText;
-  lCCKeyManualKey2.Font.Color := clGrayText;
-  lCCKeyManualKey3.Font.Color := clGrayText;
-  cbCCKeyManualKey1.Enabled := False;
-  cbCCKeyManualKey2.Enabled := False;
-  cbCCKeyManualKey3.Enabled := False;
-
-  cbCCKeyRepeat.Enabled := False;
-
-  // Приложение
-  lCCAppFileName.Font.Color := clGrayText;
-  edCCAppFileName.Enabled := False;
-  btnCCAppFileName.Enabled := False;
-  ImageCCApp.Enabled := False;
 end;
 
 end.

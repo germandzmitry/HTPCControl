@@ -1,10 +1,10 @@
-object AllCommand: TAllCommand
+object frmAllCommand: TfrmAllCommand
   Left = 0
   Top = 0
   BorderIcons = [biSystemMenu]
-  Caption = 'AllCommand'
+  Caption = 'frmAllCommand'
   ClientHeight = 332
-  ClientWidth = 815
+  ClientWidth = 665
   Color = clBtnFace
   DoubleBuffered = True
   Font.Charset = DEFAULT_CHARSET
@@ -16,22 +16,19 @@ object AllCommand: TAllCommand
   Position = poMainFormCenter
   OnCreate = FormCreate
   DesignSize = (
-    815
+    665
     332)
   PixelsPerInch = 96
   TextHeight = 13
   object lvAllCommand: TListView
     Left = 8
     Top = 8
-    Width = 799
+    Width = 649
     Height = 285
     Anchors = [akLeft, akTop, akRight, akBottom]
     Columns = <
       item
-        Width = 150
-      end
-      item
-        Width = 100
+        Width = 250
       end
       item
         AutoSize = True
@@ -46,7 +43,7 @@ object AllCommand: TAllCommand
     ViewStyle = vsReport
   end
   object btnClose: TButton
-    Left = 732
+    Left = 582
     Top = 299
     Width = 75
     Height = 25

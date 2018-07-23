@@ -7,7 +7,7 @@ uses
   Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.StdCtrls, Vcl.ComCtrls;
 
 type
-  TAllCommand = class(TForm)
+  TfrmAllCommand = class(TForm)
     lvAllCommand: TListView;
     btnClose: TButton;
     procedure FormCreate(Sender: TObject);
@@ -19,7 +19,7 @@ type
   end;
 
 var
-  AllCommand: TAllCommand;
+  frmAllCommand: TfrmAllCommand;
 
 implementation
 
@@ -27,26 +27,45 @@ implementation
 
 uses uMain, uLanguage, uTypes, uDataBase;
 
-procedure TAllCommand.btnCloseClick(Sender: TObject);
+procedure TfrmAllCommand.btnCloseClick(Sender: TObject);
 begin
   self.Close;
 end;
 
-procedure TAllCommand.FormCreate(Sender: TObject);
+procedure TfrmAllCommand.FormCreate(Sender: TObject);
 var
   r: TVCommands;
+  g: TKeyboardGroups;
   i: integer;
   LItem: TListItem;
+  LGroup: TListGroup;
 begin
   UpdateLanguage(self, lngRus);
 
+  lvAllCommand.GroupView := True;
+
   try
+    // Группы
+    g := Main.DataBase.GetKeyboardGroups;
+    for i := 0 to Length(g) - 1 do
+    begin
+      LGroup := lvAllCommand.Groups.Add;
+      LGroup.GroupID := g[i].Group;
+      LGroup.Header := g[i].Descciption;
+      LGroup.State := [lgsNormal, lgsCollapsible, lgsCollapsed];
+      // LGroup.Footer := 'footer';
+      // LGroup.Subtitle := 'subtitle';
+    end;
+
+    // Команды
     r := Main.DataBase.getVCommands;
     for i := 0 to Length(r) - 1 do
     begin
       LItem := lvAllCommand.Items.Add;
+      LItem.GroupID := r[i].OGroup;
       LItem.Caption := r[i].Command;
-      LItem.SubItems.Add(r[i].Desc);
+      if Length(Trim(r[i].Desc)) > 0 then
+        LItem.Caption := LItem.Caption + ' (' + r[i].Desc + ')';
       LItem.SubItems.Add(r[i].Operation);
       LItem.SubItems.Add(BoolToStr(r[i].ORepeat));
     end;

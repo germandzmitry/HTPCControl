@@ -209,14 +209,14 @@ begin
       if (@SetHook <> nil) and (SetHook(Self.Handle)) then
         DoRunning(true)
       else
-        raise Exception.Create(GetLanguageText('ErrorEventAppLoadHook', lngRus));
+        raise Exception.Create(GetLanguageMsg('msgEventAppLoadHook', lngRus));
     end
     else
-      raise Exception.CreateFmt(GetLanguageText('ErrorEventAppFileNotFound', lngRus),
+      raise Exception.CreateFmt(GetLanguageMsg('msgEventAppFileNotFound', lngRus),
         ['EventApplicationHook.dll']);
   end
   else
-    raise Exception.Create(GetLanguageText('ErrorEventAppHookIsLoad', lngRus));
+    raise Exception.Create(GetLanguageMsg('msgEventAppHookIsLoad', lngRus));
 end;
 
 function TEventApplications.Starting: boolean;
@@ -240,10 +240,10 @@ begin
         FHook := INVALID_HANDLE_VALUE;
       end
       else
-        raise Exception.Create(GetLanguageText('ErrorEventAppUnloadHook', lngRus));
+        raise Exception.Create(GetLanguageMsg('MsgEventAppUnloadHook', lngRus));
   end
   else
-    raise Exception.CreateFmt(GetLanguageText('ErrorEventAppFileNotFound', lngRus),
+    raise Exception.CreateFmt(GetLanguageMsg('MsgEventAppFileNotFound', lngRus),
       ['EventApplicationHook.dll']);
 end;
 

@@ -29,11 +29,8 @@ object About: TAbout
     ActivePage = TabAbout
     Anchors = [akLeft, akTop, akRight, akBottom]
     TabOrder = 0
-    ExplicitHeight = 240
     object TabAbout: TTabSheet
       Caption = 'TabAbout'
-      ExplicitWidth = 281
-      ExplicitHeight = 165
       object pAbout: TPanel
         AlignWithMargins = True
         Left = 3
@@ -46,10 +43,6 @@ object About: TAbout
         ParentBackground = False
         TabOrder = 0
         OnClick = RandomColor
-        ExplicitLeft = 32
-        ExplicitTop = 72
-        ExplicitWidth = 185
-        ExplicitHeight = 41
         DesignSize = (
           514
           139)
@@ -69,7 +62,7 @@ object About: TAbout
         end
         object lVersion: TLabel
           Left = 119
-          Top = 33
+          Top = 41
           Width = 37
           Height = 13
           Caption = 'lVersion'
@@ -77,7 +70,7 @@ object About: TAbout
         end
         object lVersionDate: TLabel
           Left = 119
-          Top = 52
+          Top = 60
           Width = 60
           Height = 13
           Caption = 'lVersionDate'
@@ -150,8 +143,6 @@ object About: TAbout
     object TabHistory: TTabSheet
       Caption = 'TabHistory'
       ImageIndex = 1
-      ExplicitWidth = 281
-      ExplicitHeight = 165
       object memoHistory: TMemo
         AlignWithMargins = True
         Left = 3
@@ -164,8 +155,6 @@ object About: TAbout
         ReadOnly = True
         ScrollBars = ssVertical
         TabOrder = 0
-        ExplicitWidth = 275
-        ExplicitHeight = 159
       end
     end
   end
@@ -179,8 +168,6 @@ object About: TAbout
     Default = True
     TabOrder = 1
     OnClick = btnOKClick
-    ExplicitLeft = 460
-    ExplicitTop = 429
   end
   object llGitHub: TLinkLabel
     Left = 8
@@ -196,6 +183,5 @@ object About: TAbout
     ShowHint = True
     TabOrder = 2
     OnClick = llGitHubClick
-    ExplicitTop = 277
   end
 end

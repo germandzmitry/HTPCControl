@@ -9,15 +9,15 @@ uses
 const
   lngRus: string = 'Russian';
 
-function GetLanguageText(ASection, AMsg: string; ASelectedLanguage: string): string; overload;
-function GetLanguageText(AMsg: string; ASelectedLanguage: string): string; overload;
+function GetLanguageMsg(AMsg: string; ASelectedLanguage: string): string;
+function GetLanguageText(ASection, AMsg: string; ASelectedLanguage: string): string;
 procedure UpdateLanguage(AForm: TForm; ASelectedLanguage: string = ''); overload;
 
 implementation
 
-function GetLanguageText(AMsg: string; ASelectedLanguage: string): string;
+function GetLanguageMsg(AMsg: string; ASelectedLanguage: string): string;
 begin
-  result := GetLanguageText('Text', AMsg, ASelectedLanguage);
+  result := GetLanguageText('MSG', AMsg, ASelectedLanguage);
 end;
 
 function GetLanguageText(ASection, AMsg: string; ASelectedLanguage: string): string;

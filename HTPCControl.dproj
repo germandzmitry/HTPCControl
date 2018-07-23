@@ -138,15 +138,19 @@
         <DCCReference Include="Units\uDataBase.pas"/>
         <DCCReference Include="Units\uEventKodi.pas"/>
         <DCCReference Include="Forms\uControlCommand.pas">
-            <Form>ControlCommand</Form>
+            <Form>frmControlCommand</Form>
             <FormType>dfm</FormType>
         </DCCReference>
         <DCCReference Include="Forms\uAllCommand.pas">
-            <Form>AllCommand</Form>
+            <Form>frmAllCommand</Form>
             <FormType>dfm</FormType>
         </DCCReference>
         <DCCReference Include="Units\uExecuteCommand.pas"/>
         <DCCReference Include="Units\MMDevApi.pas"/>
+        <DCCReference Include="Forms\uSendComPort.pas">
+            <Form>frmSendComPort</Form>
+            <FormType>dfm</FormType>
+        </DCCReference>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>
             <CfgParent>Base</CfgParent>

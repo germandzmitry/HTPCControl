@@ -23,7 +23,7 @@ object Settings: TSettings
     Top = 3
     Width = 460
     Height = 362
-    ActivePage = TabApplication
+    ActivePage = TabKodi
     Align = alClient
     TabOrder = 0
     object TabApplication: TTabSheet
@@ -35,13 +35,13 @@ object Settings: TSettings
         Left = 3
         Top = 3
         Width = 446
-        Height = 214
+        Height = 142
         Anchors = [akLeft, akTop, akRight]
         Caption = 'gbAplication'
         TabOrder = 0
         DesignSize = (
           446
-          214)
+          142)
         object cbApplicationAutoRun: TCheckBox
           Left = 16
           Top = 24
@@ -336,13 +336,13 @@ object Settings: TSettings
         Left = 3
         Top = 63
         Width = 446
-        Height = 250
+        Height = 242
         Anchors = [akLeft, akTop, akRight]
         Caption = 'gbKodiConnect'
         TabOrder = 0
         DesignSize = (
           446
-          250)
+          242)
         object lKodiHelp: TLabel
           Left = 16
           Top = 24
@@ -567,7 +567,7 @@ object Settings: TSettings
     Left = 16
     Top = 344
     Bitmap = {
-      494C010101000800280010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
+      494C010101000800300010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000001000000001002000000000000010
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000

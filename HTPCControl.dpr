@@ -14,10 +14,11 @@ uses
   uSuperObject in 'Customs\uSuperObject.pas',
   uDataBase in 'Units\uDataBase.pas',
   uEventKodi in 'Units\uEventKodi.pas',
-  uControlCommand in 'Forms\uControlCommand.pas' {ControlCommand},
-  uAllCommand in 'Forms\uAllCommand.pas' {AllCommand},
+  uControlCommand in 'Forms\uControlCommand.pas' {frmControlCommand},
+  uAllCommand in 'Forms\uAllCommand.pas' {frmAllCommand},
   uExecuteCommand in 'Units\uExecuteCommand.pas',
-  MMDevApi in 'Units\MMDevApi.pas';
+  MMDevApi in 'Units\MMDevApi.pas',
+  uSendComPort in 'Forms\uSendComPort.pas' {frmSendComPort};
 
 {$R *.res}
 
