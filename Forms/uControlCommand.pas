@@ -59,6 +59,7 @@ type
     procedure cbCCKeyManualKey2Select(Sender: TObject);
     procedure cbCCKeyManualKey3Select(Sender: TObject);
     procedure FormShow(Sender: TObject);
+    procedure edCCCommandKeyPress(Sender: TObject; var Key: Char);
   private
     { Private declarations }
 
@@ -122,13 +123,20 @@ begin
     exit;
   end;
 
+  if Length(Trim(edCCCommand.Text)) = 0 then
+  begin
+    MessageDlg(Format(uLanguage.GetLanguageMsg('msgRCCommandEmpty', lngRus), [lCCCommand.Caption]),
+      mtWarning, [mbOK], 0);
+    exit;
+  end;
+
   RCommand.Command := edCCCommand.Text;
   RCommand.Desc := edCCDescription.Text;
 
-  // TabKeyboard
-  if pcControlCommand.ActivePage = TabKeyboard then
-  begin
-    try
+  try
+    // TabKeyboard
+    if pcControlCommand.ActivePage = TabKeyboard then
+    begin
       Key1 := 0;
       Key2 := 0;
       Key3 := 0;
@@ -144,40 +152,32 @@ begin
         Main.DataBase.CreatePressKeyKeyboard(RCommand, Key1, Key2, cbCCKeyRepeat.Checked)
       else
         Main.DataBase.UpdatePressKeyKeyboard(RCommand, Key1, Key2, cbCCKeyRepeat.Checked);
-
-      self.Close;
-    except
-      on E: Exception do
-        MessageDlg(E.Message, mtWarning, [mbOK], 0);
-    end;
-  end
-  // TabApplication
-  else if pcControlCommand.ActivePage = TabApplication then
-  begin
-    try
+    end
+    // TabApplication
+    else if pcControlCommand.ActivePage = TabApplication then
+    begin
       if FCType in [ccNew, ccAdd] then
         Main.DataBase.CreateRunApplication(RCommand, edCCAppFileName.Text)
       else
         Main.DataBase.UpdateRunApplication(RCommand, edCCAppFileName.Text);
-      self.Close;
-    except
-      on E: Exception do
-        MessageDlg(E.Message, mtWarning, [mbOK], 0);
-    end;
-  end
-  // TabRepeat
-  else if pcControlCommand.ActivePage = TabRepeat then
-  begin
-    try
+    end
+    // TabRepeat
+    else if pcControlCommand.ActivePage = TabRepeat then
+    begin
       if FCType in [ccNew, ccAdd] then
         Main.DataBase.CreateRemoteCommand(RCommand.Command, RCommand.Desc, cbCommandRepeat.Checked)
       else
         Main.DataBase.UpdateRemoteCommand(RCommand.Command, RCommand.Desc, cbCommandRepeat.Checked);
-      self.Close;
-    except
-      on E: Exception do
-        MessageDlg(E.Message, mtWarning, [mbOK], 0);
-    end;
+    end
+    // Если не определенная вкладка
+    else
+      raise Exception.Create('Error Message');
+
+    self.ModalResult := mrOk;
+    // self.Close;
+  except
+    on E: Exception do
+      MessageDlg(E.Message, mtWarning, [mbOK], 0);
   end;
 
 end;
@@ -198,6 +198,11 @@ procedure TfrmControlCommand.cbCCKeyManualKey3Select(Sender: TObject);
 begin
   FKey3 := Main.DataBase.GetKeyboardKey
     (integer(cbCCKeyManualKey3.Items.Objects[cbCCKeyManualKey3.ItemIndex]));
+end;
+
+procedure TfrmControlCommand.edCCCommandKeyPress(Sender: TObject; var Key: Char);
+begin
+  edCCCommand.Text := Trim(edCCCommand.Text);
 end;
 
 procedure TfrmControlCommand.edCCKeyKeyboardKeyDown(Sender: TObject; var Key: Word;
@@ -291,7 +296,7 @@ begin
   UpdateLanguage(self, lngRus);
 
   Keyboards := Main.DataBase.GetKeyboards;
-  for i := 0 to length(Keyboards) - 1 do
+  for i := 0 to Length(Keyboards) - 1 do
   begin
     cbCCKeyManualKey1.Items.AddObject(Keyboards[i].Desc, TObject(Keyboards[i].Key));
     cbCCKeyManualKey2.Items.AddObject(Keyboards[i].Desc, TObject(Keyboards[i].Key));
@@ -329,7 +334,7 @@ begin
         ECommands := Main.DataBase.getExecuteCommands(edCCCommand.Text);
         edCCDescription.Text := RCommand.Desc;
 
-        if RCommand.Rep or (length(ECommands) = 0) then
+        if RCommand.Rep or (Length(ECommands) = 0) then
         begin
           pcControlCommand.ActivePage := TabRepeat;
           cbCommandRepeat.Checked := RCommand.Rep;

@@ -1000,7 +1000,6 @@ begin
   LItem := lvReadComPort.Items.Add;
 
   LItem.Caption := IntToStr(lvReadComPort.Items.Count);
-  // LItem.Data := TObject(StrNew(PChar(Data)));
   new(d);
   d^ := Data;
   LItem.Data := d;

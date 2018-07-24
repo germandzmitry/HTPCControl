@@ -70,7 +70,7 @@ type
     function GetCommand(const Command: string): TRemoteCommand;
     procedure DeleteCommand(const Command: string);
 
-    function GetVCommands(): TVCommands;
+    function GetVCommands(const Command: string = ''): TVCommands;
 
     function GetExecuteCommands(const Command: string): TECommands;
 
@@ -639,7 +639,7 @@ begin
   end;
 end;
 
-function TDataBase.GetVCommands: TVCommands;
+function TDataBase.GetVCommands(const Command: string = ''): TVCommands;
 var
   Query: TADOQuery;
   ResVCommands: TVCommands;
@@ -677,8 +677,13 @@ begin
       '           null as repeat,                                                   ' +
       '           9 as grp                                                          ' +
       '      from runapplication AS ra                                              ' +
-      '  ) as em on rc.command = em.command                                         ' +
-      'order by rc.command';
+      '  ) as em on rc.command = em.command';
+
+    if Length(trim(Command)) > 0 then
+    begin
+      Query.Sql.Text := Query.Sql.Text + ' where rc.command = "' + Command + '"';
+    end;
+    Query.Sql.Text := Query.Sql.Text + ' order by rc.command';
     Query.ExecSQL;
     Query.Active := True;
     Query.First;

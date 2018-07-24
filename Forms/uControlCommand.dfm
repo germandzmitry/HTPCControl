@@ -46,7 +46,7 @@ object frmControlCommand: TfrmControlCommand
     MaxLength = 100
     TabOrder = 0
     Text = 'edCCCommand'
-    ExplicitWidth = 280
+    OnKeyPress = edCCCommandKeyPress
   end
   object edCCDescription: TEdit
     Left = 96
@@ -57,7 +57,6 @@ object frmControlCommand: TfrmControlCommand
     MaxLength = 255
     TabOrder = 1
     Text = 'edCCDescription'
-    ExplicitWidth = 280
   end
   object btnCancel: TButton
     Left = 304
@@ -69,8 +68,6 @@ object frmControlCommand: TfrmControlCommand
     Default = True
     TabOrder = 2
     OnClick = btnCancelClick
-    ExplicitLeft = 301
-    ExplicitTop = 305
   end
   object btnSave: TButton
     Left = 223
@@ -81,8 +78,6 @@ object frmControlCommand: TfrmControlCommand
     Caption = 'btnSave'
     TabOrder = 3
     OnClick = btnSaveClick
-    ExplicitLeft = 220
-    ExplicitTop = 305
   end
   object pcControlCommand: TPageControl
     Left = 8
@@ -92,12 +87,8 @@ object frmControlCommand: TfrmControlCommand
     ActivePage = TabKeyboard
     Anchors = [akLeft, akTop, akRight, akBottom]
     TabOrder = 4
-    ExplicitWidth = 368
-    ExplicitHeight = 347
     object TabKeyboard: TTabSheet
       Caption = 'TabKeyboard'
-      ExplicitWidth = 360
-      ExplicitHeight = 207
       DesignSize = (
         363
         222)
@@ -206,7 +197,6 @@ object frmControlCommand: TfrmControlCommand
         Text = 'edCCKeyKeyboard'
         OnKeyDown = edCCKeyKeyboardKeyDown
         OnKeyUp = edCCKeyKeyboardKeyUp
-        ExplicitWidth = 313
       end
       object rbCCKeyKeyboard: TRadioButton
         Left = 11
@@ -217,7 +207,6 @@ object frmControlCommand: TfrmControlCommand
         Caption = 'rbCCKeyKeyboard'
         TabOrder = 5
         OnClick = rbCCKeyKeyboardClick
-        ExplicitWidth = 334
       end
       object rbCCKeyManual: TRadioButton
         Left = 11
@@ -228,7 +217,6 @@ object frmControlCommand: TfrmControlCommand
         Caption = 'rbCCKeyManual'
         TabOrder = 6
         OnClick = rbCCKeyManualClick
-        ExplicitWidth = 334
       end
       object pTabKeyboard: TPanel
         Left = 11
@@ -238,14 +226,11 @@ object frmControlCommand: TfrmControlCommand
         Anchors = [akLeft, akTop, akRight]
         Caption = 'pTabKeyboard'
         TabOrder = 7
-        ExplicitWidth = 334
       end
     end
     object TabApplication: TTabSheet
       Caption = 'TabApplication'
       ImageIndex = 1
-      ExplicitWidth = 360
-      ExplicitHeight = 207
       DesignSize = (
         363
         222)
@@ -309,7 +294,6 @@ object frmControlCommand: TfrmControlCommand
         ShowHint = True
         TabOrder = 1
         OnClick = btnCCAppFileNameClick
-        ExplicitLeft = 322
       end
       object edCCAppFileName: TEdit
         Left = 57
@@ -320,7 +304,6 @@ object frmControlCommand: TfrmControlCommand
         ReadOnly = True
         TabOrder = 2
         Text = 'edCCAppFileName'
-        ExplicitWidth = 259
       end
       object pTabApplication: TPanel
         Left = 11
@@ -330,14 +313,11 @@ object frmControlCommand: TfrmControlCommand
         Anchors = [akLeft, akTop, akRight]
         Caption = 'pTabApplication'
         TabOrder = 3
-        ExplicitWidth = 334
       end
     end
     object TabRepeat: TTabSheet
       Caption = 'TabRepeat'
       ImageIndex = 2
-      ExplicitWidth = 360
-      ExplicitHeight = 207
       DesignSize = (
         363
         222)
@@ -361,7 +341,6 @@ object frmControlCommand: TfrmControlCommand
         Anchors = [akLeft, akTop, akRight]
         Caption = 'cbCommandRepeat'
         TabOrder = 0
-        ExplicitWidth = 334
       end
       object pTabRepeat: TPanel
         Left = 11
@@ -371,7 +350,6 @@ object frmControlCommand: TfrmControlCommand
         Anchors = [akLeft, akTop, akRight]
         Caption = 'pTabRepeat'
         TabOrder = 1
-        ExplicitWidth = 334
       end
     end
   end
