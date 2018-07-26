@@ -24,7 +24,7 @@ type
   TRemoteCommand = record
     Command: string[100];
     Desc: string[255];
-    Rep: boolean;
+    RepeatPreview: boolean;
   end;
 
   PRemoteCommand = ^TRemoteCommand;
@@ -43,7 +43,7 @@ type
 
   TECommand = Record
     Command: TRemoteCommand;
-    CType: string[1];
+    ECType: TecType;
     Operation: string;
     Application: string[255];
     Key1: integer;
@@ -53,6 +53,13 @@ type
 
   PECommand = ^TECommand;
   TECommands = array of TECommand;
+
+  TEPCommand = record
+    ECommand: TECommand;
+    RepeatPreview: boolean;
+  end;
+
+  PEPCommand = ^TEPCommand;
 
   TKeyboardGroup = Record
     Group: integer;
@@ -768,8 +775,12 @@ begin
       SetLength(ResECommands, Length(ResECommands) + 1);
       ResECommands[Query.RecNo - 1].Command.Command := Query.FieldByName('command').AsString;
       ResECommands[Query.RecNo - 1].Command.Desc := Query.FieldByName('description').AsString;
-      ResECommands[Query.RecNo - 1].Command.Rep := Query.FieldByName('rcrepeat').AsBoolean;
-      ResECommands[Query.RecNo - 1].CType := Query.FieldByName('type').AsString;
+      ResECommands[Query.RecNo - 1].Command.RepeatPreview := Query.FieldByName('rcrepeat')
+        .AsBoolean;
+      if Query.FieldByName('type').AsString = tcApplication then
+        ResECommands[Query.RecNo - 1].ECType := ecApplication
+      else if Query.FieldByName('type').AsString = tcKeyboard then
+        ResECommands[Query.RecNo - 1].ECType := ecKyeboard;
       ResECommands[Query.RecNo - 1].Application := Query.FieldByName('application').AsString;
       ResECommands[Query.RecNo - 1].Key1 := Query.FieldByName('key1').AsInteger;
       ResECommands[Query.RecNo - 1].Key2 := Query.FieldByName('key2').AsInteger;
@@ -810,7 +821,7 @@ begin
       Result := True;
       Command.Command := Query.FieldByName('command').AsString;
       Command.Desc := Query.FieldByName('description').AsString;
-      Command.Rep := Query.FieldByName('repeat').AsBoolean;
+      Command.RepeatPreview := Query.FieldByName('repeat').AsBoolean;
     end;
   finally
     Query.Active := false;

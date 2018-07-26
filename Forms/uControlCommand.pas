@@ -334,40 +334,43 @@ begin
         ECommands := Main.DataBase.getExecuteCommands(edCCCommand.Text);
         edCCDescription.Text := RCommand.Desc;
 
-        if RCommand.Rep or (Length(ECommands) = 0) then
+        if RCommand.RepeatPreview or (Length(ECommands) = 0) then
         begin
           pcControlCommand.ActivePage := TabRepeat;
-          cbCommandRepeat.Checked := RCommand.Rep;
+          cbCommandRepeat.Checked := RCommand.RepeatPreview;
           exit;
         end;
 
         ECommand := ECommands[0];
-        if ECommand.cType = tcApplication then
-        begin
-          pcControlCommand.ActivePage := TabApplication;
-          edCCAppFileName.Text := ECommand.Application;
-          LoadIcon(ECommand.Application, ImageCCApp);
-        end
-        else if ECommand.cType = tcKeyboard then
-        begin
-          pcControlCommand.ActivePage := TabKeyboard;
+        case ECommand.ECType of
+          ecKyeboard:
+            begin
+              pcControlCommand.ActivePage := TabKeyboard;
 
-          rbCCKeyManual.Checked := True;
-          rbCCKeyManualClick(rbCCKeyManual);
+              rbCCKeyManual.Checked := True;
+              rbCCKeyManualClick(rbCCKeyManual);
 
-          cbCCKeyManualKey1.ItemIndex := cbCCKeyManualKey1.Items.IndexOfObject
-            (TObject(ECommand.Key1));
-          cbCCKeyManualKey1Select(cbCCKeyManualKey1);
+              cbCCKeyManualKey1.ItemIndex := cbCCKeyManualKey1.Items.IndexOfObject
+                (TObject(ECommand.Key1));
+              cbCCKeyManualKey1Select(cbCCKeyManualKey1);
 
-          if ECommand.Key2 > 0 then
-          begin
-            cbCCKeyManualKey2.ItemIndex := cbCCKeyManualKey2.Items.IndexOfObject
-              (TObject(ECommand.Key2));
-            cbCCKeyManualKey2Select(cbCCKeyManualKey2);
-          end;
+              if ECommand.Key2 > 0 then
+              begin
+                cbCCKeyManualKey2.ItemIndex := cbCCKeyManualKey2.Items.IndexOfObject
+                  (TObject(ECommand.Key2));
+                cbCCKeyManualKey2Select(cbCCKeyManualKey2);
+              end;
 
-          cbCCKeyRepeat.Checked := ECommand.Rep;
+              cbCCKeyRepeat.Checked := ECommand.Rep;
+            end;
+          ecApplication:
+            begin
+              pcControlCommand.ActivePage := TabApplication;
+              edCCAppFileName.Text := ECommand.Application;
+              LoadIcon(ECommand.Application, ImageCCApp);
+            end
         end;
+
       end;
   end;
 end;

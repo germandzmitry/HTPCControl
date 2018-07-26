@@ -2,14 +2,13 @@ unit uExecuteCommand;
 
 interface
 
-uses Winapi.Windows, System.SysUtils, uDataBase, uLanguage;
+uses Winapi.Windows, System.SysUtils, uDataBase, uLanguage, uTypes;
 
 type
 
-  TecType = (ecKyeboard, ecApplication);
-
-  TExecuteCommandEvent = procedure(Command, Operation: string; ECType: TecType;
-    RepeatPreview: boolean) of object;
+  TExecuteCommandEvent = procedure(ECommand: TECommand; ECType: TecType; RepeatPreview: boolean)
+    of object;
+  TSetPreviewCommandEvent = procedure(RCommand: PRemoteCommand) of object;
 
 type
   TExecuteCommand = class
@@ -19,20 +18,23 @@ type
     FPrevRCommand: PRemoteCommand;
 
     FOnExecuteCommand: TExecuteCommandEvent;
+    FOnSetPreviewCommand: TSetPreviewCommandEvent;
 
     procedure RunApplication(ECommand: TECommand); overload;
-    procedure RunApplication(Command, Operation, FileName: string); overload;
-
     procedure PressKeyboard(ECommand: TECommand; RepeatPreview: boolean = false); overload;
 
-    procedure DoExecuteCommand(Command, Operation: string; ECType: TecType;
+    procedure DoExecuteCommand(ECommand: TECommand; ECType: TecType;
       RepeatPreview: boolean); dynamic;
+    procedure DoSetPreviewCommand(RCommand: PRemoteCommand); dynamic;
 
   public
     constructor Create(DB: TDataBase); overload;
     destructor Destroy; override;
 
     property OnExecuteCommand: TExecuteCommandEvent read FOnExecuteCommand write FOnExecuteCommand;
+    property OnSetPreviewCommand: TSetPreviewCommandEvent read FOnSetPreviewCommand
+      write FOnSetPreviewCommand;
+
   end;
 
 implementation
@@ -58,67 +60,61 @@ end;
 
 procedure TExecuteCommand.Execute(RCommand: TRemoteCommand; RepeatPreview: boolean = false);
 var
-  cmd: TECommands;
+  ECommands: TECommands;
   i: integer;
   g: TRemoteCommand;
 begin
 
   // Повтор предыдущей команды
-  if RCommand.Rep and (FPrevRCommand <> nil) then
+  if RCommand.RepeatPreview and (FPrevRCommand <> nil) then
   begin
     Execute(TRemoteCommand(FPrevRCommand^), true);
     exit;
   end;
 
-  cmd := FDB.getExecuteCommands(RCommand.Command);
+  ECommands := FDB.getExecuteCommands(RCommand.Command);
 
-  if Length(cmd) > 0 then
+  if Length(ECommands) > 0 then
   begin
 
-    if cmd[0].Rep then
+    if ECommands[0].Rep then
     begin
       if FPrevRCommand = nil then
         New(FPrevRCommand);
-      FPrevRCommand^ := cmd[0].Command;
+      FPrevRCommand^ := ECommands[0].Command;
     end
     else
     begin
       if FPrevRCommand <> nil then
       begin
-        Dispatch(FPrevRCommand);
+        Dispose(FPrevRCommand);
         FPrevRCommand := nil;
       end;
     end;
+    DoSetPreviewCommand(FPrevRCommand);
 
-    for i := 0 to Length(cmd) - 1 do
-    begin
-      if cmd[i].CType = tcApplication then
-        RunApplication(cmd[i])
-      else if cmd[i].CType = tcKeyboard then
-        PressKeyboard(cmd[i])
+    for i := 0 to Length(ECommands) - 1 do
+      if ECommands[i].ECType = ecApplication then
+        RunApplication(ECommands[i])
+      else if ECommands[i].ECType = ecKyeboard then
+        PressKeyboard(ECommands[i], RepeatPreview)
       else
-        raise Exception.Create(Format(GetLanguageMsg('msgExecuteCommandTypeNotFound', lngRus),
-          [cmd[i].CType]));
-    end;
+        raise Exception.Create(GetLanguageMsg('msgExecuteCommandTypeNotFound', lngRus));
+
   end;
 
 end;
 
 procedure TExecuteCommand.RunApplication(ECommand: TECommand);
-// var
-// LECommand: TECommand;
-begin
-  // LECommand := TECommand(ECommand);
-  RunApplication(ECommand.Command.Command, ECommand.Operation, ECommand.Application);
-end;
-
-procedure TExecuteCommand.RunApplication(Command, Operation, FileName: string);
+// RunApplication(ECommand.Command.Command, ECommand.Operation, ECommand.Application);
 var
   Rlst: LongBool;
   Application: PWideChar;
   StartUpInfo: TStartUpInfo;
   ProcessInfo: TProcessInformation;
+  FileName: string;
 begin
+  FileName := ECommand.Operation;
   if (Length(FileName) > 0) and FileExists(FileName) then
   begin
     Application := PWideChar(WideString(FileName));
@@ -134,13 +130,12 @@ begin
       CloseHandle(ProcessInfo.hThread); // закрываем дескриптор процесса
       CloseHandle(ProcessInfo.hProcess); // закрываем дескриптор потока
 
-      DoExecuteCommand(Command, Operation, ecApplication, false);
+      DoExecuteCommand(ECommand, ecApplication, false);
     end
     else
       raise Exception.Create(Format(GetLanguageMsg('msgExecuteCommandRunApplication', lngRus),
         [SysErrorMessage(GetLastError)]));
   end;
-
 end;
 
 procedure TExecuteCommand.PressKeyboard(ECommand: TECommand; RepeatPreview: boolean = false);
@@ -153,18 +148,24 @@ begin
     if ECommand.Key2 <> 0 then
       keybd_event(ECommand.Key2, 0, 0, 0); // Нажатие кнопки.
 
-    DoExecuteCommand(ECommand.Command.Command, ECommand.Operation, ecKyeboard, RepeatPreview);
+    DoExecuteCommand(ECommand, ecKyeboard, RepeatPreview);
   finally
     keybd_event(ECommand.Key2, 0, KEYEVENTF_KEYUP, 0); // Отпускание кнопки.
     keybd_event(ECommand.Key1, 0, KEYEVENTF_KEYUP, 0); // Отпускание кнопки.
   end;
 end;
 
-procedure TExecuteCommand.DoExecuteCommand(Command, Operation: string; ECType: TecType;
+procedure TExecuteCommand.DoExecuteCommand(ECommand: TECommand; ECType: TecType;
   RepeatPreview: boolean);
 begin
   if Assigned(FOnExecuteCommand) then
-    FOnExecuteCommand(Command, Operation, ECType, RepeatPreview);
+    FOnExecuteCommand(ECommand, ECType, RepeatPreview);
+end;
+
+procedure TExecuteCommand.DoSetPreviewCommand(RCommand: PRemoteCommand);
+begin
+  if Assigned(FOnSetPreviewCommand) then
+    FOnSetPreviewCommand(RCommand);
 end;
 
 end.

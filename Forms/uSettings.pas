@@ -24,6 +24,7 @@ type
     OpenRun: boolean;
     Port: string;
     Speed: integer;
+    ShowLast: integer;
     procedure Default;
   End;
 
@@ -76,7 +77,6 @@ type
     TabEventApplication: TTabSheet;
     TabDB: TTabSheet;
     TabKodi: TTabSheet;
-    pButton: TPanel;
     btnClose: TButton;
     btnSave: TButton;
     gbAplication: TGroupBox;
@@ -128,6 +128,9 @@ type
     cbApplicationCloseTray: TCheckBox;
     edApplicationAutoRunVolume: TEdit;
     udApplicationAutoRunVolume: TUpDown;
+    lComPortShowLast: TLabel;
+    edComPortShowLast: TEdit;
+    udComPortShowLast: TUpDown;
     procedure btnCloseClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure FormShow(Sender: TObject);
@@ -143,6 +146,7 @@ type
     procedure btnKodiSelectFileClick(Sender: TObject);
     procedure cbApplicationAutoRunClick(Sender: TObject);
     procedure cbApplicationAutoRunSetVolumeClick(Sender: TObject);
+    procedure edComPortShowLastChange(Sender: TObject);
   private
     procedure saveSetting();
     procedure setAutorun(AutoRun: boolean);
@@ -188,6 +192,7 @@ begin
     Result.ComPort.OpenRun := IniFile.ReadBool('Com', 'OpenRun', Result.ComPort.OpenRun);
     Result.ComPort.Port := IniFile.ReadString('Com', 'COM', Result.ComPort.Port);
     Result.ComPort.Speed := IniFile.ReadInteger('Com', 'Speed', Result.ComPort.Speed);
+    Result.ComPort.ShowLast := IniFile.ReadInteger('Com', 'ShowLast', Result.ComPort.ShowLast);
 
     // События приложений
     Result.EventApplication.Using := IniFile.ReadBool('EventApplication', 'Using',
@@ -262,6 +267,7 @@ begin
   self.OpenRun := false;
   self.Port := '';
   self.Speed := 9600;
+  self.ShowLast := 100;
 end;
 
 { TEventApplication }
@@ -379,6 +385,7 @@ begin
   cbComPortOpenRun.Checked := LSetting.ComPort.OpenRun;
   cbComPortPort.ItemIndex := cbComPortPort.Items.IndexOf(LSetting.ComPort.Port);
   cbComPortSpeed.ItemIndex := cbComPortSpeed.Items.IndexOf(IntToStr(LSetting.ComPort.Speed));
+  udComPortShowLast.Position := LSetting.ComPort.ShowLast;
 
   // События приложений
   cbEventAppicationUsing.Checked := LSetting.EventApplication.Using;
@@ -454,6 +461,7 @@ begin
     IniFile.WriteBool('Com', 'OpenRun', cbComPortOpenRun.Checked);
     IniFile.WriteString('Com', 'COM', cbComPortPort.Text);
     IniFile.WriteInteger('Com', 'Speed', StrToInt(cbComPortSpeed.Text));
+    IniFile.WriteInteger('Com', 'ShowLast', udComPortShowLast.Position);
 
     // События приложений
     IniFile.WriteBool('EventApplication', 'Using', cbEventAppicationUsing.Checked);
@@ -561,6 +569,13 @@ begin
   edKodiUser.Enabled := cbKodiUsing.Checked;
   edKodiPassword.Enabled := cbKodiUsing.Checked;
   btnKodiTestConnect.Enabled := cbKodiUsing.Checked;
+end;
+
+procedure TSettings.edComPortShowLastChange(Sender: TObject);
+begin
+  if (Length(Trim(edComPortShowLast.Text)) > 0) and
+    (StrToInt(edComPortShowLast.Text) > udComPortShowLast.Max) then
+    edComPortShowLast.Text := IntToStr(udComPortShowLast.Max);
 end;
 
 procedure TSettings.btnKodiSelectFileClick(Sender: TObject);

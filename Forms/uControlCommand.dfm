@@ -89,6 +89,10 @@ object frmControlCommand: TfrmControlCommand
     TabOrder = 4
     object TabKeyboard: TTabSheet
       Caption = 'TabKeyboard'
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
       DesignSize = (
         363
         222)
@@ -231,6 +235,10 @@ object frmControlCommand: TfrmControlCommand
     object TabApplication: TTabSheet
       Caption = 'TabApplication'
       ImageIndex = 1
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
       DesignSize = (
         363
         222)
@@ -318,6 +326,10 @@ object frmControlCommand: TfrmControlCommand
     object TabRepeat: TTabSheet
       Caption = 'TabRepeat'
       ImageIndex = 2
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
       DesignSize = (
         363
         222)

@@ -24,11 +24,11 @@ object frmAllCommand: TfrmAllCommand
   object lvAllCommand: TListView
     AlignWithMargins = True
     Left = 8
-    Top = 34
+    Top = 26
     Width = 649
-    Height = 258
+    Height = 266
     Margins.Left = 8
-    Margins.Top = 8
+    Margins.Top = 0
     Margins.Right = 8
     Margins.Bottom = 40
     Align = alClient
@@ -38,8 +38,6 @@ object frmAllCommand: TfrmAllCommand
       end
       item
         AutoSize = True
-        WidthType = (
-          -2)
       end
       item
         Width = 30
@@ -49,8 +47,6 @@ object frmAllCommand: TfrmAllCommand
     RowSelect = True
     TabOrder = 0
     ViewStyle = vsReport
-    ExplicitTop = 32
-    ExplicitHeight = 261
   end
   object btnClose: TButton
     Left = 582
@@ -62,25 +58,55 @@ object frmAllCommand: TfrmAllCommand
     TabOrder = 1
     OnClick = btnCloseClick
   end
-  object ActionToolBar1: TActionToolBar
+  object pTop: TPanel
     Left = 0
     Top = 0
     Width = 665
     Height = 26
-    ActionManager = amAllCommand
-    Caption = 'ActionToolBar1'
-    Color = clMenuBar
-    ColorMap.DisabledFontColor = 7171437
-    ColorMap.HighlightColor = clWhite
-    ColorMap.BtnSelectedFont = clBlack
-    ColorMap.UnusedColor = clWhite
-    Font.Charset = DEFAULT_CHARSET
-    Font.Color = clBlack
-    Font.Height = -11
-    Font.Name = 'Tahoma'
-    Font.Style = []
-    ParentFont = False
-    Spacing = 0
+    Margins.Left = 8
+    Margins.Top = 0
+    Margins.Right = 8
+    Margins.Bottom = 0
+    Align = alTop
+    AutoSize = True
+    BevelOuter = bvNone
+    Caption = 'pTop'
+    TabOrder = 2
+    object ActionToolBar: TActionToolBar
+      Left = 0
+      Top = 0
+      Width = 536
+      Height = 26
+      ActionManager = amAllCommand
+      Align = alClient
+      Caption = 'ActionToolBar'
+      Color = clMenuBar
+      ColorMap.DisabledFontColor = 7171437
+      ColorMap.HighlightColor = clWhite
+      ColorMap.BtnSelectedFont = clBlack
+      ColorMap.UnusedColor = clWhite
+      Font.Charset = DEFAULT_CHARSET
+      Font.Color = clBlack
+      Font.Height = -11
+      Font.Name = 'Tahoma'
+      Font.Style = []
+      HorzMargin = 8
+      ParentFont = False
+      Spacing = 0
+    end
+    object edSearch: TEdit
+      AlignWithMargins = True
+      Left = 536
+      Top = 3
+      Width = 121
+      Height = 20
+      Margins.Left = 0
+      Margins.Right = 8
+      Align = alRight
+      TabOrder = 1
+      Text = 'edSearch'
+      ExplicitHeight = 21
+    end
   end
   object alAllCommand: TActionList
     Images = Main.ilSmall
@@ -152,7 +178,7 @@ object frmAllCommand: TfrmAllCommand
             Caption = 'ActRC&ExpandAll'
             ImageIndex = 11
           end>
-        ActionBar = ActionToolBar1
+        ActionBar = ActionToolBar
       end>
     LinkedActionLists = <
       item

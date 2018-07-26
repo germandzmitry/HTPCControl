@@ -11,7 +11,8 @@ uses
   Vcl.PlatformDefaultStyleActnCtrls, System.Actions, UCustomPageControl, System.UITypes,
   System.ImageList, Vcl.ImgList, Winapi.shellApi, System.IniFiles, uEventApplication,
   uSettings, uDataBase, uEventKodi, uComPort, Vcl.Menus, Vcl.ActnPopup, CommCtrl, uExecuteCommand,
-  System.Notification, Vcl.AppEvnts, MMDevApi, Winapi.ActiveX, Vcl.ActnMenus;
+  System.Notification, Vcl.AppEvnts, MMDevApi, Winapi.ActiveX, Vcl.ActnMenus,
+  uTypes;
 
 type
   TMain = class(TForm)
@@ -26,7 +27,6 @@ type
     ActToolsDeviceManager: TAction;
     ActionManager: TActionManager;
     ActRCOpenAccess: TAction;
-    Button1: TButton;
     ActComPortOpen: TAction;
     ActComPortSend: TAction;
     ActComPortClose: TAction;
@@ -36,10 +36,9 @@ type
     ActRCAdd: TAction;
     ActRCEdit: TAction;
     ActRCDelete: TAction;
-    ActAccessAdd1: TMenuItem;
-    ActAccessEdit1: TMenuItem;
-    ActAccessDelete1: TMenuItem;
-    Edit1: TEdit;
+    ActPopupRCAdd: TMenuItem;
+    ActPopupRCEdit: TMenuItem;
+    ActPopupRCDelete: TMenuItem;
     ilReadComPort: TImageList;
     ActRCAllCommand: TAction;
     Tray: TTrayIcon;
@@ -64,7 +63,6 @@ type
     procedure ActToolsSettingExecute(Sender: TObject);
     procedure ActToolsDeviceManagerExecute(Sender: TObject);
     procedure ActRCOpenAccessExecute(Sender: TObject);
-    procedure Button1Click(Sender: TObject);
     procedure ActComPortOpenExecute(Sender: TObject);
     procedure ActComPortSendExecute(Sender: TObject);
     procedure ActComPortCloseExecute(Sender: TObject);
@@ -91,6 +89,10 @@ type
       State: TCustomDrawState; var DefaultDraw: Boolean);
     procedure ActEventAppStartExecute(Sender: TObject);
     procedure ActEventAppStopExecute(Sender: TObject);
+    procedure AppEventsMessage(var Msg: tagMSG; var Handled: Boolean);
+
+    procedure lvRemoteControlCustomDrawSubItem(Sender: TCustomListView; Item: TListItem;
+      SubItem: Integer; State: TCustomDrawState; var DefaultDraw: Boolean);
   private
     { Private declarations }
     lvRemoteControl: TListView;
@@ -109,6 +111,7 @@ type
     FListViewWndProc: TWndMethod;
 
     FSureExit: Boolean;
+    FProcessingEventHandler: Boolean;
 
     procedure LoadWindowSetting();
     procedure SaveWindowSetting();
@@ -123,6 +126,7 @@ type
     procedure StopEventApplication();
 
     procedure ShowNotification(const Title, AlertBode: string);
+    procedure SmallIconFromExecutableFile(const FileName: string; var Icon: TIcon);
 
     procedure onComPortOpen(Sender: TObject);
     procedure onComPortClose(Sender: TObject);
@@ -133,7 +137,8 @@ type
 
     procedure onAppRunning(Running: Boolean);
 
-    procedure onExecuteCommand(Command, Operation: string; ECType: TecType; RepeatPreview: Boolean);
+    procedure onExecuteCommand(ECommand: TECommand; ECType: TecType; RepeatPreview: Boolean);
+    procedure onSetPreviewCommand(RCommand: PRemoteCommand);
 
     procedure onKodiRunning(Running: Boolean);
     procedure onKodiPlayer(Player: string);
@@ -142,6 +147,8 @@ type
     procedure ListViewWndProc(var Msg: TMessage);
 
     procedure CreateActionMenu();
+
+    function Processing: Boolean;
   public
     { Public declarations }
     property DataBase: TDataBase read FDataBase;
@@ -155,16 +162,16 @@ implementation
 
 {$R *.dfm}
 
-uses uAbout, uControlCommand, uLanguage, uTypes, uAllCommand, USendComPort;
+uses uAbout, uControlCommand, uLanguage, uAllCommand, USendComPort;
 
 procedure TMain.FormCreate(Sender: TObject);
 
-  function CreateTab(aPage: TCustomPageControl; aName: string): TTabSheet;
+  function CreateTab(aPage: TCustomPageControl; aName, aCaption: string): TTabSheet;
   begin
     Result := TTabSheet.Create(aPage);
     Result.PageControl := aPage;
     Result.Name := aName;
-    Result.Caption := aName;
+    Result.Caption := aCaption;
     Result.DoubleBuffered := True;
   end;
 
@@ -227,7 +234,8 @@ begin
   SendMessage(FPageClient.Handle, WM_UPDATEUISTATE, MakeLong(UIS_SET, UISF_HIDEFOCUS), 0);
 
   // Вкладка - RemoteControl
-  tabRemoteControl := CreateTab(FPageClient, 'TabRemoteControl');
+  tabRemoteControl := CreateTab(FPageClient, 'TabRemoteControl',
+    GetLanguageText(Main.Name, 'TabRemoteControl', lngRus));
   lvRemoteControl := TListView.Create(tabRemoteControl);
   with lvRemoteControl do
   begin
@@ -242,19 +250,21 @@ begin
     ReadOnly := True;
     RowSelect := True;
     ColumnClick := False;
+    OnCustomDrawSubItem := lvRemoteControlCustomDrawSubItem;
 
     LColumn := Columns.Add;
-    LColumn.Caption := 'Команда';
+    LColumn.Caption := GetLanguageText(Main.Name, 'lvRemoteControl:0', lngRus);
     LColumn.Width := 100;
 
     LColumn := Columns.Add;
-    LColumn.Caption := 'Операция';
+    LColumn.Caption := GetLanguageText(Main.Name, 'lvRemoteControl:1', lngRus);
     LColumn.AutoSize := True;
   end;
   SendMessage(lvRemoteControl.Handle, WM_UPDATEUISTATE, MakeLong(UIS_SET, UISF_HIDEFOCUS), 0);
 
   // Вкладка - EventApplication
-  tabEventApplication := CreateTab(FPageClient, 'TabEventApplication');
+  tabEventApplication := CreateTab(FPageClient, 'TabEventApplication',
+    GetLanguageText(Main.Name, 'TabEventApplication', lngRus));
   lvEventApplication := TListView.Create(tabEventApplication);
   with lvEventApplication do
   begin
@@ -271,17 +281,18 @@ begin
     ColumnClick := False;
 
     LColumn := Columns.Add;
-    LColumn.Caption := 'Событие';
+    LColumn.Caption := GetLanguageText(Main.Name, 'lvEventApplication:0', lngRus);
     LColumn.Width := 100;
 
     LColumn := Columns.Add;
-    LColumn.Caption := 'Приложение';
+    LColumn.Caption := GetLanguageText(Main.Name, 'lvEventApplication:1', lngRus);
     LColumn.AutoSize := True;
   end;
   SendMessage(lvEventApplication.Handle, WM_UPDATEUISTATE, MakeLong(UIS_SET, UISF_HIDEFOCUS), 0);
 
   // Вкладка - EventKodi
-  tabEventKodi := CreateTab(FPageClient, 'TabEventKodi');
+  tabEventKodi := CreateTab(FPageClient, 'TabEventKodi',
+    GetLanguageText(Main.Name, 'TabEventKodi', lngRus));
   lvEventKodi := TListView.Create(tabEventKodi);
   with lvEventKodi do
   begin
@@ -298,11 +309,11 @@ begin
     ColumnClick := False;
 
     LColumn := Columns.Add;
-    LColumn.Caption := 'Плеер';
+    LColumn.Caption := GetLanguageText(Main.Name, 'lvEventKodi:0', lngRus);
     LColumn.Width := 100;
 
     LColumn := Columns.Add;
-    LColumn.Caption := 'Состояние';
+    LColumn.Caption := GetLanguageText(Main.Name, 'lvEventKodi:1', lngRus);
     LColumn.AutoSize := True;
   end;
   SendMessage(lvEventKodi.Handle, WM_UPDATEUISTATE, MakeLong(UIS_SET, UISF_HIDEFOCUS), 0);
@@ -382,14 +393,6 @@ begin
   end;
 
   SaveWindowSetting;
-
-  if Assigned(lvRemoteControl) then
-    lvRemoteControl.Free;
-  if Assigned(lvEventApplication) then
-    lvEventApplication.Free;
-  if Assigned(lvEventKodi) then
-    lvEventKodi.Free;
-  FPageClient.Free;
 end;
 
 procedure TMain.FormCloseQuery(Sender: TObject; var CanClose: Boolean);
@@ -410,6 +413,17 @@ begin
 
   lvReadComPort.WindowProc := FListViewWndProc;
   FListViewWndProc := nil;
+
+  for i := 0 to lvRemoteControl.Items.Count - 1 do
+    Dispose(lvRemoteControl.Items[i].Data);
+
+  if Assigned(lvRemoteControl) then
+    lvRemoteControl.Free;
+  if Assigned(lvEventApplication) then
+    lvEventApplication.Free;
+  if Assigned(lvEventKodi) then
+    lvEventKodi.Free;
+  FPageClient.Free;
 end;
 
 procedure TMain.ActRCAllCommandExecute(Sender: TObject);
@@ -435,7 +449,7 @@ begin
   try
     LCC.cType := ccAdd;
     LCC.Caption := GetLanguageText(LCC.Name, 'CaptionAdd', lngRus);
-    LCC.edCCCommand.Text := string(lvReadComPort.Selected.Data^);
+    LCC.edCCCommand.Text := TReadComPort(lvReadComPort.Selected.Data^).Command;
     LCC.ShowModal;
   finally
     LCC.Free;
@@ -450,7 +464,7 @@ begin
   try
     LCC.cType := ccEdit;
     LCC.Caption := GetLanguageText(LCC.Name, 'CaptionEdit', lngRus);
-    LCC.edCCCommand.Text := string(lvReadComPort.Selected.Data^);
+    LCC.edCCCommand.Text := TReadComPort(lvReadComPort.Selected.Data^).Command;
     LCC.ShowModal;
   finally
     LCC.Free;
@@ -461,7 +475,7 @@ procedure TMain.ActRCDeleteExecute(Sender: TObject);
 var
   LCommand: string;
 begin
-  LCommand := string(lvReadComPort.Selected.Data^);
+  LCommand := TReadComPort(lvReadComPort.Selected.Data^).Command;
 
   if MessageDlg(Format(GetLanguageMsg('msgDBDeleteRemoteCommand', lngRus), [LCommand]),
     mtConfirmation, mbOKCancel, 1) = mrOk then
@@ -643,9 +657,38 @@ begin
     TurnTray;
 end;
 
-procedure TMain.Button1Click(Sender: TObject);
+procedure TMain.AppEventsMessage(var Msg: tagMSG; var Handled: Boolean);
+var
+  LComPortConnected: Boolean;
+  LDataBaseConnected: Boolean;
+  LEventApplicationStarting: Boolean;
 begin
-  // onComPortReadData(nil, Edit1.Text);
+  if Processing then
+    Exit;
+
+  FProcessingEventHandler := True;
+  try
+    LComPortConnected := Assigned(FArduino) and FArduino.Connected;
+    LDataBaseConnected := Assigned(FDataBase) and FDataBase.Connected;
+    LEventApplicationStarting := Assigned(FEventApplication) and FEventApplication.Starting;
+
+    { ComPort }
+    ActComPortOpen.Enabled := not LComPortConnected;
+    ActComPortSend.Enabled := LComPortConnected;
+    ActComPortClose.Enabled := LComPortConnected;
+
+    { DataBase }
+    ActRCAllCommand.Enabled := LDataBaseConnected;
+
+    { EventApplication }
+    ActEventAppStart.Enabled := not LEventApplicationStarting;
+    ActEventAppStop.Enabled := LEventApplicationStarting;
+
+    FProcessingEventHandler := False;
+  except
+    FProcessingEventHandler := False;
+    { intentionally silent }
+  end;
 end;
 
 procedure TMain.ListViewWndProc(var Msg: TMessage);
@@ -673,6 +716,47 @@ begin
   end;
 end;
 
+procedure TMain.lvRemoteControlCustomDrawSubItem(Sender: TCustomListView; Item: TListItem;
+  SubItem: Integer; State: TCustomDrawState; var DefaultDraw: Boolean);
+var
+  aRect: TRect;
+  LIcon: TIcon;
+  LSubItemText: string;
+  LLeft: Integer;
+  LEPCommand: TEPCommand;
+begin
+  if (SubItem = 1) then
+  begin
+    LEPCommand := TEPCommand(Item.Data^);
+    ListView_GetSubItemRect(Sender.Handle, Item.Index, SubItem, LVIR_BOUNDS, @aRect);
+    SetBkMode(Sender.Canvas.Handle, TRANSPARENT);
+    LSubItemText := Item.SubItems[SubItem - 1];
+    LLeft := 0;
+
+    LIcon := TIcon.Create();
+    try
+      case LEPCommand.ECommand.ECType of
+        ecKyeboard:
+          if LEPCommand.RepeatPreview then
+            ilSmall.GetIcon(13, LIcon)
+          else
+            ilSmall.GetIcon(12, LIcon);
+        ecApplication:
+          if FileExists(LEPCommand.ECommand.Application) then
+            SmallIconFromExecutableFile(LSubItemText, LIcon)
+      end;
+
+      Sender.Canvas.Draw(aRect.Left + 5, aRect.Top + 1, LIcon);
+      LLeft := LIcon.Width + 5;
+    finally
+      LIcon.Free;
+    end;
+
+    Sender.Canvas.TextOut(aRect.Left + 5 + LLeft, aRect.Top + 1, LSubItemText);
+    DefaultDraw := False;
+  end;
+end;
+
 procedure TMain.lvReadComPortContextPopup(Sender: TObject; MousePos: TPoint; var Handled: Boolean);
 var
   HeaderRect: TRect;
@@ -692,7 +776,7 @@ begin
       Exit;
     end;
 
-    LCommand := string(lvReadComPort.Selected.Data^);
+    LCommand := TReadComPort(lvReadComPort.Selected.Data^).Command;
     CommandExists := FDataBase.CommandExists(LCommand, RCommand);
     ActRCAdd.Enabled := not CommandExists;
     ActRCEdit.Enabled := CommandExists;
@@ -709,6 +793,9 @@ begin
     Sender.Canvas.Brush.Color := clBtnFace
   else
     Sender.Canvas.Brush.Color := clWhite;
+
+  if not TReadComPort(Item.Data^).Exists then
+    Sender.Canvas.Font.Color := clRed;
 end;
 
 procedure TMain.TrayClick(Sender: TObject);
@@ -736,6 +823,14 @@ begin
   SetForegroundWindow(Main.Handle);
   Tray.Visible := False;
   Main.Visible := True;
+end;
+
+function TMain.Processing: Boolean;
+begin
+  Result := True;
+  if FProcessingEventHandler then
+    Exit;
+  Result := False;
 end;
 
 procedure TMain.OpenComPort();
@@ -882,6 +977,8 @@ procedure TMain.OnWindowsHook(Sender: TObject; const HSHELL: NativeInt;
 var
   LItem: TListItem;
 begin
+  lvEventApplication.Items.BeginUpdate;
+
   LItem := lvEventApplication.Items.Add;
   case HSHELL of
     HSHELL_WINDOWCREATED:
@@ -920,8 +1017,10 @@ begin
     HSHELL_WINDOWREPLACED:
       LItem.Caption := 'WindowReplaced';
   end;
-
   LItem.SubItems.Add(ApplicationData.FileName);
+
+  // lvEventApplication.Perform(CM_RecreateWnd, 0, 0);
+  lvEventApplication.Items.EndUpdate;
 end;
 
 procedure TMain.onAppRunning(Running: Boolean);
@@ -938,9 +1037,6 @@ var
 begin
   ActComPortOpenClose.ImageIndex := 4;
   ActComPortOpenClose.Caption := GetLanguageText(Main.Name, 'ActComPortClose', lngRus);
-  ActComPortOpen.Enabled := False;
-  ActComPortSend.Enabled := True;
-  ActComPortClose.Enabled := True;
 
   for i := 0 to lvReadComPort.Items.Count - 1 do
     Dispose(lvReadComPort.Items[i].Data);
@@ -962,6 +1058,7 @@ begin
       FExecuteCommand := TExecuteCommand.Create(FDataBase);
 
     FExecuteCommand.onExecuteCommand := onExecuteCommand;
+    FExecuteCommand.onSetPreviewCommand := onSetPreviewCommand;
   except
     on E: Exception do
       MessageDlg(E.Message, mtError, [mbOK], 0);
@@ -973,9 +1070,6 @@ procedure TMain.onComPortClose(Sender: TObject);
 begin
   ActComPortOpenClose.ImageIndex := 3;
   ActComPortOpenClose.Caption := GetLanguageText(Main.Name, 'ActComPortOpen', lngRus);
-  ActComPortOpen.Enabled := True;
-  ActComPortSend.Enabled := False;
-  ActComPortClose.Enabled := False;
 
   StatusBar.Panels[0].Text := GetLanguageMsg('msgSatusBarComPortNotConnected', lngRus);
 
@@ -988,70 +1082,124 @@ begin
     FreeAndNil(FDataBase);
   end;
 
-  FreeAndNil(FDataBase);
+  FreeAndNil(FExecuteCommand);
 end;
 
 procedure TMain.onComPortReadData(Sender: TObject; const Data: string);
 var
   LItem: TListItem;
   RCommand: TRemoteCommand;
-  d: ^string;
+  d: PReadComPortData;
+  num: Integer;
 begin
-  LItem := lvReadComPort.Items.Add;
-
-  LItem.Caption := IntToStr(lvReadComPort.Items.Count);
-  new(d);
-  d^ := Data;
-  LItem.Data := d;
-  LItem.SubItems.Add(Data);
-
-  lvReadComPort.Selected := LItem;
-  lvReadComPort.Items[lvReadComPort.Items.Count - 1].MakeVisible(True);
-
+  lvReadComPort.Items.BeginUpdate;
   try
-    if FDataBase.Connected and FDataBase.CommandExists(Data, RCommand) then
+
+    if lvReadComPort.Items.Count >= FSetting.ComPort.ShowLast - 1 then
     begin
-      if length(Trim(RCommand.Desc)) > 0 then
-        LItem.SubItems[0] := Data + ' (' + RCommand.Desc + ')';
-
-      FExecuteCommand.Execute(RCommand);
-
+      Dispose(lvReadComPort.Items[0].Data);
+      lvReadComPort.Items.Delete(0);
     end;
-  except
-    on E: Exception do
-      MessageDlg(E.Message, mtError, [mbOK], 0);
+
+    if lvReadComPort.Items.Count = 0 then
+      num := 1
+    else
+      num := StrToInt(lvReadComPort.Items[lvReadComPort.Items.Count - 1].Caption) + 1;
+
+    LItem := lvReadComPort.Items.Add;
+    LItem.Caption := inttostr(num);
+
+    new(d);
+    d^.Command := Data;
+    d^.Exists := False;
+    d^.Execute := False;
+
+    LItem.Data := d;
+    LItem.SubItems.Add(Data);
+
+    lvReadComPort.Selected := LItem;
+    lvReadComPort.Items[lvReadComPort.Items.Count - 1].MakeVisible(True);
+
+    try
+      if FDataBase.Connected and FDataBase.CommandExists(Data, RCommand) then
+      begin
+        TReadComPort(LItem.Data^).Exists := True;
+
+        if length(Trim(RCommand.Desc)) > 0 then
+          LItem.SubItems[0] := Data + ' (' + RCommand.Desc + ')';
+
+        FExecuteCommand.Execute(RCommand);
+      end;
+    except
+      on E: Exception do
+        MessageDlg(E.Message, mtError, [mbOK], 0);
+    end;
+
+  finally
+    lvReadComPort.Items.EndUpdate;
+  end;
+end;
+
+procedure TMain.onExecuteCommand(ECommand: TECommand; ECType: TecType; RepeatPreview: Boolean);
+var
+  LItem: TListItem;
+  LEPCommand: PEPCommand;
+begin
+  lvRemoteControl.Items.BeginUpdate;
+  try
+    LItem := lvRemoteControl.Items.Add;
+    LItem.Caption := ECommand.Command.Command;
+
+    new(LEPCommand);
+    LEPCommand^.ECommand := ECommand;
+    LEPCommand^.RepeatPreview := RepeatPreview;
+    LItem.Data := LEPCommand;
+
+    case ECType of
+      ecKyeboard:
+        LItem.SubItems.Add(ECommand.Operation);
+      ecApplication:
+        LItem.SubItems.Add(ExtractFileName(ECommand.Operation));
+    end;
+
+    lvRemoteControl.Selected := LItem;
+    lvRemoteControl.Items[lvRemoteControl.Items.Count - 1].MakeVisible(True);
+    // lvRemoteControl.Perform(CM_RecreateWnd, 0, 0);
+  finally
+    lvRemoteControl.Items.EndUpdate;
   end;
 
 end;
 
-procedure TMain.onExecuteCommand(Command, Operation: string; ECType: TecType;
-  RepeatPreview: Boolean);
-var
-  LItem: TListItem;
+procedure TMain.onSetPreviewCommand(RCommand: PRemoteCommand);
 begin
-  LItem := lvRemoteControl.Items.Add;
-  LItem.Caption := Command;
-  LItem.SubItems.Add(Operation);
-
-  lvRemoteControl.Selected := LItem;
-  lvRemoteControl.Items[lvRemoteControl.Items.Count - 1].MakeVisible(True);
+  if RCommand = nil then
+    StatusBar.Panels[3].Text := ''
+  else
+    StatusBar.Panels[3].Text := RCommand^.Command;
 end;
 
 procedure TMain.onKodiPlayer(Player: string);
 var
   LItem: TListItem;
 begin
+  lvEventKodi.Items.BeginUpdate;
   LItem := lvEventKodi.Items.Add;
   LItem.Caption := Player;
+  // lvEventKodi.Perform(CM_RecreateWnd, 0, 0);
+  lvEventKodi.Items.EndUpdate;
 end;
 
 procedure TMain.onKodiPlayerState(Player, State: string);
 var
   LItem: TListItem;
 begin
+  lvEventKodi.Items.BeginUpdate;
   LItem := lvEventKodi.Items.Add;
   LItem.Caption := Player;
   LItem.SubItems.Add(State);
+  // lvEventKodi.Perform(CM_RecreateWnd, 0, 0);
+  lvEventKodi.Items.EndUpdate;
 end;
 
 procedure TMain.onKodiRunning(Running: Boolean);
@@ -1096,6 +1244,20 @@ begin
     AppNotification.PresentNotification(Notif);
   finally
     Notif.Free;
+  end;
+end;
+
+procedure TMain.SmallIconFromExecutableFile(const FileName: string; var Icon: TIcon);
+var
+  LIcon: HICON;
+  ExtractedIconCount: UINT;
+begin
+  try
+    ExtractedIconCount := ExtractIconEx(PChar(FileName), 0, nil, @LIcon, 1);
+    Win32Check(ExtractedIconCount = 1);
+    Icon.Handle := LIcon;
+  except
+    raise;
   end;
 end;
 

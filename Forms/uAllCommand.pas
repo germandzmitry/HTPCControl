@@ -6,7 +6,7 @@ uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
   Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.StdCtrls, Vcl.ComCtrls,
   System.Actions, Vcl.ActnList, Vcl.PlatformDefaultStyleActnCtrls, Vcl.ActnMan,
-  Vcl.ToolWin, Vcl.ActnCtrls, uDataBase;
+  Vcl.ToolWin, Vcl.ActnCtrls, uDataBase, Vcl.ExtCtrls;
 
 type
   TfrmAllCommand = class(TForm)
@@ -17,9 +17,11 @@ type
     ActRCNew: TAction;
     ActRCEdit: TAction;
     ActRCDelete: TAction;
-    ActionToolBar1: TActionToolBar;
+    ActionToolBar: TActionToolBar;
     ActRCCollapseAll: TAction;
     ActRCExpandAll: TAction;
+    pTop: TPanel;
+    edSearch: TEdit;
     procedure FormCreate(Sender: TObject);
     procedure btnCloseClick(Sender: TObject);
     procedure ActRCNewExecute(Sender: TObject);
@@ -52,6 +54,8 @@ var
   LGroup: TListGroup;
 begin
   UpdateLanguage(self, lngRus);
+
+  edSearch.Text := '';
 
   lvAllCommand.GroupView := True;
 
