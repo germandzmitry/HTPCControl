@@ -242,27 +242,27 @@ object Main: TMain
       ShortCut = 16465
       OnExecute = ActFileExitExecute
     end
-    object ActEventApp: TAction
-      Category = 'EventApp'
-      Caption = 'ActEventApp'
-      OnExecute = ActEventAppExecute
+    object ActShellApp: TAction
+      Category = 'ShellApp'
+      Caption = 'ActShellApp'
+      OnExecute = ActShellAppExecute
     end
     object ActKodi: TAction
       Category = 'Kodi'
       Caption = 'ActKodi'
       OnExecute = ActKodiExecute
     end
-    object ActEventAppStart: TAction
-      Category = 'EventApp'
-      Caption = 'ActEventAppStart'
+    object ActShellAppStart: TAction
+      Category = 'ShellApp'
+      Caption = 'ActShellAppStart'
       ImageIndex = 8
-      OnExecute = ActEventAppStartExecute
+      OnExecute = ActShellAppStartExecute
     end
-    object ActEventAppStop: TAction
-      Category = 'EventApp'
-      Caption = 'ActEventAppStop'
+    object ActShellAppStop: TAction
+      Category = 'ShellApp'
+      Caption = 'ActShellAppStop'
       ImageIndex = 9
-      OnExecute = ActEventAppStopExecute
+      OnExecute = ActShellAppStopExecute
     end
   end
   object ilSmall: TImageList

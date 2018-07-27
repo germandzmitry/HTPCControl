@@ -12,7 +12,7 @@ const
   HookMap = '{F3E25943-FCC7-43E5-BE22-7CF35EA5FCC6}';
 
 const
-  WM_EventApplication = WM_USER + 177;
+  WM_ShellApplication = WM_USER + 177;
 
 type
   PHookData = ^THookData;
@@ -43,31 +43,31 @@ begin
   end
 end;
 
-procedure SaveLog(str: String);
-var
+{ procedure SaveLog(str: String);
+  var
   f: TextFile;
-const
+  const
   filedir: String = 'd:\stat.log';
-begin
+  begin
   AssignFile(f, filedir);
   if not(FileExists(filedir)) then
   begin
-    Rewrite(f);
-    CloseFile(f);
+  Rewrite(f);
+  CloseFile(f);
   end;
   Append(f);
   Writeln(f, str);
   Flush(f);
   CloseFile(f);
-end;
+  end; }
 
-procedure SendMsg(WindowHandle, Event: NativeInt);
+procedure SendMsg(WindowHandle, HSHELL: NativeInt);
 begin
-  SendMessage(HookData^.AppWnd, WM_EventApplication, WindowHandle, Event);
-  //SaveLog(IntToStr(Event));
+  SendMessage(HookData^.AppWnd, WM_ShellApplication, WindowHandle, HSHELL);
+  // SaveLog(IntToStr(HSHELL));
 end;
 
-function UsingEvent(Key: string): boolean;
+function UsingHSHELL(Key: string): boolean;
 var
   Reg: TRegistry;
 begin
@@ -105,37 +105,37 @@ begin
   begin
     case code of
       HSHELL_WINDOWCREATED:
-        if UsingEvent('WINDOWCREATED') and IsWindow(wParam) then
+        if UsingHSHELL('WINDOWCREATED') and IsWindow(wParam) then
           SendMsg(wParam, code);
       HSHELL_WINDOWDESTROYED:
-        if UsingEvent('WINDOWDESTROYED') and (IsWindow(wParam)) and (GetParent(wParam) = 0) then
+        if UsingHSHELL('WINDOWDESTROYED') and (IsWindow(wParam)) and (GetParent(wParam) = 0) then
           SendMsg(wParam, code);
       HSHELL_ACTIVATESHELLWINDOW:
-        if UsingEvent('ACTIVATESHELLWINDOW') and IsWindow(wParam) then
+        if UsingHSHELL('ACTIVATESHELLWINDOW') and IsWindow(wParam) then
           SendMsg(wParam, code);
       HSHELL_WINDOWACTIVATED:
-        if UsingEvent('WINDOWACTIVATED') and IsWindow(wParam) then
+        if UsingHSHELL('WINDOWACTIVATED') and IsWindow(wParam) then
           SendMsg(wParam, code);
       HSHELL_GETMINRECT:
-        if UsingEvent('GETMINRECT') and IsWindow(wParam) then
+        if UsingHSHELL('GETMINRECT') and IsWindow(wParam) then
           SendMsg(wParam, code);
       HSHELL_REDRAW:
-        if UsingEvent('REDRAW') and IsWindow(wParam) then
+        if UsingHSHELL('REDRAW') and IsWindow(wParam) then
           SendMsg(wParam, code);
       HSHELL_TASKMAN:
-        if UsingEvent('TASKMAN') and IsWindow(wParam) then
+        if UsingHSHELL('TASKMAN') and IsWindow(wParam) then
           SendMsg(wParam, code);
       HSHELL_LANGUAGE:
-        if UsingEvent('LANGUAGE') and IsWindow(wParam) then
+        if UsingHSHELL('LANGUAGE') and IsWindow(wParam) then
           SendMsg(wParam, code);
       HSHELL_ACCESSIBILITYSTATE:
-        if UsingEvent('ACCESSIBILITYSTATE') and IsWindow(wParam) then
+        if UsingHSHELL('ACCESSIBILITYSTATE') and IsWindow(wParam) then
           SendMsg(wParam, code);
       HSHELL_APPCOMMAND:
-        if UsingEvent('APPCOMMAND') and IsWindow(wParam) then
+        if UsingHSHELL('APPCOMMAND') and IsWindow(wParam) then
           SendMsg(wParam, code);
       HSHELL_WINDOWREPLACED:
-        if UsingEvent('WINDOWREPLACED') and IsWindow(wParam) then
+        if UsingHSHELL('WINDOWREPLACED') and IsWindow(wParam) then
           SendMsg(wParam, code);
     end;
 
@@ -157,9 +157,11 @@ begin
     Result := false;
 end;
 
-function RemoveHook: BOOL; stdcall;
+function RemoveHook(var Error: Cardinal): BOOL; stdcall;
 begin
   Result := UnhookWindowsHookEx(HookData^.OldHook);
+  if not Result then
+    Error := GetLastError;
 end;
 
 exports SetHook, RemoveHook;

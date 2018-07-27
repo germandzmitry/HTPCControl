@@ -49,13 +49,13 @@ type
     ActFile: TAction;
     ActComPort: TAction;
     ActRC: TAction;
-    ActEventApp: TAction;
+    ActShellApp: TAction;
     ActKodi: TAction;
     ActTools: TAction;
     ActHelp: TAction;
     ActionToolBar1: TActionToolBar;
-    ActEventAppStart: TAction;
-    ActEventAppStop: TAction;
+    ActShellAppStart: TAction;
+    ActShellAppStop: TAction;
     procedure FormCreate(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure FormShow(Sender: TObject);
@@ -81,14 +81,14 @@ type
     procedure ActFileExitExecute(Sender: TObject);
     procedure ActComPortExecute(Sender: TObject);
     procedure ActRCExecute(Sender: TObject);
-    procedure ActEventAppExecute(Sender: TObject);
+    procedure ActShellAppExecute(Sender: TObject);
     procedure ActKodiExecute(Sender: TObject);
     procedure ActToolsExecute(Sender: TObject);
     procedure ActHelpExecute(Sender: TObject);
     procedure lvReadComPortCustomDrawItem(Sender: TCustomListView; Item: TListItem;
       State: TCustomDrawState; var DefaultDraw: Boolean);
-    procedure ActEventAppStartExecute(Sender: TObject);
-    procedure ActEventAppStopExecute(Sender: TObject);
+    procedure ActShellAppStartExecute(Sender: TObject);
+    procedure ActShellAppStopExecute(Sender: TObject);
     procedure AppEventsMessage(var Msg: tagMSG; var Handled: Boolean);
 
     procedure lvRemoteControlCustomDrawSubItem(Sender: TCustomListView; Item: TListItem;
@@ -96,14 +96,14 @@ type
   private
     { Private declarations }
     lvRemoteControl: TListView;
-    lvEventApplication: TListView;
+    lvShellApplication: TListView;
     lvEventKodi: TListView;
 
     FArduino: TComPort;
     FExecuteCommand: TExecuteCommand;
     FKodi: TKodi;
     FDataBase: TDataBase;
-    FEventApplication: TEventApplications;
+    FShellApplication: TShellApplications;
     FSetting: TSetting;
 
     FPageClient: TCustomPageControl;
@@ -191,7 +191,7 @@ procedure TMain.FormCreate(Sender: TObject);
   end;
 
 var
-  tabRemoteControl, tabEventApplication, tabEventKodi: TTabSheet;
+  tabRemoteControl, tabShellApplication, tabEventKodi: TTabSheet;
   LColumn: TListColumn;
 
 begin
@@ -262,17 +262,17 @@ begin
   end;
   SendMessage(lvRemoteControl.Handle, WM_UPDATEUISTATE, MakeLong(UIS_SET, UISF_HIDEFOCUS), 0);
 
-  // ¬кладка - EventApplication
-  tabEventApplication := CreateTab(FPageClient, 'TabEventApplication',
-    GetLanguageText(Main.Name, 'TabEventApplication', lngRus));
-  lvEventApplication := TListView.Create(tabEventApplication);
-  with lvEventApplication do
+  // ¬кладка - ShellApplication
+  tabShellApplication := CreateTab(FPageClient, 'TabShellApplication',
+    GetLanguageText(Main.Name, 'TabShellApplication', lngRus));
+  lvShellApplication := TListView.Create(tabShellApplication);
+  with lvShellApplication do
   begin
     Left := 10;
     Top := 10;
     Width := 20;
     Height := 20;
-    Parent := tabEventApplication;
+    Parent := tabShellApplication;
     Align := alClient;
     BorderStyle := bsNone;
     ViewStyle := vsReport;
@@ -281,14 +281,14 @@ begin
     ColumnClick := False;
 
     LColumn := Columns.Add;
-    LColumn.Caption := GetLanguageText(Main.Name, 'lvEventApplication:0', lngRus);
+    LColumn.Caption := GetLanguageText(Main.Name, 'lvShellApplication:0', lngRus);
     LColumn.Width := 100;
 
     LColumn := Columns.Add;
-    LColumn.Caption := GetLanguageText(Main.Name, 'lvEventApplication:1', lngRus);
+    LColumn.Caption := GetLanguageText(Main.Name, 'lvShellApplication:1', lngRus);
     LColumn.AutoSize := True;
   end;
-  SendMessage(lvEventApplication.Handle, WM_UPDATEUISTATE, MakeLong(UIS_SET, UISF_HIDEFOCUS), 0);
+  SendMessage(lvShellApplication.Handle, WM_UPDATEUISTATE, MakeLong(UIS_SET, UISF_HIDEFOCUS), 0);
 
   // ¬кладка - EventKodi
   tabEventKodi := CreateTab(FPageClient, 'TabEventKodi',
@@ -385,11 +385,11 @@ begin
     FreeAndNil(FKodi);
   end;
 
-  if Assigned(FEventApplication) then
+  if Assigned(FShellApplication) then
   begin
-    if FEventApplication.Starting then
-      FEventApplication.Stop;
-    FreeAndNil(FEventApplication);
+    if FShellApplication.Starting then
+      FShellApplication.Stop;
+    FreeAndNil(FShellApplication);
   end;
 
   SaveWindowSetting;
@@ -419,8 +419,8 @@ begin
 
   if Assigned(lvRemoteControl) then
     lvRemoteControl.Free;
-  if Assigned(lvEventApplication) then
-    lvEventApplication.Free;
+  if Assigned(lvShellApplication) then
+    lvShellApplication.Free;
   if Assigned(lvEventKodi) then
     lvEventKodi.Free;
   FPageClient.Free;
@@ -501,33 +501,33 @@ begin
       SW_SHOWNORMAL);
 end;
 
-procedure TMain.ActEventAppExecute(Sender: TObject);
+procedure TMain.ActShellAppExecute(Sender: TObject);
 begin
   //
 end;
 
-procedure TMain.ActEventAppStartExecute(Sender: TObject);
+procedure TMain.ActShellAppStartExecute(Sender: TObject);
 begin
   try
     StartEventApplication;
   except
     on E: Exception do
     begin
-      FreeAndNil(FEventApplication);
+      FreeAndNil(FShellApplication);
       MessageDlg(E.Message, mtError, [mbOK], 0);
     end;
   end
 
 end;
 
-procedure TMain.ActEventAppStopExecute(Sender: TObject);
+procedure TMain.ActShellAppStopExecute(Sender: TObject);
 begin
   try
     StopEventApplication;
   except
     on E: Exception do
     begin
-      FreeAndNil(FEventApplication);
+      FreeAndNil(FShellApplication);
       MessageDlg(E.Message, mtError, [mbOK], 0);
     end;
   end
@@ -661,7 +661,7 @@ procedure TMain.AppEventsMessage(var Msg: tagMSG; var Handled: Boolean);
 var
   LComPortConnected: Boolean;
   LDataBaseConnected: Boolean;
-  LEventApplicationStarting: Boolean;
+  LShellApplicationStarting: Boolean;
 begin
   if Processing then
     Exit;
@@ -670,7 +670,7 @@ begin
   try
     LComPortConnected := Assigned(FArduino) and FArduino.Connected;
     LDataBaseConnected := Assigned(FDataBase) and FDataBase.Connected;
-    LEventApplicationStarting := Assigned(FEventApplication) and FEventApplication.Starting;
+    LShellApplicationStarting := Assigned(FShellApplication) and FShellApplication.Starting;
 
     { ComPort }
     ActComPortOpen.Enabled := not LComPortConnected;
@@ -680,9 +680,9 @@ begin
     { DataBase }
     ActRCAllCommand.Enabled := LDataBaseConnected;
 
-    { EventApplication }
-    ActEventAppStart.Enabled := not LEventApplicationStarting;
-    ActEventAppStop.Enabled := LEventApplicationStarting;
+    { ShellApplication }
+    ActShellAppStart.Enabled := not LShellApplicationStarting;
+    ActShellAppStop.Enabled := LShellApplicationStarting;
 
     FProcessingEventHandler := False;
   except
@@ -858,24 +858,24 @@ end;
 
 procedure TMain.StartEventApplication();
 begin
-  if not Assigned(FEventApplication) or not FEventApplication.Starting then
+  if not Assigned(FShellApplication) or not FShellApplication.Starting then
   begin
-    FEventApplication := TEventApplications.Create(Main);
-    FEventApplication.OnRunning := onAppRunning;
-    FEventApplication.OnWindowsHook := OnWindowsHook;
-    FEventApplication.Start();
-    lvEventApplication.Items.Clear;
+    FShellApplication := TShellApplications.Create(Main);
+    FShellApplication.OnRunning := onAppRunning;
+    FShellApplication.OnWindowsHook := OnWindowsHook;
+    FShellApplication.Start();
+    lvShellApplication.Items.Clear;
   end;
 end;
 
 procedure TMain.StopEventApplication();
 begin
-  if Assigned(FEventApplication) then
+  if Assigned(FShellApplication) then
     try
-      if FEventApplication.Starting then
-        FEventApplication.Stop;
+      if FShellApplication.Starting then
+        FShellApplication.Stop;
     finally
-      FreeAndNil(FEventApplication);
+      FreeAndNil(FShellApplication);
     end;
 end;
 
@@ -916,13 +916,13 @@ begin
     LItemGlobal.Items.Add.Caption := '-';
     LItemGlobal.Items.Add.Action := ActRCOpenAccess;
 
-    { EventApplication }
+    { ShellApplication }
     { ------------------------------------------ }
     LItemGlobal := Items.Add;
     LItemGlobal.Index := 3;
-    LItemGlobal.Action := ActEventApp;
-    LItemGlobal.Items.Add.Action := ActEventAppStart;
-    LItemGlobal.Items.Add.Action := ActEventAppStop;
+    LItemGlobal.Action := ActShellApp;
+    LItemGlobal.Items.Add.Action := ActShellAppStart;
+    LItemGlobal.Items.Add.Action := ActShellAppStop;
 
     { Kodi }
     { ------------------------------------------ }
@@ -977,9 +977,9 @@ procedure TMain.OnWindowsHook(Sender: TObject; const HSHELL: NativeInt;
 var
   LItem: TListItem;
 begin
-  lvEventApplication.Items.BeginUpdate;
+  lvShellApplication.Items.BeginUpdate;
 
-  LItem := lvEventApplication.Items.Add;
+  LItem := lvShellApplication.Items.Add;
   case HSHELL of
     HSHELL_WINDOWCREATED:
       begin
@@ -1019,8 +1019,8 @@ begin
   end;
   LItem.SubItems.Add(ApplicationData.FileName);
 
-  // lvEventApplication.Perform(CM_RecreateWnd, 0, 0);
-  lvEventApplication.Items.EndUpdate;
+  // lvShellApplication.Perform(CM_RecreateWnd, 0, 0);
+  lvShellApplication.Items.EndUpdate;
 end;
 
 procedure TMain.onAppRunning(Running: Boolean);

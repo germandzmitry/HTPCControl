@@ -7,7 +7,7 @@ uses
   Vcl.Controls, Vcl.Forms, Vcl.Graphics, uLanguage;
 
 const
-  WM_EventApplication = WM_USER + 177;
+  WM_ShellApplication = WM_USER + 177;
 
 type
   TEXEVersionData = record
@@ -36,7 +36,7 @@ type
   PHICON = ^HICON;
 
 type
-  TEventApplications = class(TWinControl)
+  TShellApplications = class(TWinControl)
     procedure Start();
     procedure Stop();
     function Starting(): boolean;
@@ -45,7 +45,7 @@ type
     FWindow: HWND;
 
     SetHook: function(Wnd: HWND): BOOL; stdcall;
-    RemoveHook: function(): BOOL; stdcall;
+    RemoveHook: function(var Error: Cardinal): BOOL; stdcall;
 
     FOnRunning: TAppRunningEvent;
     FOnWindowsHook: TAppEvents;
@@ -61,7 +61,7 @@ type
     FOnAppCommand: TAppEvent;
     FOnWindowReplaced: TAppEvent;
 
-    procedure EventApplication(var Msg: TMessage); message WM_EventApplication;
+    procedure ShellApplication(var Msg: TMessage); message WM_ShellApplication;
 
     procedure DoRunning(Running: boolean); dynamic;
     procedure DoWindowsHook(HSHELL: NativeInt; ApplicationData: TEXEVersionData); dynamic;
@@ -106,99 +106,99 @@ function ExtractIconEx(lpszFile: LPCWSTR; nIconIndex: Integer; phiconLarge, phic
 
 implementation
 
-constructor TEventApplications.Create(AOwner: TComponent);
+constructor TShellApplications.Create(AOwner: TComponent);
 begin
   inherited Create(AOwner);
   Parent := TWinControl(AOwner);
   FHook := INVALID_HANDLE_VALUE;
 end;
 
-destructor TEventApplications.Destroy;
+destructor TShellApplications.Destroy;
 begin
   if Starting then
     Stop;
   inherited;
 end;
 
-procedure TEventApplications.DoAccessibilityState(ApplicationData: TEXEVersionData);
+procedure TShellApplications.DoAccessibilityState(ApplicationData: TEXEVersionData);
 begin
   if Assigned(FOnActivateShellWindow) then
     FOnAccessibilityState(Self, ApplicationData);
 end;
 
-procedure TEventApplications.DoActivateShellWindow(ApplicationData: TEXEVersionData);
+procedure TShellApplications.DoActivateShellWindow(ApplicationData: TEXEVersionData);
 begin
   if Assigned(FOnActivateShellWindow) then
     FOnActivateShellWindow(Self, ApplicationData);
 end;
 
-procedure TEventApplications.DoAppCommand(ApplicationData: TEXEVersionData);
+procedure TShellApplications.DoAppCommand(ApplicationData: TEXEVersionData);
 begin
   if Assigned(FOnAppCommand) then
     FOnAppCommand(Self, ApplicationData);
 end;
 
-procedure TEventApplications.DoGetMinRect(ApplicationData: TEXEVersionData);
+procedure TShellApplications.DoGetMinRect(ApplicationData: TEXEVersionData);
 begin
   if Assigned(FOnGetMinRect) then
     FOnGetMinRect(Self, ApplicationData);
 end;
 
-procedure TEventApplications.DoLanguage(ApplicationData: TEXEVersionData);
+procedure TShellApplications.DoLanguage(ApplicationData: TEXEVersionData);
 begin
   if Assigned(FOnLanguage) then
     FOnLanguage(Self, ApplicationData);
 end;
 
-procedure TEventApplications.DoReDraw(ApplicationData: TEXEVersionData);
+procedure TShellApplications.DoReDraw(ApplicationData: TEXEVersionData);
 begin
   if Assigned(FOnReDraw) then
     FOnReDraw(Self, ApplicationData);
 end;
 
-procedure TEventApplications.DoRunning(Running: boolean);
+procedure TShellApplications.DoRunning(Running: boolean);
 begin
   if Assigned(FOnRunning) then
     FOnRunning(Running);
 end;
 
-procedure TEventApplications.DoTaskMan(ApplicationData: TEXEVersionData);
+procedure TShellApplications.DoTaskMan(ApplicationData: TEXEVersionData);
 begin
   if Assigned(FOnTaskMan) then
     FOnTaskMan(Self, ApplicationData);
 end;
 
-procedure TEventApplications.DoWindowActivated(ApplicationData: TEXEVersionData);
+procedure TShellApplications.DoWindowActivated(ApplicationData: TEXEVersionData);
 begin
   if Assigned(FOnWindowActivated) then
     FOnWindowActivated(Self, ApplicationData);
 end;
 
-procedure TEventApplications.DoWindowCreated(ApplicationData: TEXEVersionData);
+procedure TShellApplications.DoWindowCreated(ApplicationData: TEXEVersionData);
 begin
   if Assigned(FOnWindowCreated) then
     FOnWindowCreated(Self, ApplicationData);
 end;
 
-procedure TEventApplications.DoWindowDestroyed(ApplicationData: TEXEVersionData);
+procedure TShellApplications.DoWindowDestroyed(ApplicationData: TEXEVersionData);
 begin
   if Assigned(FOnWindowDestroyed) then
     FOnWindowDestroyed(Self, ApplicationData);
 end;
 
-procedure TEventApplications.DoWindowsHook(HSHELL: NativeInt; ApplicationData: TEXEVersionData);
+procedure TShellApplications.DoWindowsHook(HSHELL: NativeInt; ApplicationData: TEXEVersionData);
 begin
   if Assigned(FOnWindowsHook) then
     FOnWindowsHook(Self, HSHELL, ApplicationData);
 end;
 
-procedure TEventApplications.DoWindowReplaced(ApplicationData: TEXEVersionData);
+procedure TShellApplications.DoWindowReplaced(ApplicationData: TEXEVersionData);
 begin
   if Assigned(FOnWindowReplaced) then
     FOnWindowReplaced(Self, ApplicationData);
 end;
 
-procedure TEventApplications.Start();
+procedure TShellApplications.Start();
 begin
   if not Starting then
   begin
@@ -219,7 +219,7 @@ begin
     raise Exception.Create(GetLanguageMsg('msgEventAppHookIsLoad', lngRus));
 end;
 
-function TEventApplications.Starting: boolean;
+function TShellApplications.Starting: boolean;
 begin
   if FHook = INVALID_HANDLE_VALUE then
     Result := false
@@ -227,27 +227,30 @@ begin
     Result := true;
 end;
 
-procedure TEventApplications.Stop();
+procedure TShellApplications.Stop();
+var
+  LError: Cardinal;
 begin
   if Starting then
   begin
     @RemoveHook := GetProcAddress(FHook, 'RemoveHook');
     if @RemoveHook <> nil then
-      if RemoveHook then
+      if RemoveHook(LError) then
       begin
         DoRunning(false);
         FreeLibrary(FHook);
         FHook := INVALID_HANDLE_VALUE;
       end
       else
-        raise Exception.Create(GetLanguageMsg('MsgEventAppUnloadHook', lngRus));
+        raise Exception.CreateFmt(GetLanguageMsg('MsgEventAppUnloadHook', lngRus),
+          [SysErrorMessage(LError)]);
   end
   else
     raise Exception.CreateFmt(GetLanguageMsg('MsgEventAppFileNotFound', lngRus),
       ['ShellApplication.dll']);
 end;
 
-procedure TEventApplications.EventApplication(var Msg: TMessage);
+procedure TShellApplications.ShellApplication(var Msg: TMessage);
 var
   ApplicationData: TEXEVersionData;
 begin
@@ -286,7 +289,7 @@ begin
   Msg.Result := 1;
 end;
 
-function TEventApplications.GetExePath(const ProcessHandle: HWND): String;
+function TShellApplications.GetExePath(const ProcessHandle: HWND): String;
 var
   ph: THandle;
   FileName: array [0 .. MAX_PATH - 1] of Char;
@@ -304,7 +307,7 @@ begin
     end;
 end;
 
-function TEventApplications.GetEXEVersionData(const ProcessHandle: HWND): TEXEVersionData;
+function TShellApplications.GetEXEVersionData(const ProcessHandle: HWND): TEXEVersionData;
 type
   PLandCodepage = ^TLandCodepage;
 
@@ -382,7 +385,7 @@ begin
   end;
 end;
 
-function TEventApplications.GetSmallIconEXE(const FileName: string): TIcon;
+function TShellApplications.GetSmallIconEXE(const FileName: string): TIcon;
 var
   Icon: HICON;
   ExtractedIconCount: UINT;
