@@ -39,7 +39,6 @@ type
     ActPopupRCAdd: TMenuItem;
     ActPopupRCEdit: TMenuItem;
     ActPopupRCDelete: TMenuItem;
-    ilReadComPort: TImageList;
     ActRCAllCommand: TAction;
     Tray: TTrayIcon;
     AppNotification: TNotificationCenter;
@@ -796,6 +795,8 @@ begin
 
   if not TReadComPort(Item.Data^).Exists then
     Sender.Canvas.Font.Color := clRed;
+
+  // DefaultDraw := False;
 end;
 
 procedure TMain.TrayClick(Sender: TObject);

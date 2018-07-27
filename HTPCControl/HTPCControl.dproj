@@ -118,18 +118,15 @@
         </DelphiCompile>
         <DCCReference Include="Forms\uMain.pas">
             <Form>Main</Form>
-            <FormType>dfm</FormType>
         </DCCReference>
         <DCCReference Include="Units\uComPort.pas"/>
         <DCCReference Include="Customs\uCustomPageControl.pas"/>
         <DCCReference Include="Forms\uAbout.pas">
             <Form>About</Form>
-            <FormType>dfm</FormType>
         </DCCReference>
         <DCCReference Include="Customs\uCustomActionDrawDisableImage.pas"/>
         <DCCReference Include="Forms\uSettings.pas">
             <Form>Settings</Form>
-            <FormType>dfm</FormType>
         </DCCReference>
         <DCCReference Include="Units\uLanguage.pas"/>
         <DCCReference Include="Units\uShellApplication.pas"/>
@@ -139,17 +136,14 @@
         <DCCReference Include="Units\uEventKodi.pas"/>
         <DCCReference Include="Forms\uControlCommand.pas">
             <Form>frmControlCommand</Form>
-            <FormType>dfm</FormType>
         </DCCReference>
         <DCCReference Include="Forms\uAllCommand.pas">
             <Form>frmAllCommand</Form>
-            <FormType>dfm</FormType>
         </DCCReference>
         <DCCReference Include="Units\uExecuteCommand.pas"/>
         <DCCReference Include="Units\MMDevApi.pas"/>
         <DCCReference Include="Forms\uSendComPort.pas">
             <Form>frmSendComPort</Form>
-            <FormType>dfm</FormType>
         </DCCReference>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>
@@ -189,27 +183,12 @@
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
-                <DeployClass Name="DependencyModule">
-                    <Platform Name="Win32">
-                        <Operation>0</Operation>
-                        <Extensions>.dll;.bpl</Extensions>
-                    </Platform>
+                <DeployClass Name="ProjectiOSDeviceResourceRules">
                     <Platform Name="iOSDevice64">
                         <Operation>1</Operation>
-                        <Extensions>.dylib</Extensions>
-                    </Platform>
-                    <Platform Name="OSX32">
-                        <RemoteDir>Contents\MacOS</RemoteDir>
-                        <Operation>1</Operation>
-                        <Extensions>.dylib</Extensions>
                     </Platform>
                     <Platform Name="iOSDevice32">
                         <Operation>1</Operation>
-                        <Extensions>.dylib</Extensions>
-                    </Platform>
-                    <Platform Name="iOSSimulator">
-                        <Operation>1</Operation>
-                        <Extensions>.dylib</Extensions>
                     </Platform>
                 </DeployClass>
                 <DeployClass Name="ProjectOSXResource">
@@ -563,12 +542,27 @@
                         <Operation>1</Operation>
                     </Platform>
                 </DeployClass>
-                <DeployClass Name="ProjectiOSDeviceResourceRules">
+                <DeployClass Name="DependencyModule">
+                    <Platform Name="Win32">
+                        <Operation>0</Operation>
+                        <Extensions>.dll;.bpl</Extensions>
+                    </Platform>
                     <Platform Name="iOSDevice64">
                         <Operation>1</Operation>
+                        <Extensions>.dylib</Extensions>
+                    </Platform>
+                    <Platform Name="OSX32">
+                        <RemoteDir>Contents\MacOS</RemoteDir>
+                        <Operation>1</Operation>
+                        <Extensions>.dylib</Extensions>
                     </Platform>
                     <Platform Name="iOSDevice32">
                         <Operation>1</Operation>
+                        <Extensions>.dylib</Extensions>
+                    </Platform>
+                    <Platform Name="iOSSimulator">
+                        <Operation>1</Operation>
+                        <Extensions>.dylib</Extensions>
                     </Platform>
                 </DeployClass>
                 <ProjectRoot Platform="iOSDevice64" Name="$(PROJECTNAME).app"/>
