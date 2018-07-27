@@ -8,7 +8,7 @@ type
 
   TExecuteCommandEvent = procedure(ECommand: TECommand; ECType: TecType; RepeatPreview: boolean)
     of object;
-  TSetPreviewCommandEvent = procedure(RCommand: PRemoteCommand) of object;
+  TSetPreviewCommandEvent = procedure(RCommand: PRemoteCommand; Opearion: string) of object;
 
 type
   TExecuteCommand = class
@@ -25,7 +25,7 @@ type
 
     procedure DoExecuteCommand(ECommand: TECommand; ECType: TecType;
       RepeatPreview: boolean); dynamic;
-    procedure DoSetPreviewCommand(RCommand: PRemoteCommand); dynamic;
+    procedure DoSetPreviewCommand(RCommand: PRemoteCommand; Opearion: string); dynamic;
 
   public
     constructor Create(DB: TDataBase); overload;
@@ -63,6 +63,7 @@ var
   ECommands: TECommands;
   i: integer;
   g: TRemoteCommand;
+  LOperation: string;
 begin
 
   // Повтор предыдущей команды
@@ -82,6 +83,7 @@ begin
       if FPrevRCommand = nil then
         New(FPrevRCommand);
       FPrevRCommand^ := ECommands[0].Command;
+      LOperation := ECommands[0].Operation;
     end
     else
     begin
@@ -91,7 +93,7 @@ begin
         FPrevRCommand := nil;
       end;
     end;
-    DoSetPreviewCommand(FPrevRCommand);
+    DoSetPreviewCommand(FPrevRCommand, LOperation);
 
     for i := 0 to Length(ECommands) - 1 do
       if ECommands[i].ECType = ecApplication then
@@ -162,10 +164,10 @@ begin
     FOnExecuteCommand(ECommand, ECType, RepeatPreview);
 end;
 
-procedure TExecuteCommand.DoSetPreviewCommand(RCommand: PRemoteCommand);
+procedure TExecuteCommand.DoSetPreviewCommand(RCommand: PRemoteCommand; Opearion: string);
 begin
   if Assigned(FOnSetPreviewCommand) then
-    FOnSetPreviewCommand(RCommand);
+    FOnSetPreviewCommand(RCommand, Opearion);
 end;
 
 end.

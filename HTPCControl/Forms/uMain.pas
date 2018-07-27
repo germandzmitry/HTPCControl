@@ -137,7 +137,7 @@ type
     procedure onAppRunning(Running: Boolean);
 
     procedure onExecuteCommand(ECommand: TECommand; ECType: TecType; RepeatPreview: Boolean);
-    procedure onSetPreviewCommand(RCommand: PRemoteCommand);
+    procedure onExecuteCommandSetPreviewCommand(RCommand: PRemoteCommand; Opearion: string);
 
     procedure onKodiRunning(Running: Boolean);
     procedure onKodiPlayer(Player: string);
@@ -1059,7 +1059,7 @@ begin
       FExecuteCommand := TExecuteCommand.Create(FDataBase);
 
     FExecuteCommand.onExecuteCommand := onExecuteCommand;
-    FExecuteCommand.onSetPreviewCommand := onSetPreviewCommand;
+    FExecuteCommand.onSetPreviewCommand := onExecuteCommandSetPreviewCommand;
   except
     on E: Exception do
       MessageDlg(E.Message, mtError, [mbOK], 0);
@@ -1172,12 +1172,12 @@ begin
 
 end;
 
-procedure TMain.onSetPreviewCommand(RCommand: PRemoteCommand);
+procedure TMain.onExecuteCommandSetPreviewCommand(RCommand: PRemoteCommand; Opearion: string);
 begin
   if RCommand = nil then
     StatusBar.Panels[3].Text := ''
   else
-    StatusBar.Panels[3].Text := RCommand^.Command;
+    StatusBar.Panels[3].Text := Opearion;
 end;
 
 procedure TMain.onKodiPlayer(Player: string);
