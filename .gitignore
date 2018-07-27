@@ -70,7 +70,7 @@ __recovery/
 Win32/
 
 # Setting
-Application/Setting.ini
+HTPCControl/Application/Setting.ini
 
 # Castalia statistics file (since XE7 Castalia is distributed with Delphi)
 *.stat

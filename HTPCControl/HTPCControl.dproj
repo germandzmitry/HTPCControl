@@ -132,7 +132,7 @@
             <FormType>dfm</FormType>
         </DCCReference>
         <DCCReference Include="Units\uLanguage.pas"/>
-        <DCCReference Include="Units\uEventApplication.pas"/>
+        <DCCReference Include="Units\uShellApplication.pas"/>
         <DCCReference Include="Units\uTypes.pas"/>
         <DCCReference Include="Customs\uSuperObject.pas"/>
         <DCCReference Include="Units\uDataBase.pas"/>

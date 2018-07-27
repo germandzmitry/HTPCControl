@@ -1,4 +1,4 @@
-unit uEventApplication;
+unit uShellApplication;
 
 interface
 
@@ -202,7 +202,7 @@ procedure TEventApplications.Start();
 begin
   if not Starting then
   begin
-    FHook := LoadLibrary('EventApplicationHook.dll');
+    FHook := LoadLibrary('ShellApplication.dll');
     if FHook <> 0 then
     begin
       @SetHook := GetProcAddress(FHook, 'SetHook');
@@ -213,7 +213,7 @@ begin
     end
     else
       raise Exception.CreateFmt(GetLanguageMsg('msgEventAppFileNotFound', lngRus),
-        ['EventApplicationHook.dll']);
+        ['ShellApplication.dll']);
   end
   else
     raise Exception.Create(GetLanguageMsg('msgEventAppHookIsLoad', lngRus));
@@ -244,7 +244,7 @@ begin
   end
   else
     raise Exception.CreateFmt(GetLanguageMsg('MsgEventAppFileNotFound', lngRus),
-      ['EventApplicationHook.dll']);
+      ['ShellApplication.dll']);
 end;
 
 procedure TEventApplications.EventApplication(var Msg: TMessage);

@@ -9,7 +9,7 @@ uses
   uCustomActionDrawDisableImage in 'Customs\uCustomActionDrawDisableImage.pas',
   uSettings in 'Forms\uSettings.pas' {Settings},
   uLanguage in 'Units\uLanguage.pas',
-  uEventApplication in 'Units\uEventApplication.pas',
+  uShellApplication in 'Units\uShellApplication.pas',
   uTypes in 'Units\uTypes.pas',
   uSuperObject in 'Customs\uSuperObject.pas',
   uDataBase in 'Units\uDataBase.pas',

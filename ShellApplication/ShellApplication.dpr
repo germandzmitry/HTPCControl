@@ -1,4 +1,4 @@
-library EventApplicationHook;
+library ShellApplication;
 
 // http://vsokovikov.narod.ru/New_MSDN_API/Hook/fn_shellproc.htm
 // https://msdn.microsoft.com/en-us/library/windows/desktop/ms644991(v=vs.85).aspx

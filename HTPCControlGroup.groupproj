@@ -1,0 +1,48 @@
+﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <PropertyGroup>
+        <ProjectGuid>{8717CE2A-CF34-4C96-AE58-600576F15BD7}</ProjectGuid>
+    </PropertyGroup>
+    <ItemGroup>
+        <Projects Include="HTPCControl\HTPCControl.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="ShellApplication\ShellApplication.dproj">
+            <Dependencies/>
+        </Projects>
+    </ItemGroup>
+    <ProjectExtensions>
+        <Borland.Personality>Default.Personality.12</Borland.Personality>
+        <Borland.ProjectType/>
+        <BorlandProject>
+            <Default.Personality/>
+        </BorlandProject>
+    </ProjectExtensions>
+    <Target Name="HTPCControl">
+        <MSBuild Projects="HTPCControl\HTPCControl.dproj"/>
+    </Target>
+    <Target Name="HTPCControl:Clean">
+        <MSBuild Projects="HTPCControl\HTPCControl.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="HTPCControl:Make">
+        <MSBuild Projects="HTPCControl\HTPCControl.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="ShellApplication">
+        <MSBuild Projects="ShellApplication\ShellApplication.dproj"/>
+    </Target>
+    <Target Name="ShellApplication:Clean">
+        <MSBuild Projects="ShellApplication\ShellApplication.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="ShellApplication:Make">
+        <MSBuild Projects="ShellApplication\ShellApplication.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="Build">
+        <CallTarget Targets="HTPCControl;ShellApplication"/>
+    </Target>
+    <Target Name="Clean">
+        <CallTarget Targets="HTPCControl:Clean;ShellApplication:Clean"/>
+    </Target>
+    <Target Name="Make">
+        <CallTarget Targets="HTPCControl:Make;ShellApplication:Make"/>
+    </Target>
+    <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
+</Project>

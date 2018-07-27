@@ -9,7 +9,7 @@ uses
   Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.ComCtrls, Vcl.ExtCtrls, Vcl.StdCtrls,
   Vcl.ToolWin, Vcl.ActnMan, Vcl.ActnCtrls, Vcl.ActnList, System.Win.Registry,
   Vcl.PlatformDefaultStyleActnCtrls, System.Actions, UCustomPageControl, System.UITypes,
-  System.ImageList, Vcl.ImgList, Winapi.shellApi, System.IniFiles, uEventApplication,
+  System.ImageList, Vcl.ImgList, Winapi.shellApi, System.IniFiles, uShellApplication,
   uSettings, uDataBase, uEventKodi, uComPort, Vcl.Menus, Vcl.ActnPopup, CommCtrl, uExecuteCommand,
   System.Notification, Vcl.AppEvnts, MMDevApi, Winapi.ActiveX, Vcl.ActnMenus,
   uTypes;
@@ -743,7 +743,7 @@ begin
             ilSmall.GetIcon(12, LIcon);
         ecApplication:
           if FileExists(LEPCommand.ECommand.Application) then
-            SmallIconFromExecutableFile(LSubItemText, LIcon)
+            SmallIconFromExecutableFile(LEPCommand.ECommand.Application, LIcon)
       end;
 
       Sender.Canvas.Draw(aRect.Left + 5, aRect.Top + 1, LIcon);
@@ -1257,7 +1257,7 @@ begin
     Win32Check(ExtractedIconCount = 1);
     Icon.Handle := LIcon;
   except
-    raise;
+
   end;
 end;
 
