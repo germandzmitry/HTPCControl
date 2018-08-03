@@ -199,24 +199,36 @@ begin
 end;
 
 procedure TShellApplications.Start();
+var
+  LError: Cardinal;
 begin
-  if not Starting then
-  begin
-    FHook := LoadLibrary('ShellApplication.dll');
-    if FHook <> 0 then
-    begin
-      @SetHook := GetProcAddress(FHook, 'SetHook');
-      if (@SetHook <> nil) and (SetHook(Self.Handle)) then
-        DoRunning(true)
-      else
-        raise Exception.Create(GetLanguageMsg('msgEventAppLoadHook', lngRus));
-    end
-    else
-      raise Exception.CreateFmt(GetLanguageMsg('msgEventAppFileNotFound', lngRus),
-        ['ShellApplication.dll']);
-  end
-  else
+  if Starting then
     raise Exception.Create(GetLanguageMsg('msgEventAppHookIsLoad', lngRus));
+
+{$IFDEF WIN32}
+  FHook := LoadLibrary('ShellApplication.dll');
+{$ELSE}
+  FHook := LoadLibrary('ShellApplication.64.dll');
+{$ENDIF}
+  if FHook = 0 then
+    raise Exception.CreateFmt(GetLanguageMsg('msgEventAppLoadLibrary', lngRus),
+      [SysErrorMessage(GetLastError)]);
+
+  @SetHook := GetProcAddress(FHook, 'SetHook');
+  if @SetHook = nil then
+  begin
+    LError := GetLastError;
+    FreeLibrary(FHook);
+    FHook := INVALID_HANDLE_VALUE;
+    raise Exception.CreateFmt(GetLanguageMsg('msgEventAppGetProcAddress', lngRus),
+      ['SetHook', SysErrorMessage(LError)]);
+  end;
+
+  if SetHook(Self.Handle) then
+    DoRunning(true)
+  else
+    raise Exception.Create(GetLanguageMsg('msgEventAppLoadHook', lngRus));
+
 end;
 
 function TShellApplications.Starting: boolean;
@@ -231,23 +243,28 @@ procedure TShellApplications.Stop();
 var
   LError: Cardinal;
 begin
-  if Starting then
+  if not Starting then
+    exit;
+
+  @RemoveHook := GetProcAddress(FHook, 'RemoveHook');
+  if @RemoveHook = nil then
   begin
-    @RemoveHook := GetProcAddress(FHook, 'RemoveHook');
-    if @RemoveHook <> nil then
-      if RemoveHook(LError) then
-      begin
-        DoRunning(false);
-        FreeLibrary(FHook);
-        FHook := INVALID_HANDLE_VALUE;
-      end
-      else
-        raise Exception.CreateFmt(GetLanguageMsg('MsgEventAppUnloadHook', lngRus),
-          [SysErrorMessage(LError)]);
+    LError := GetLastError;
+    FreeLibrary(FHook);
+    FHook := INVALID_HANDLE_VALUE;
+    raise Exception.CreateFmt(GetLanguageMsg('msgEventAppGetProcAddress', lngRus),
+      ['RemoveHook', SysErrorMessage(LError)]);
+  end;
+
+  if RemoveHook(LError) then
+  begin
+    DoRunning(false);
+    FreeLibrary(FHook);
+    FHook := INVALID_HANDLE_VALUE;
   end
   else
-    raise Exception.CreateFmt(GetLanguageMsg('MsgEventAppFileNotFound', lngRus),
-      ['ShellApplication.dll']);
+    raise Exception.CreateFmt(GetLanguageMsg('MsgEventAppUnloadHook', lngRus),
+      [SysErrorMessage(LError)]);
 end;
 
 procedure TShellApplications.ShellApplication(var Msg: TMessage);
