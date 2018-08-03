@@ -348,7 +348,8 @@ begin
     if FSetting.ComPort.OpenRun then
     begin
       OpenComPort;
-      // ShowNotification(Application.Title, 'Приложение успешно запущенно');
+      if FSetting.Application.AutoRunNotificationCenter then
+        ShowNotification(Application.Title, 'Приложение успешно запущенно');
     end;
   except
     on E: Exception do
@@ -1242,6 +1243,7 @@ begin
     Notif.Name := 'HTPCControl';
     Notif.Title := Title;
     Notif.AlertBody := AlertBode;
+
     AppNotification.PresentNotification(Notif);
   finally
     Notif.Free;

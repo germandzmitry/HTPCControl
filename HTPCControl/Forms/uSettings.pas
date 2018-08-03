@@ -15,6 +15,7 @@ type
     AutoRunTray: boolean;
     AutoRunSetVolume: boolean;
     Volume: integer;
+    AutoRunNotificationCenter: boolean;
     TurnTray: boolean;
     CloseTray: boolean;
     procedure Default;
@@ -131,6 +132,7 @@ type
     lComPortShowLast: TLabel;
     edComPortShowLast: TEdit;
     udComPortShowLast: TUpDown;
+    cbApplicationAutoRunNotificationCenter: TCheckBox;
     procedure btnCloseClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure FormShow(Sender: TObject);
@@ -183,6 +185,8 @@ begin
       Result.Application.AutoRunSetVolume);
     Result.Application.Volume := IniFile.ReadInteger('Application', 'Volume',
       Result.Application.Volume);
+    Result.Application.AutoRunNotificationCenter := IniFile.ReadBool('Application',
+      'AutoRunNotificationCenter', Result.Application.AutoRunNotificationCenter);
     Result.Application.TurnTray := IniFile.ReadBool('Application', 'TurnTray',
       Result.Application.TurnTray);
     Result.Application.CloseTray := IniFile.ReadBool('Application', 'CloseTray',
@@ -256,6 +260,7 @@ begin
   self.AutoRunTray := false;
   self.AutoRunSetVolume := false;
   self.Volume := 10;
+  self.AutoRunNotificationCenter := false;
   self.TurnTray := false;
   self.CloseTray := false;
 end;
@@ -378,6 +383,7 @@ begin
   cbApplicationAutoRunTray.Checked := LSetting.Application.AutoRunTray;
   cbApplicationAutoRunSetVolume.Checked := LSetting.Application.AutoRunSetVolume;
   udApplicationAutoRunVolume.Position := LSetting.Application.Volume;
+  cbApplicationAutoRunNotificationCenter.Checked := LSetting.Application.AutoRunNotificationCenter;
   cbApplicationTurnTray.Checked := LSetting.Application.TurnTray;
   cbApplicationCloseTray.Checked := LSetting.Application.CloseTray;
 
@@ -454,6 +460,8 @@ begin
     IniFile.WriteBool('Application', 'AutoRunTray', cbApplicationAutoRunTray.Checked);
     IniFile.WriteBool('Application', 'AutoRunSetVolume', cbApplicationAutoRunSetVolume.Checked);
     IniFile.WriteInteger('Application', 'Volume', udApplicationAutoRunVolume.Position);
+    IniFile.WriteBool('Application', 'AutoRunNotificationCenter',
+      cbApplicationAutoRunNotificationCenter.Checked);
     IniFile.WriteBool('Application', 'TurnTray', cbApplicationTurnTray.Checked);
     IniFile.WriteBool('Application', 'CloseTray', cbApplicationCloseTray.Checked);
 
@@ -544,6 +552,7 @@ begin
   cbApplicationAutoRunSetVolume.Enabled := cbApplicationAutoRun.Checked;
   edApplicationAutoRunVolume.Enabled := cbApplicationAutoRun.Checked;
   udApplicationAutoRunVolume.Enabled := cbApplicationAutoRun.Checked;
+  cbApplicationAutoRunNotificationCenter.Enabled := cbApplicationAutoRun.Checked;
 
   if cbApplicationAutoRun.Checked then
     cbApplicationAutoRunSetVolumeClick(cbApplicationAutoRunSetVolume);
