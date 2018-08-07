@@ -55,6 +55,12 @@ type
     ActionToolBar1: TActionToolBar;
     ActShellAppStart: TAction;
     ActShellAppStop: TAction;
+    pClientHeader: TPanel;
+    lKodiPlaying: TLabel;
+    ActKodiStart: TAction;
+    ActKodiStop: TAction;
+    lKodiHeader: TLabel;
+    Label1: TLabel;
     procedure FormCreate(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure FormShow(Sender: TObject);
@@ -92,6 +98,8 @@ type
 
     procedure lvRemoteControlCustomDrawSubItem(Sender: TCustomListView; Item: TListItem;
       SubItem: Integer; State: TCustomDrawState; var DefaultDraw: Boolean);
+    procedure ActKodiStartExecute(Sender: TObject);
+    procedure ActKodiStopExecute(Sender: TObject);
   private
     { Private declarations }
     lvRemoteControl: TListView;
@@ -124,6 +132,9 @@ type
     procedure StartEventApplication();
     procedure StopEventApplication();
 
+    procedure StartEventKodi();
+    procedure StopEventKodi();
+
     procedure ShowNotification(const Title, AlertBode: string);
     procedure SmallIconFromExecutableFile(const FileName: string; var Icon: TIcon);
 
@@ -142,6 +153,7 @@ type
     procedure onKodiRunning(Running: Boolean);
     procedure onKodiPlayer(Player: string);
     procedure onKodiPlayerState(Player, State: string);
+    procedure onKodiPlaying(Player: string; Playing: TPlaying);
 
     procedure ListViewWndProc(var Msg: TMessage);
 
@@ -196,9 +208,11 @@ var
 begin
   LoadWindowSetting;
   FSetting := uSettings.getSetting();
-
-  Main.Caption := Application.Title;
-
+{$IFDEF WIN32}
+  Main.Caption := Application.Title + ' (x86)';
+{$ELSE}
+  Main.Caption := Application.Title + ' (x64)';
+{$IFEND}
   SendMessage(lvReadComPort.Handle, WM_UPDATEUISTATE, MakeLong(UIS_SET, UISF_HIDEFOCUS), 0);
   Main.lvReadComPort.Align := alClient;
 
@@ -208,7 +222,8 @@ begin
   Tray.Icon := Application.Icon;
   pClient.Align := alClient;
 
-  // CreateActionMenu;
+  pClientHeader.Caption := '';
+  pClientHeader.Align := alBottom;
 
   // Панель
   FPageClient := TCustomPageControl.Create(self);
@@ -228,7 +243,7 @@ begin
     TextFormat := [tfCenter];
     DoubleBuffered := True;
     Style := tsButtons;
-    TabHeight := 26;
+    TabHeight := 24;
   end;
   SendMessage(FPageClient.Handle, WM_UPDATEUISTATE, MakeLong(UIS_SET, UISF_HIDEFOCUS), 0);
 
@@ -244,7 +259,9 @@ begin
     Height := 20;
     Parent := tabRemoteControl;
     Align := alClient;
-    BorderStyle := bsNone;
+    AlignWithMargins := True;
+    Margins.Left := 0;
+    // BorderStyle := bsNone;
     ViewStyle := vsReport;
     ReadOnly := True;
     RowSelect := True;
@@ -273,7 +290,9 @@ begin
     Height := 20;
     Parent := tabShellApplication;
     Align := alClient;
-    BorderStyle := bsNone;
+    AlignWithMargins := True;
+    Margins.Left := 0;
+    // BorderStyle := bsNone;
     ViewStyle := vsReport;
     ReadOnly := True;
     RowSelect := True;
@@ -301,7 +320,9 @@ begin
     Height := 20;
     Parent := tabEventKodi;
     Align := alClient;
-    BorderStyle := bsNone;
+    AlignWithMargins := True;
+    Margins.Left := 0;
+    // BorderStyle := bsNone;
     ViewStyle := vsReport;
     ReadOnly := True;
     RowSelect := True;
@@ -517,7 +538,6 @@ begin
       MessageDlg(E.Message, mtError, [mbOK], 0);
     end;
   end
-
 end;
 
 procedure TMain.ActShellAppStopExecute(Sender: TObject);
@@ -628,6 +648,28 @@ begin
   //
 end;
 
+procedure TMain.ActKodiStartExecute(Sender: TObject);
+begin
+  try
+    StartEventKodi;
+  except
+    on E: Exception do
+    begin
+      FreeAndNil(FKodi);
+      MessageDlg(E.Message, mtError, [mbOK], 0);
+    end;
+  end
+end;
+
+procedure TMain.ActKodiStopExecute(Sender: TObject);
+begin
+  if Assigned(FKodi) then
+  begin
+    FKodi.Terminate;
+    FreeAndNil(FKodi);
+  end;
+end;
+
 procedure TMain.ActToolsDeviceManagerExecute(Sender: TObject);
 begin
   ShellExecute(Main.Handle, 'open', PWideChar(WideString('devmgmt.msc')), nil, nil, SW_SHOWNORMAL);
@@ -662,6 +704,7 @@ var
   LComPortConnected: Boolean;
   LDataBaseConnected: Boolean;
   LShellApplicationStarting: Boolean;
+  LKodiStarting: Boolean;
 begin
   if Processing then
     Exit;
@@ -671,6 +714,7 @@ begin
     LComPortConnected := Assigned(FArduino) and FArduino.Connected;
     LDataBaseConnected := Assigned(FDataBase) and FDataBase.Connected;
     LShellApplicationStarting := Assigned(FShellApplication) and FShellApplication.Starting;
+    LKodiStarting := Assigned(FKodi);
 
     { ComPort }
     ActComPortOpen.Enabled := not LComPortConnected;
@@ -683,6 +727,10 @@ begin
     { ShellApplication }
     ActShellAppStart.Enabled := not LShellApplicationStarting;
     ActShellAppStop.Enabled := LShellApplicationStarting;
+
+    { Kodi }
+    ActKodiStart.Enabled := not LKodiStarting;
+    ActKodiStop.Enabled := LKodiStarting;
 
     FProcessingEventHandler := False;
   except
@@ -881,6 +929,26 @@ begin
     end;
 end;
 
+procedure TMain.StartEventKodi();
+begin
+  if not Assigned(FKodi) then
+  begin
+    FKodi := TKodi.Create(FSetting.Kodi.UpdateInterval, FSetting.Kodi.IP, FSetting.Kodi.Port,
+      FSetting.Kodi.User, FSetting.Kodi.Password);
+
+    FKodi.Priority := tpNormal;
+    FKodi.OnRunning := onKodiRunning;
+    FKodi.OnPlayer := onKodiPlayer;
+    FKodi.OnPlayerState := onKodiPlayerState;
+    FKodi.OnPlaying := onKodiPlaying;
+  end;
+end;
+
+procedure TMain.StopEventKodi();
+begin
+  //
+end;
+
 procedure TMain.CreateActionMenu;
 var
   LItem, LItemGlobal, LItemSub: TActionClientItem;
@@ -931,6 +999,8 @@ begin
     LItemGlobal := Items.Add;
     LItemGlobal.Index := 4;
     LItemGlobal.Action := ActKodi;
+    LItemGlobal.Items.Add.Action := ActKodiStart;
+    LItemGlobal.Items.Add.Action := ActKodiStop;
 
     { Tools }
     { ------------------------------------------ }
@@ -988,15 +1058,7 @@ begin
         LItem.Caption := 'WindowCreated';
         if (FSetting.Kodi.Using) and (ApplicationData.FileName = FSetting.Kodi.FileName) and
           not Assigned(FKodi) then
-        begin
-          FKodi := TKodi.Create(FSetting.Kodi.UpdateInterval, FSetting.Kodi.IP, FSetting.Kodi.Port,
-            FSetting.Kodi.User, FSetting.Kodi.Password);
-
-          FKodi.Priority := tpNormal;
-          FKodi.OnRunning := onKodiRunning;
-          FKodi.OnPlayer := onKodiPlayer;
-          FKodi.OnPlayerState := onKodiPlayerState;
-        end;
+          StartEventKodi;
       end;
     HSHELL_WINDOWDESTROYED:
       LItem.Caption := 'WindowDestroyed';
@@ -1186,10 +1248,18 @@ var
   LItem: TListItem;
 begin
   lvEventKodi.Items.BeginUpdate;
-  LItem := lvEventKodi.Items.Add;
-  LItem.Caption := Player;
-  // lvEventKodi.Perform(CM_RecreateWnd, 0, 0);
-  lvEventKodi.Items.EndUpdate;
+  try
+    LItem := lvEventKodi.Items.Add;
+    LItem.Caption := Player;
+    // lvEventKodi.Perform(CM_RecreateWnd, 0, 0);
+  finally
+    lvEventKodi.Items.EndUpdate;
+  end;
+end;
+
+procedure TMain.onKodiPlaying(Player: string; Playing: TPlaying);
+begin
+  Label1.Caption := Playing.PLabel;
 end;
 
 procedure TMain.onKodiPlayerState(Player, State: string);
@@ -1197,11 +1267,14 @@ var
   LItem: TListItem;
 begin
   lvEventKodi.Items.BeginUpdate;
-  LItem := lvEventKodi.Items.Add;
-  LItem.Caption := Player;
-  LItem.SubItems.Add(State);
-  // lvEventKodi.Perform(CM_RecreateWnd, 0, 0);
-  lvEventKodi.Items.EndUpdate;
+  try
+    LItem := lvEventKodi.Items.Add;
+    LItem.Caption := Player;
+    LItem.SubItems.Add(State);
+    // lvEventKodi.Perform(CM_RecreateWnd, 0, 0);
+  finally
+    lvEventKodi.Items.EndUpdate;
+  end;
 end;
 
 procedure TMain.onKodiRunning(Running: Boolean);

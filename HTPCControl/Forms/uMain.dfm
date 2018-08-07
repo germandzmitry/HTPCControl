@@ -2,8 +2,8 @@ object Main: TMain
   Left = 0
   Top = 0
   Caption = 'Main'
-  ClientHeight = 337
-  ClientWidth = 722
+  ClientHeight = 549
+  ClientWidth = 965
   Color = clBtnFace
   DoubleBuffered = True
   Font.Charset = DEFAULT_CHARSET
@@ -22,18 +22,16 @@ object Main: TMain
   object Splitter: TSplitter
     Left = 337
     Top = 29
-    Height = 289
+    Width = 6
+    Height = 501
     Color = clBtnFace
     ParentColor = False
     ResizeStyle = rsUpdate
-    ExplicitLeft = 105
-    ExplicitTop = 26
-    ExplicitHeight = 292
   end
   object StatusBar: TStatusBar
     Left = 0
-    Top = 318
-    Width = 722
+    Top = 530
+    Width = 965
     Height = 19
     Panels = <
       item
@@ -51,23 +49,26 @@ object Main: TMain
       item
         Width = 50
       end>
+    ExplicitTop = 318
+    ExplicitWidth = 722
   end
   object pComPort: TPanel
     Left = 0
     Top = 29
     Width = 337
-    Height = 289
+    Height = 501
     Align = alLeft
     BevelOuter = bvNone
     Caption = 'pComPort'
     TabOrder = 1
+    ExplicitHeight = 289
     object lvReadComPort: TListView
       AlignWithMargins = True
       Left = 8
       Top = 64
       Width = 289
       Height = 153
-      BorderStyle = bsNone
+      Margins.Right = 0
       Columns = <
         item
           Width = 40
@@ -107,17 +108,63 @@ object Main: TMain
   end
   object pClient: TPanel
     Left = 346
-    Top = 93
-    Width = 349
-    Height = 198
+    Top = 80
+    Width = 591
+    Height = 416
     BevelOuter = bvNone
     Caption = 'pClient'
     TabOrder = 2
+    object pClientHeader: TPanel
+      AlignWithMargins = True
+      Left = 16
+      Top = 72
+      Width = 500
+      Height = 113
+      Margins.Left = 0
+      BevelKind = bkFlat
+      BevelOuter = bvNone
+      BiDiMode = bdLeftToRight
+      Caption = 'pClientHeader'
+      Color = clWhite
+      ParentBiDiMode = False
+      ParentBackground = False
+      TabOrder = 0
+      DesignSize = (
+        496
+        109)
+      object lKodiPlaying: TLabel
+        Left = 16
+        Top = 27
+        Width = 113
+        Height = 13
+        Alignment = taRightJustify
+        AutoSize = False
+        Caption = 'lKodiPlaying'
+      end
+      object lKodiHeader: TLabel
+        Left = 8
+        Top = 8
+        Width = 481
+        Height = 13
+        Anchors = [akLeft, akTop, akRight]
+        AutoSize = False
+        Caption = 'lKodiHeader'
+      end
+      object Label1: TLabel
+        Left = 135
+        Top = 27
+        Width = 354
+        Height = 13
+        Anchors = [akLeft, akTop, akRight]
+        AutoSize = False
+        Caption = 'Label1'
+      end
+    end
   end
   object ActionMainMenuBar: TActionMainMenuBar
     Left = 0
     Top = 0
-    Width = 722
+    Width = 965
     Height = 29
     UseSystemFont = False
     ActionManager = ActionManager
@@ -134,11 +181,12 @@ object Main: TMain
     Font.Style = []
     HorzMargin = 8
     Spacing = 0
+    ExplicitWidth = 722
   end
   object ActionList: TActionList
     Images = ilSmall
-    Left = 448
-    Top = 112
+    Left = 440
+    Top = 360
     object ActComPort: TAction
       Category = 'ComPort'
       Caption = 'ActComPort'
@@ -264,12 +312,24 @@ object Main: TMain
       ImageIndex = 9
       OnExecute = ActShellAppStopExecute
     end
+    object ActKodiStart: TAction
+      Category = 'Kodi'
+      Caption = 'ActKodiStart'
+      ImageIndex = 8
+      OnExecute = ActKodiStartExecute
+    end
+    object ActKodiStop: TAction
+      Category = 'Kodi'
+      Caption = 'ActKodiStop'
+      ImageIndex = 9
+      OnExecute = ActKodiStopExecute
+    end
   end
   object ilSmall: TImageList
-    Left = 376
-    Top = 200
+    Left = 368
+    Top = 448
     Bitmap = {
-      494C01010E0020013C0110001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
+      494C01010E002001400110001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000004000000001002000000000000040
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000
@@ -818,14 +878,14 @@ object Main: TMain
         Caption = 'ActionList'
       end>
     Images = ilSmall
-    Left = 376
-    Top = 112
+    Left = 368
+    Top = 360
     StyleName = 'Platform Default'
   end
   object PopupActReadComPort: TPopupActionBar
     Images = ilSmall
-    Left = 544
-    Top = 112
+    Left = 536
+    Top = 360
     object ActPopupRCAdd: TMenuItem
       Action = ActRCAdd
     end
@@ -839,17 +899,17 @@ object Main: TMain
   object Tray: TTrayIcon
     OnClick = TrayClick
     OnDblClick = TrayDblClick
-    Left = 448
-    Top = 200
+    Left = 440
+    Top = 448
   end
   object AppNotification: TNotificationCenter
-    Left = 532
-    Top = 202
+    Left = 524
+    Top = 450
   end
   object AppEvents: TApplicationEvents
     OnMessage = AppEventsMessage
     OnMinimize = AppEventsMinimize
-    Left = 620
-    Top = 202
+    Left = 612
+    Top = 450
   end
 end

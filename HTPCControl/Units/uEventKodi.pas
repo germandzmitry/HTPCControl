@@ -10,9 +10,17 @@ const
   NoPlayer: integer = -1;
 
 type
+  TPlaying = record
+    PLabel: string;
+    PType: string;
+    PFile: string;
+  end;
+
+type
   TKodiRunningEvent = procedure(Running: boolean) of object;
   TKodiPlayerEvent = procedure(Player: string) of object;
   TKodiPlayerStateEvent = procedure(Player, State: string) of object;
+  TKodiPlayingEvent = procedure(Player: string; Playing: TPlaying) of object;
 
 type
   TKodi = class(TThread)
@@ -27,15 +35,18 @@ type
     FOnRunning: TKodiRunningEvent;
     FOnPlayer: TKodiPlayerEvent;
     FOnPlayerState: TKodiPlayerStateEvent;
+    FOnPlaying: TKodiPlayingEvent;
 
     function Quit(var Error: boolean): boolean;
     function CurrentPlayer(var PlayerType: string): integer;
     function PlayerState(PlayerId: integer): integer;
+    function PlayerPlaying(PlayerId: integer): TPlaying;
     function httpGet(query: string): ISuperObject;
 
     procedure DoRunning(Running: boolean); dynamic;
     procedure DoPlayer(Player: string); dynamic;
     procedure DoPlayerState(Player: string; State: integer); dynamic;
+    procedure DoPlaying(Player: string; Playing: TPlaying); dynamic;
   protected
     procedure Execute; override;
     procedure DoTerminate; override;
@@ -47,6 +58,7 @@ type
     property OnRunning: TKodiRunningEvent read FOnRunning write FOnRunning;
     property OnPlayer: TKodiPlayerEvent read FOnPlayer write FOnPlayer;
     property OnPlayerState: TKodiPlayerStateEvent read FOnPlayerState write FOnPlayerState;
+    property OnPlaying: TKodiPlayingEvent read FOnPlaying write FOnPlaying;
   end;
 
 implementation
@@ -81,6 +93,12 @@ procedure TKodi.DoPlayer(Player: string);
 begin
   if Assigned(FOnPlayer) then
     FOnPlayer(Player);
+end;
+
+procedure TKodi.DoPlaying(Player: string; Playing: TPlaying);
+begin
+  if Assigned(FOnPlaying) then
+    FOnPlaying(Player, Playing);
 end;
 
 procedure TKodi.DoPlayerState(Player: string; State: integer);
@@ -119,7 +137,10 @@ var
   prevPlayerId, PlayerId: integer;
   PlayerType: string;
   quitError: boolean;
+  Playing: TPlaying;
 begin
+  FreeOnTerminate := False;
+
   prevPlayerState := -1;
   PlayerState := -1;
   prevPlayerId := NoPlayer;
@@ -127,16 +148,13 @@ begin
   PlayerType := '';
   quitError := False;
 
-  // что бы приложение успело загрузиться
-  // Sleep(5000);
-
   DoRunning(True);
 
-  FreeOnTerminate := True;
+  // что бы приложение успело загрузиться
+  Sleep(3000);
 
   while not Terminated do
   begin
-    Sleep(FUpdateInterval);
 
     if Quit(quitError) then
     begin
@@ -176,10 +194,20 @@ begin
           begin
             DoPlayerState(PlayerType, PlayerState);
           end);
+
+      Playing := self.PlayerPlaying(PlayerId);
+      Synchronize(
+        procedure
+        begin
+          DoPlaying(PlayerType, Playing);
+        end);
+
     end;
 
     prevPlayerId := PlayerId;
     prevPlayerState := PlayerState;
+
+    Sleep(FUpdateInterval);
 
   end;
 end;
@@ -248,6 +276,24 @@ begin
   except
     on E: Exception do
       Result := -1;
+  end;
+end;
+
+function TKodi.PlayerPlaying(PlayerId: integer): TPlaying;
+var
+  get, objItem: ISuperObject;
+begin
+  try
+    get := httpGet('"Player.GetItem","params":{"playerid":' + inttostr(PlayerId) +
+      ',"properties":["file"]}');
+    objItem := get.O['result'].O['item'];
+
+    Result.PLabel := objItem.s['label'];
+    Result.PType := objItem.s['type'];
+    Result.PFile := objItem.s['file'];
+  except
+    on E: Exception do
+
   end;
 end;
 
