@@ -2,8 +2,8 @@ object Main: TMain
   Left = 0
   Top = 0
   Caption = 'Main'
-  ClientHeight = 549
-  ClientWidth = 965
+  ClientHeight = 553
+  ClientWidth = 832
   Color = clBtnFace
   DoubleBuffered = True
   Font.Charset = DEFAULT_CHARSET
@@ -19,19 +19,21 @@ object Main: TMain
   OnShow = FormShow
   PixelsPerInch = 96
   TextHeight = 13
-  object Splitter: TSplitter
+  object SplitterLeft: TSplitter
     Left = 337
     Top = 29
     Width = 6
-    Height = 501
+    Height = 505
     Color = clBtnFace
     ParentColor = False
     ResizeStyle = rsUpdate
+    ExplicitLeft = 200
+    ExplicitHeight = 501
   end
   object StatusBar: TStatusBar
     Left = 0
-    Top = 530
-    Width = 965
+    Top = 534
+    Width = 832
     Height = 19
     Panels = <
       item
@@ -49,41 +51,19 @@ object Main: TMain
       item
         Width = 50
       end>
-    ExplicitTop = 318
-    ExplicitWidth = 722
+    ExplicitTop = 530
+    ExplicitWidth = 965
   end
   object pComPort: TPanel
     Left = 0
     Top = 29
     Width = 337
-    Height = 501
+    Height = 505
     Align = alLeft
     BevelOuter = bvNone
     Caption = 'pComPort'
     TabOrder = 1
-    ExplicitHeight = 289
-    object lvReadComPort: TListView
-      AlignWithMargins = True
-      Left = 8
-      Top = 64
-      Width = 289
-      Height = 153
-      Margins.Right = 0
-      Columns = <
-        item
-          Width = 40
-        end
-        item
-          AutoSize = True
-        end>
-      ColumnClick = False
-      ReadOnly = True
-      RowSelect = True
-      TabOrder = 0
-      ViewStyle = vsReport
-      OnContextPopup = lvReadComPortContextPopup
-      OnCustomDrawItem = lvReadComPortCustomDrawItem
-    end
+    ExplicitHeight = 501
     object ActionToolBar1: TActionToolBar
       Left = 0
       Top = 0
@@ -105,66 +85,211 @@ object Main: TMain
       ParentFont = False
       Spacing = 0
     end
+    object plvReadComPort: TPanel
+      AlignWithMargins = True
+      Left = 24
+      Top = 154
+      Width = 289
+      Height = 197
+      Margins.Right = 0
+      BevelOuter = bvNone
+      BorderStyle = bsSingle
+      Caption = 'plvReadComPort'
+      Ctl3D = False
+      ParentCtl3D = False
+      TabOrder = 1
+      object lvReadComPort: TListView
+        Left = 12
+        Top = 21
+        Width = 205
+        Height = 153
+        Margins.Right = 0
+        BorderStyle = bsNone
+        Columns = <
+          item
+            Width = 40
+          end
+          item
+            AutoSize = True
+          end>
+        ColumnClick = False
+        ReadOnly = True
+        RowSelect = True
+        TabOrder = 0
+        ViewStyle = vsReport
+        OnContextPopup = lvReadComPortContextPopup
+        OnCustomDrawItem = lvReadComPortCustomDrawItem
+      end
+    end
   end
   object pClient: TPanel
-    Left = 346
-    Top = 80
-    Width = 591
-    Height = 416
+    Left = 349
+    Top = 193
+    Width = 460
+    Height = 335
     BevelOuter = bvNone
     Caption = 'pClient'
     TabOrder = 2
-    object pClientHeader: TPanel
+    object SplitterBottom: TSplitter
+      Left = 0
+      Top = 146
+      Width = 460
+      Height = 6
+      Cursor = crVSplit
+      Align = alBottom
+      ResizeStyle = rsUpdate
+      ExplicitTop = 294
+      ExplicitWidth = 591
+    end
+    object scrbFooter: TScrollBox
       AlignWithMargins = True
-      Left = 16
-      Top = 72
-      Width = 500
-      Height = 113
+      Left = 0
+      Top = 152
+      Width = 457
+      Height = 180
       Margins.Left = 0
-      BevelKind = bkFlat
+      Margins.Top = 0
+      Align = alBottom
+      BevelInner = bvNone
       BevelOuter = bvNone
-      BiDiMode = bdLeftToRight
-      Caption = 'pClientHeader'
       Color = clWhite
-      ParentBiDiMode = False
-      ParentBackground = False
+      Ctl3D = False
+      ParentColor = False
+      ParentCtl3D = False
       TabOrder = 0
-      DesignSize = (
-        496
-        109)
-      object lKodiPlaying: TLabel
-        Left = 16
-        Top = 27
-        Width = 113
-        Height = 13
-        Alignment = taRightJustify
-        AutoSize = False
-        Caption = 'lKodiPlaying'
+      OnResize = scrbFooterResize
+      object pKodiPlayingFile: TPanel
+        AlignWithMargins = True
+        Left = 3
+        Top = 102
+        Width = 449
+        Height = 27
+        Align = alTop
+        Caption = 'pKodiPlayingFile'
+        ParentBackground = False
+        TabOrder = 0
+        ExplicitTop = 62
+        DesignSize = (
+          449
+          27)
+        object lKodiPlayingFile: TLabel
+          Left = 17
+          Top = 10
+          Width = 72
+          Height = 13
+          Margins.Left = 16
+          Margins.Top = 0
+          Margins.Right = 0
+          Margins.Bottom = 0
+          Alignment = taRightJustify
+          BiDiMode = bdLeftToRight
+          Caption = 'lKodiPlayingFile'
+          ParentBiDiMode = False
+        end
+        object lKodiPlayingFileV: TLabel
+          Left = 364
+          Top = 10
+          Width = 78
+          Height = 13
+          Anchors = [akLeft, akTop, akRight]
+          Caption = 'lKodiPlayingFileV'
+          Color = clRed
+          ParentColor = False
+          Transparent = True
+          WordWrap = True
+        end
       end
-      object lKodiHeader: TLabel
-        Left = 8
-        Top = 8
-        Width = 481
-        Height = 13
-        Anchors = [akLeft, akTop, akRight]
-        AutoSize = False
-        Caption = 'lKodiHeader'
+      object pKodiHeader: TPanel
+        AlignWithMargins = True
+        Left = 3
+        Top = 34
+        Width = 449
+        Height = 27
+        Align = alTop
+        Caption = 'pKodiHeader'
+        ParentBackground = False
+        TabOrder = 1
+        ExplicitLeft = 0
+        ExplicitTop = 0
+        ExplicitWidth = 417
+        object lKodiHeader: TLabel
+          Left = 17
+          Top = 11
+          Width = 57
+          Height = 13
+          Caption = 'lKodiHeader'
+          Font.Charset = DEFAULT_CHARSET
+          Font.Color = clWindowText
+          Font.Height = -11
+          Font.Name = 'Tahoma'
+          Font.Style = []
+          ParentFont = False
+        end
       end
-      object Label1: TLabel
-        Left = 135
-        Top = 27
-        Width = 354
-        Height = 13
-        Anchors = [akLeft, akTop, akRight]
-        AutoSize = False
-        Caption = 'Label1'
+      object pKodiPlayingLabel: TPanel
+        AlignWithMargins = True
+        Left = 3
+        Top = 67
+        Width = 449
+        Height = 29
+        Align = alTop
+        Caption = 'pKodiPlayingLabel'
+        ParentBackground = False
+        TabOrder = 2
+        ExplicitTop = 28
+        DesignSize = (
+          449
+          29)
+        object lKodiPlayingLabel: TLabel
+          Left = 17
+          Top = 10
+          Width = 81
+          Height = 13
+          Margins.Left = 16
+          Margins.Top = 0
+          Margins.Right = 0
+          Margins.Bottom = 0
+          Alignment = taRightJustify
+          Caption = 'lKodiPlayingLabel'
+        end
+        object lKodiPlayingLabelV: TLabel
+          Left = 356
+          Top = 10
+          Width = 87
+          Height = 13
+          Anchors = [akLeft, akTop, akRight]
+          Caption = 'lKodiPlayingLabelV'
+          Color = clYellow
+          ParentColor = False
+          Transparent = True
+          WordWrap = True
+        end
+      end
+      object pShellApplicationHeader: TPanel
+        AlignWithMargins = True
+        Left = 3
+        Top = 3
+        Width = 449
+        Height = 25
+        Align = alTop
+        Caption = 'pShellApplicationHeader'
+        ParentBackground = False
+        TabOrder = 3
+        ExplicitTop = -8
+        object lShellApplicationHeader: TLabel
+          Left = 17
+          Top = 8
+          Width = 111
+          Height = 13
+          Caption = 'lShellApplicationHeader'
+        end
       end
     end
   end
   object ActionMainMenuBar: TActionMainMenuBar
     Left = 0
     Top = 0
-    Width = 965
+    Width = 832
     Height = 29
     UseSystemFont = False
     ActionManager = ActionManager
@@ -181,12 +306,14 @@ object Main: TMain
     Font.Style = []
     HorzMargin = 8
     Spacing = 0
-    ExplicitWidth = 722
+    ExplicitLeft = 8
+    ExplicitTop = 56
+    ExplicitWidth = 834
   end
   object ActionList: TActionList
     Images = ilSmall
-    Left = 440
-    Top = 360
+    Left = 448
+    Top = 56
     object ActComPort: TAction
       Category = 'ComPort'
       Caption = 'ActComPort'
@@ -326,10 +453,10 @@ object Main: TMain
     end
   end
   object ilSmall: TImageList
-    Left = 368
-    Top = 448
+    Left = 376
+    Top = 128
     Bitmap = {
-      494C01010E002001400110001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
+      494C01010E002001440110001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000004000000001002000000000000040
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000
@@ -878,14 +1005,14 @@ object Main: TMain
         Caption = 'ActionList'
       end>
     Images = ilSmall
-    Left = 368
-    Top = 360
+    Left = 376
+    Top = 56
     StyleName = 'Platform Default'
   end
   object PopupActReadComPort: TPopupActionBar
     Images = ilSmall
-    Left = 536
-    Top = 360
+    Left = 544
+    Top = 56
     object ActPopupRCAdd: TMenuItem
       Action = ActRCAdd
     end
@@ -899,17 +1026,17 @@ object Main: TMain
   object Tray: TTrayIcon
     OnClick = TrayClick
     OnDblClick = TrayDblClick
-    Left = 440
-    Top = 448
+    Left = 448
+    Top = 128
   end
   object AppNotification: TNotificationCenter
-    Left = 524
-    Top = 450
+    Left = 532
+    Top = 130
   end
   object AppEvents: TApplicationEvents
     OnMessage = AppEventsMessage
     OnMinimize = AppEventsMinimize
-    Left = 612
-    Top = 450
+    Left = 620
+    Top = 130
   end
 end

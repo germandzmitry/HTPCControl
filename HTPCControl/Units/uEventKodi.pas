@@ -31,6 +31,7 @@ type
     FPort: integer;
     FUser, FPassword: string;
     FErrorResponse: integer;
+    FSleep: integer;
 
     FOnRunning: TKodiRunningEvent;
     FOnPlayer: TKodiPlayerEvent;
@@ -81,6 +82,7 @@ begin
   FPassword := Password;
 
   FErrorResponse := 0;
+  FSleep := 0;
 end;
 
 destructor TKodi.Destroy;
@@ -151,7 +153,8 @@ begin
   DoRunning(True);
 
   // что бы приложение успело загрузиться
-  Sleep(3000);
+  Sleep(2000);
+  FSleep := FUpdateInterval;
 
   while not Terminated do
   begin
@@ -164,6 +167,16 @@ begin
 
     if quitError then
       Continue;
+
+    if FSleep < FUpdateInterval then
+    begin
+      Sleep(100);
+
+      FSleep := FSleep + 100;
+      Continue;
+    end
+    else
+      FSleep := 0;
 
     PlayerId := CurrentPlayer(PlayerType);
 
@@ -206,8 +219,6 @@ begin
 
     prevPlayerId := PlayerId;
     prevPlayerState := PlayerState;
-
-    Sleep(FUpdateInterval);
 
   end;
 end;
@@ -288,9 +299,9 @@ begin
       ',"properties":["file"]}');
     objItem := get.O['result'].O['item'];
 
-    Result.PLabel := objItem.s['label'];
-    Result.PType := objItem.s['type'];
-    Result.PFile := objItem.s['file'];
+    Result.PLabel := Utf8ToAnsi(objItem.s['label']);
+    Result.PType := Utf8ToAnsi(objItem.s['type']);
+    Result.PFile := Utf8ToAnsi(objItem.s['file']);
   except
     on E: Exception do
 

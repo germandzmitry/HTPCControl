@@ -18,7 +18,7 @@ type
   TMain = class(TForm)
     StatusBar: TStatusBar;
     pComPort: TPanel;
-    Splitter: TSplitter;
+    SplitterLeft: TSplitter;
     pClient: TPanel;
     ActionList: TActionList;
     ActHelpAbout: TAction;
@@ -55,12 +55,21 @@ type
     ActionToolBar1: TActionToolBar;
     ActShellAppStart: TAction;
     ActShellAppStop: TAction;
-    pClientHeader: TPanel;
-    lKodiPlaying: TLabel;
+    lKodiPlayingLabel: TLabel;
     ActKodiStart: TAction;
     ActKodiStop: TAction;
     lKodiHeader: TLabel;
-    Label1: TLabel;
+    lKodiPlayingLabelV: TLabel;
+    SplitterBottom: TSplitter;
+    scrbFooter: TScrollBox;
+    plvReadComPort: TPanel;
+    lKodiPlayingFile: TLabel;
+    lKodiPlayingFileV: TLabel;
+    pKodiPlayingFile: TPanel;
+    pKodiHeader: TPanel;
+    pKodiPlayingLabel: TPanel;
+    pShellApplicationHeader: TPanel;
+    lShellApplicationHeader: TLabel;
     procedure FormCreate(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure FormShow(Sender: TObject);
@@ -100,8 +109,13 @@ type
       SubItem: Integer; State: TCustomDrawState; var DefaultDraw: Boolean);
     procedure ActKodiStartExecute(Sender: TObject);
     procedure ActKodiStopExecute(Sender: TObject);
+    procedure scrbFooterResize(Sender: TObject);
   private
     { Private declarations }
+    plvRemoteControl: TPanel;
+    plvShellApplication: TPanel;
+    plvEventKodi: TPanel;
+
     lvRemoteControl: TListView;
     lvShellApplication: TListView;
     lvEventKodi: TListView;
@@ -114,9 +128,6 @@ type
     FSetting: TSetting;
 
     FPageClient: TCustomPageControl;
-
-    FListViewWndProc: TWndMethod;
-
     FSureExit: Boolean;
     FProcessingEventHandler: Boolean;
 
@@ -155,11 +166,12 @@ type
     procedure onKodiPlayerState(Player, State: string);
     procedure onKodiPlaying(Player: string; Playing: TPlaying);
 
-    procedure ListViewWndProc(var Msg: TMessage);
-
     procedure CreateActionMenu();
+    procedure CreateComponent();
+    procedure SettingComponent();
 
     function Processing: Boolean;
+    procedure SetLabelHeight(ALabel: TLabel);
   public
     { Public declarations }
     property DataBase: TDataBase read FDataBase;
@@ -177,15 +189,6 @@ uses uAbout, uControlCommand, uLanguage, uAllCommand, USendComPort;
 
 procedure TMain.FormCreate(Sender: TObject);
 
-  function CreateTab(aPage: TCustomPageControl; aName, aCaption: string): TTabSheet;
-  begin
-    Result := TTabSheet.Create(aPage);
-    Result.PageControl := aPage;
-    Result.Name := aName;
-    Result.Caption := aCaption;
-    Result.DoubleBuffered := True;
-  end;
-
   procedure SetVolume(Volume: Integer);
   var
     deviceEnumerator: IMMDeviceEnumerator;
@@ -202,142 +205,25 @@ procedure TMain.FormCreate(Sender: TObject);
   end;
 
 var
-  tabRemoteControl, tabShellApplication, tabEventKodi: TTabSheet;
-  LColumn: TListColumn;
-
+  i: Integer;
 begin
+
+  CreateComponent;
+  SettingComponent;
+
+  // чистим контролы
+  for i := 0 to self.ComponentCount - 1 do
+  begin
+    // Label
+    if self.Components[i] is TLabel then
+      TLabel(self.Components[i]).Caption := '';
+    // Panel
+    if self.Components[i] is TPanel then
+      TPanel(self.Components[i]).Caption := '';
+  end;
+
   LoadWindowSetting;
   FSetting := uSettings.getSetting();
-{$IFDEF WIN32}
-  Main.Caption := Application.Title + ' (x86)';
-{$ELSE}
-  Main.Caption := Application.Title + ' (x64)';
-{$IFEND}
-  SendMessage(lvReadComPort.Handle, WM_UPDATEUISTATE, MakeLong(UIS_SET, UISF_HIDEFOCUS), 0);
-  Main.lvReadComPort.Align := alClient;
-
-  FListViewWndProc := lvReadComPort.WindowProc;
-  lvReadComPort.WindowProc := ListViewWndProc;
-
-  Tray.Icon := Application.Icon;
-  pClient.Align := alClient;
-
-  pClientHeader.Caption := '';
-  pClientHeader.Align := alBottom;
-
-  // ѕанель
-  FPageClient := TCustomPageControl.Create(self);
-  with FPageClient do
-  begin
-    Left := 10;
-    Top := 10;
-    Width := 20;
-    Height := 20;
-    Parent := pClient;
-    Name := 'pcClient';
-
-    Visible := True;
-    Align := alClient;
-    OwnerDraw := True;
-    TabPosition := TTabPosition.tpTop;
-    TextFormat := [tfCenter];
-    DoubleBuffered := True;
-    Style := tsButtons;
-    TabHeight := 24;
-  end;
-  SendMessage(FPageClient.Handle, WM_UPDATEUISTATE, MakeLong(UIS_SET, UISF_HIDEFOCUS), 0);
-
-  // ¬кладка - RemoteControl
-  tabRemoteControl := CreateTab(FPageClient, 'TabRemoteControl',
-    GetLanguageText(Main.Name, 'TabRemoteControl', lngRus));
-  lvRemoteControl := TListView.Create(tabRemoteControl);
-  with lvRemoteControl do
-  begin
-    Left := 10;
-    Top := 10;
-    Width := 20;
-    Height := 20;
-    Parent := tabRemoteControl;
-    Align := alClient;
-    AlignWithMargins := True;
-    Margins.Left := 0;
-    // BorderStyle := bsNone;
-    ViewStyle := vsReport;
-    ReadOnly := True;
-    RowSelect := True;
-    ColumnClick := False;
-    OnCustomDrawSubItem := lvRemoteControlCustomDrawSubItem;
-
-    LColumn := Columns.Add;
-    LColumn.Caption := GetLanguageText(Main.Name, 'lvRemoteControl:0', lngRus);
-    LColumn.Width := 100;
-
-    LColumn := Columns.Add;
-    LColumn.Caption := GetLanguageText(Main.Name, 'lvRemoteControl:1', lngRus);
-    LColumn.AutoSize := True;
-  end;
-  SendMessage(lvRemoteControl.Handle, WM_UPDATEUISTATE, MakeLong(UIS_SET, UISF_HIDEFOCUS), 0);
-
-  // ¬кладка - ShellApplication
-  tabShellApplication := CreateTab(FPageClient, 'TabShellApplication',
-    GetLanguageText(Main.Name, 'TabShellApplication', lngRus));
-  lvShellApplication := TListView.Create(tabShellApplication);
-  with lvShellApplication do
-  begin
-    Left := 10;
-    Top := 10;
-    Width := 20;
-    Height := 20;
-    Parent := tabShellApplication;
-    Align := alClient;
-    AlignWithMargins := True;
-    Margins.Left := 0;
-    // BorderStyle := bsNone;
-    ViewStyle := vsReport;
-    ReadOnly := True;
-    RowSelect := True;
-    ColumnClick := False;
-
-    LColumn := Columns.Add;
-    LColumn.Caption := GetLanguageText(Main.Name, 'lvShellApplication:0', lngRus);
-    LColumn.Width := 100;
-
-    LColumn := Columns.Add;
-    LColumn.Caption := GetLanguageText(Main.Name, 'lvShellApplication:1', lngRus);
-    LColumn.AutoSize := True;
-  end;
-  SendMessage(lvShellApplication.Handle, WM_UPDATEUISTATE, MakeLong(UIS_SET, UISF_HIDEFOCUS), 0);
-
-  // ¬кладка - EventKodi
-  tabEventKodi := CreateTab(FPageClient, 'TabEventKodi',
-    GetLanguageText(Main.Name, 'TabEventKodi', lngRus));
-  lvEventKodi := TListView.Create(tabEventKodi);
-  with lvEventKodi do
-  begin
-    Left := 10;
-    Top := 10;
-    Width := 20;
-    Height := 20;
-    Parent := tabEventKodi;
-    Align := alClient;
-    AlignWithMargins := True;
-    Margins.Left := 0;
-    // BorderStyle := bsNone;
-    ViewStyle := vsReport;
-    ReadOnly := True;
-    RowSelect := True;
-    ColumnClick := False;
-
-    LColumn := Columns.Add;
-    LColumn.Caption := GetLanguageText(Main.Name, 'lvEventKodi:0', lngRus);
-    LColumn.Width := 100;
-
-    LColumn := Columns.Add;
-    LColumn.Caption := GetLanguageText(Main.Name, 'lvEventKodi:1', lngRus);
-    LColumn.AutoSize := True;
-  end;
-  SendMessage(lvEventKodi.Handle, WM_UPDATEUISTATE, MakeLong(UIS_SET, UISF_HIDEFOCUS), 0);
-
   UpdateLanguage(self, lngRus);
 
   // ќбработка настроек запуска
@@ -388,6 +274,12 @@ end;
 procedure TMain.FormShow(Sender: TObject);
 begin
   CreateActionMenu;
+
+{$IFDEF WIN32}
+  Main.Caption := Application.Title + ' (x86)';
+{$ELSE}
+  Main.Caption := Application.Title + ' (x64)';
+{$IFEND}
 end;
 
 procedure TMain.FormClose(Sender: TObject; var Action: TCloseAction);
@@ -432,9 +324,6 @@ begin
   for i := 0 to lvReadComPort.Items.Count - 1 do
     Dispose(lvReadComPort.Items[i].Data);
 
-  lvReadComPort.WindowProc := FListViewWndProc;
-  FListViewWndProc := nil;
-
   for i := 0 to lvRemoteControl.Items.Count - 1 do
     Dispose(lvRemoteControl.Items[i].Data);
 
@@ -444,6 +333,14 @@ begin
     lvShellApplication.Free;
   if Assigned(lvEventKodi) then
     lvEventKodi.Free;
+
+  if Assigned(plvRemoteControl) then
+    plvRemoteControl.Free;
+  if Assigned(plvShellApplication) then
+    plvShellApplication.Free;
+  if Assigned(plvEventKodi) then
+    plvEventKodi.Free;
+
   FPageClient.Free;
 end;
 
@@ -739,11 +636,20 @@ begin
   end;
 end;
 
-procedure TMain.ListViewWndProc(var Msg: TMessage);
+procedure TMain.SetLabelHeight(ALabel: TLabel);
+var
+  Rect: TRect;
 begin
-  ShowScrollBar(lvReadComPort.Handle, SB_HORZ, False);
-  ShowScrollBar(lvReadComPort.Handle, SB_VERT, True);
-  FListViewWndProc(Msg); // process message
+  // if ALabel.Canvas.TextWidth(Text) < ALabel.Width then
+  // begin
+  Rect.Left := 0;
+  Rect.Top := 0;
+  Rect.Right := ALabel.Width;
+  Rect.Bottom := ALabel.Height;
+
+  ALabel.Height := DrawText(ALabel.Canvas.Handle, PChar(ALabel.Caption), -1, Rect,
+    DT_CALCRECT or DT_WORDBREAK);
+  // end;
 end;
 
 procedure TMain.LoadWindowSetting;
@@ -758,10 +664,42 @@ begin
     Main.Height := IniFile.ReadInteger('Window', 'Height', Main.Height);
     if IniFile.ReadBool('Window', 'Maximized', True) then
       Main.WindowState := wsMaximized;
-    Main.pComPort.Width := IniFile.ReadInteger('Window', 'Splitter', Main.pComPort.Width);
+
+    Main.pComPort.Width := IniFile.ReadInteger('Window', 'SplitterLeft', Main.pComPort.Width);
+    Main.scrbFooter.Height := IniFile.ReadInteger('Window', 'SplitterBottom',
+      Main.scrbFooter.Height);
   finally
     IniFile.Free;
   end;
+end;
+
+procedure TMain.SaveWindowSetting();
+var
+  IniFile: TIniFile;
+begin
+  IniFile := TIniFile.Create(ExtractFileDir(Application.ExeName) + '\' + FileSetting);
+  try
+    if WindowState = wsMaximized then
+      IniFile.WriteBool('Window', 'Maximized', True)
+    else
+    begin
+      IniFile.WriteBool('Window', 'Maximized', False);
+      IniFile.WriteInteger('Window', 'Left', Main.Left);
+      IniFile.WriteInteger('Window', 'Top', Main.Top);
+      IniFile.WriteInteger('Window', 'Width', Main.Width);
+      IniFile.WriteInteger('Window', 'Height', Main.Height);
+    end;
+    IniFile.WriteInteger('Window', 'SplitterLeft', Main.pComPort.Width);
+    IniFile.WriteInteger('Window', 'SplitterBottom', Main.scrbFooter.Height);
+  finally
+    IniFile.Free;
+  end;
+end;
+
+procedure TMain.scrbFooterResize(Sender: TObject);
+begin
+  SetLabelHeight(lKodiPlayingLabelV);
+  SetLabelHeight(lKodiPlayingFileV);
 end;
 
 procedure TMain.lvRemoteControlCustomDrawSubItem(Sender: TCustomListView; Item: TListItem;
@@ -1044,47 +982,334 @@ begin
   pComPort.Width := pComPort.Width - 1;
 end;
 
+procedure TMain.CreateComponent();
+
+  function CreateTab(aPage: TCustomPageControl; aName, aCaption: string): TTabSheet;
+  begin
+    Result := TTabSheet.Create(aPage);
+    Result.PageControl := aPage;
+    Result.Name := aName;
+    Result.Caption := aCaption;
+    Result.DoubleBuffered := True;
+  end;
+
+var
+  tabRemoteControl, tabShellApplication, tabEventKodi: TTabSheet;
+  LColumn: TListColumn;
+begin
+  // ѕанель
+  FPageClient := TCustomPageControl.Create(self);
+  with FPageClient do
+  begin
+    Left := 10;
+    Top := 10;
+    Width := 20;
+    Height := 20;
+    Parent := pClient;
+    Name := 'pcClient';
+
+    Visible := True;
+    Align := alClient;
+    OwnerDraw := True;
+    TabPosition := TTabPosition.tpTop;
+    TextFormat := [tfCenter];
+    DoubleBuffered := True;
+    Style := tsButtons;
+    TabHeight := 24;
+  end;
+  SendMessage(FPageClient.Handle, WM_UPDATEUISTATE, MakeLong(UIS_SET, UISF_HIDEFOCUS), 0);
+
+  // ¬кладка - RemoteControl
+  tabRemoteControl := CreateTab(FPageClient, 'TabRemoteControl',
+    GetLanguageText(Main.Name, 'TabRemoteControl', lngRus));
+
+  plvRemoteControl := TPanel.Create(tabRemoteControl);
+  with plvRemoteControl do
+  begin
+    Left := 10;
+    Top := 10;
+    Width := 20;
+    Height := 20;
+    Parent := tabRemoteControl;
+    Align := alClient;
+    Ctl3D := False;
+    BevelOuter := bvNone;
+    BorderStyle := bsSingle;
+    AlignWithMargins := True;
+    Margins.Left := 0;
+    Margins.Bottom := 0;
+  end;
+
+  lvRemoteControl := TListView.Create(plvRemoteControl);
+  with lvRemoteControl do
+  begin
+    Left := 10;
+    Top := 10;
+    Width := 20;
+    Height := 20;
+    Parent := plvRemoteControl;
+    Align := alClient;
+    BorderStyle := bsNone;
+    ViewStyle := vsReport;
+    ReadOnly := True;
+    RowSelect := True;
+    ColumnClick := False;
+    OnCustomDrawSubItem := lvRemoteControlCustomDrawSubItem;
+
+    LColumn := Columns.Add;
+    LColumn.Caption := GetLanguageText(Main.Name, 'lvRemoteControl:0', lngRus);
+    LColumn.Width := 100;
+
+    LColumn := Columns.Add;
+    LColumn.Caption := GetLanguageText(Main.Name, 'lvRemoteControl:1', lngRus);
+    LColumn.AutoSize := True;
+  end;
+  SendMessage(lvRemoteControl.Handle, WM_UPDATEUISTATE, MakeLong(UIS_SET, UISF_HIDEFOCUS), 0);
+
+  // ¬кладка - ShellApplication
+  tabShellApplication := CreateTab(FPageClient, 'TabShellApplication',
+    GetLanguageText(Main.Name, 'TabShellApplication', lngRus));
+
+  plvShellApplication := TPanel.Create(tabShellApplication);
+  with plvShellApplication do
+  begin
+    Left := 10;
+    Top := 10;
+    Width := 20;
+    Height := 20;
+    Parent := tabShellApplication;
+    Align := alClient;
+    Ctl3D := False;
+    BevelOuter := bvNone;
+    BorderStyle := bsSingle;
+    AlignWithMargins := True;
+    Margins.Left := 0;
+    Margins.Bottom := 0;
+  end;
+
+  lvShellApplication := TListView.Create(plvShellApplication);
+  with lvShellApplication do
+  begin
+    Left := 10;
+    Top := 10;
+    Width := 20;
+    Height := 20;
+    Parent := plvShellApplication;
+    Align := alClient;
+    BorderStyle := bsNone;
+    ViewStyle := vsReport;
+    ReadOnly := True;
+    RowSelect := True;
+    ColumnClick := False;
+
+    LColumn := Columns.Add;
+    LColumn.Caption := GetLanguageText(Main.Name, 'lvShellApplication:0', lngRus);
+    LColumn.Width := 100;
+
+    LColumn := Columns.Add;
+    LColumn.Caption := GetLanguageText(Main.Name, 'lvShellApplication:1', lngRus);
+    LColumn.AutoSize := True;
+  end;
+  SendMessage(lvShellApplication.Handle, WM_UPDATEUISTATE, MakeLong(UIS_SET, UISF_HIDEFOCUS), 0);
+
+  // ¬кладка - EventKodi
+  tabEventKodi := CreateTab(FPageClient, 'TabEventKodi',
+    GetLanguageText(Main.Name, 'TabEventKodi', lngRus));
+
+  plvEventKodi := TPanel.Create(tabEventKodi);
+  with plvEventKodi do
+  begin
+    Left := 10;
+    Top := 10;
+    Width := 20;
+    Height := 20;
+    Parent := tabEventKodi;
+    Align := alClient;
+    Ctl3D := False;
+    BevelOuter := bvNone;
+    BorderStyle := bsSingle;
+    AlignWithMargins := True;
+    Margins.Left := 0;
+    Margins.Bottom := 0;
+  end;
+
+  lvEventKodi := TListView.Create(plvEventKodi);
+  with lvEventKodi do
+  begin
+    Left := 10;
+    Top := 10;
+    Width := 20;
+    Height := 20;
+    Parent := plvEventKodi;
+    Align := alClient;
+    BorderStyle := bsNone;
+    ViewStyle := vsReport;
+    ReadOnly := True;
+    RowSelect := True;
+    ColumnClick := False;
+
+    LColumn := Columns.Add;
+    LColumn.Caption := GetLanguageText(Main.Name, 'lvEventKodi:0', lngRus);
+    LColumn.Width := 100;
+
+    LColumn := Columns.Add;
+    LColumn.Caption := GetLanguageText(Main.Name, 'lvEventKodi:1', lngRus);
+    LColumn.AutoSize := True;
+  end;
+  SendMessage(lvEventKodi.Handle, WM_UPDATEUISTATE, MakeLong(UIS_SET, UISF_HIDEFOCUS), 0);
+end;
+
+procedure TMain.SettingComponent();
+var
+  LLeft, LWidth: Integer;
+
+  procedure SettingPanelHeader(APanel: TPanel);
+  begin
+    with APanel do
+    begin
+      AutoSize := True;
+      BevelOuter := bvNone;
+      AlignWithMargins := True;
+      ParentBackground := True;
+      Margins.Bottom := 0;
+      Margins.Left := 0;
+      Margins.Right := 0;
+      Margins.Top := 6;
+    end;
+  end;
+
+  procedure SettingLabelHeader(ALabel: TLabel);
+  begin
+    with ALabel do
+    begin
+      AutoSize := False;
+      Top := 0;
+      Left := LLeft;
+      Width := Parent.Width - LLeft;
+      Height := 13;
+      Font.Style := [fsBold];
+      // TRANSPARENT := False;
+      // Color := clGreen;
+    end;
+  end;
+
+  procedure SettingPanel(APanel: TPanel);
+  begin
+    with APanel do
+    begin
+      AutoSize := True;
+      BevelOuter := bvNone;
+      AlignWithMargins := True;
+      ParentBackground := True;
+      Margins.Bottom := 0;
+      Margins.Left := 0;
+      Margins.Right := 0;
+      Margins.Top := 6;
+    end;
+  end;
+
+  procedure SettingLabel(ALabel: TLabel);
+  begin
+    with ALabel do
+    begin
+      Alignment := taRightJustify;
+      AutoSize := False;
+      Top := 0;
+      Left := LLeft * 2;
+      Width := LWidth;
+      Height := 13;
+      // TRANSPARENT := False;
+      // Color := clGreen;
+    end;
+  end;
+
+  procedure SettingValue(ALabel: TLabel);
+  begin
+    with ALabel do
+    begin
+      AutoSize := False;
+      Top := 0;
+      Left := (LLeft * 2) + LWidth + 4;
+      Width := scrbFooter.Width - ALabel.Left - 5;
+      Height := 13;
+      // TRANSPARENT := True;
+      // Color := clRed;
+    end;
+  end;
+
+begin
+  LLeft := 8;
+  LWidth := 120;
+
+  SettingPanelHeader(pShellApplicationHeader);
+  SettingLabelHeader(lShellApplicationHeader);
+
+  // Kodi
+  SettingPanelHeader(pKodiHeader);
+  SettingLabelHeader(lKodiHeader);
+
+  SettingPanel(pKodiPlayingLabel);
+  SettingLabel(lKodiPlayingLabel);
+  SettingValue(lKodiPlayingLabelV);
+
+  SettingPanel(pKodiPlayingFile);
+  SettingLabel(lKodiPlayingFile);
+  SettingValue(lKodiPlayingFileV);
+
+  plvReadComPort.Align := alClient;
+  lvReadComPort.Align := alClient;
+  SendMessage(lvReadComPort.Handle, WM_UPDATEUISTATE, MakeLong(UIS_SET, UISF_HIDEFOCUS), 0);
+
+  Tray.Icon := Application.Icon;
+  pClient.Align := alClient;
+
+end;
+
 procedure TMain.OnWindowsHook(Sender: TObject; const HSHELL: NativeInt;
   const ApplicationData: TEXEVersionData);
 var
   LItem: TListItem;
 begin
   lvShellApplication.Items.BeginUpdate;
-
-  LItem := lvShellApplication.Items.Add;
-  case HSHELL of
-    HSHELL_WINDOWCREATED:
-      begin
-        LItem.Caption := 'WindowCreated';
-        if (FSetting.Kodi.Using) and (ApplicationData.FileName = FSetting.Kodi.FileName) and
-          not Assigned(FKodi) then
-          StartEventKodi;
-      end;
-    HSHELL_WINDOWDESTROYED:
-      LItem.Caption := 'WindowDestroyed';
-    HSHELL_ACTIVATESHELLWINDOW:
-      LItem.Caption := 'ActivateShellWindow';
-    HSHELL_WINDOWACTIVATED:
-      LItem.Caption := 'WindowActivated';
-    HSHELL_GETMINRECT:
-      LItem.Caption := 'GetMinRect';
-    HSHELL_REDRAW:
-      LItem.Caption := 'ReDraw';
-    HSHELL_TASKMAN:
-      LItem.Caption := 'TaskMan';
-    HSHELL_LANGUAGE:
-      LItem.Caption := 'Language';
-    HSHELL_ACCESSIBILITYSTATE:
-      LItem.Caption := 'AccessibilityState';
-    HSHELL_APPCOMMAND:
-      LItem.Caption := 'AppCommand';
-    HSHELL_WINDOWREPLACED:
-      LItem.Caption := 'WindowReplaced';
+  try
+    LItem := lvShellApplication.Items.Add;
+    case HSHELL of
+      HSHELL_WINDOWCREATED:
+        begin
+          LItem.Caption := 'WindowCreated';
+          if (FSetting.Kodi.Using) and (ApplicationData.FileName = FSetting.Kodi.FileName) and
+            not Assigned(FKodi) then
+            StartEventKodi;
+        end;
+      HSHELL_WINDOWDESTROYED:
+        LItem.Caption := 'WindowDestroyed';
+      HSHELL_ACTIVATESHELLWINDOW:
+        LItem.Caption := 'ActivateShellWindow';
+      HSHELL_WINDOWACTIVATED:
+        LItem.Caption := 'WindowActivated';
+      HSHELL_GETMINRECT:
+        LItem.Caption := 'GetMinRect';
+      HSHELL_REDRAW:
+        LItem.Caption := 'ReDraw';
+      HSHELL_TASKMAN:
+        LItem.Caption := 'TaskMan';
+      HSHELL_LANGUAGE:
+        LItem.Caption := 'Language';
+      HSHELL_ACCESSIBILITYSTATE:
+        LItem.Caption := 'AccessibilityState';
+      HSHELL_APPCOMMAND:
+        LItem.Caption := 'AppCommand';
+      HSHELL_WINDOWREPLACED:
+        LItem.Caption := 'WindowReplaced';
+    end;
+    LItem.SubItems.Add(ApplicationData.FileName);
+  finally
+    lvShellApplication.Items.EndUpdate;
   end;
-  LItem.SubItems.Add(ApplicationData.FileName);
 
-  // lvShellApplication.Perform(CM_RecreateWnd, 0, 0);
-  lvShellApplication.Items.EndUpdate;
+  if (GetWindowLong(lvShellApplication.Handle, GWL_STYLE) and WS_HSCROLL) > 0 then
+    lvShellApplication.Perform(CM_RecreateWnd, 0, 0);
+
 end;
 
 procedure TMain.onAppRunning(Running: Boolean);
@@ -1202,6 +1427,9 @@ begin
   finally
     lvReadComPort.Items.EndUpdate;
   end;
+
+  if (GetWindowLong(lvReadComPort.Handle, GWL_STYLE) and WS_HSCROLL) > 0 then
+    lvReadComPort.Perform(CM_RecreateWnd, 0, 0);
 end;
 
 procedure TMain.onExecuteCommand(ECommand: TECommand; ECType: TecType; RepeatPreview: Boolean);
@@ -1228,11 +1456,12 @@ begin
 
     lvRemoteControl.Selected := LItem;
     lvRemoteControl.Items[lvRemoteControl.Items.Count - 1].MakeVisible(True);
-    // lvRemoteControl.Perform(CM_RecreateWnd, 0, 0);
   finally
     lvRemoteControl.Items.EndUpdate;
   end;
 
+  if (GetWindowLong(lvRemoteControl.Handle, GWL_STYLE) and WS_HSCROLL) > 0 then
+    lvRemoteControl.Perform(CM_RecreateWnd, 0, 0);
 end;
 
 procedure TMain.onExecuteCommandSetPreviewCommand(RCommand: PRemoteCommand; Opearion: string);
@@ -1251,15 +1480,15 @@ begin
   try
     LItem := lvEventKodi.Items.Add;
     LItem.Caption := Player;
-    // lvEventKodi.Perform(CM_RecreateWnd, 0, 0);
+
+    lvEventKodi.Selected := LItem;
+    lvEventKodi.Items[lvEventKodi.Items.Count - 1].MakeVisible(True);
   finally
     lvEventKodi.Items.EndUpdate;
   end;
-end;
 
-procedure TMain.onKodiPlaying(Player: string; Playing: TPlaying);
-begin
-  Label1.Caption := Playing.PLabel;
+  if (GetWindowLong(lvEventKodi.Handle, GWL_STYLE) and WS_HSCROLL) > 0 then
+    lvEventKodi.Perform(CM_RecreateWnd, 0, 0);
 end;
 
 procedure TMain.onKodiPlayerState(Player, State: string);
@@ -1271,10 +1500,24 @@ begin
     LItem := lvEventKodi.Items.Add;
     LItem.Caption := Player;
     LItem.SubItems.Add(State);
-    // lvEventKodi.Perform(CM_RecreateWnd, 0, 0);
+
+    lvEventKodi.Selected := LItem;
+    lvEventKodi.Items[lvEventKodi.Items.Count - 1].MakeVisible(True);
   finally
     lvEventKodi.Items.EndUpdate;
   end;
+
+  if (GetWindowLong(lvEventKodi.Handle, GWL_STYLE) and WS_HSCROLL) > 0 then
+    lvEventKodi.Perform(CM_RecreateWnd, 0, 0);
+end;
+
+procedure TMain.onKodiPlaying(Player: string; Playing: TPlaying);
+begin
+  lKodiPlayingLabelV.Caption := Playing.PLabel;
+  SetLabelHeight(lKodiPlayingLabelV);
+
+  lKodiPlayingFileV.Caption := Playing.PFile;
+  SetLabelHeight(lKodiPlayingFileV);
 end;
 
 procedure TMain.onKodiRunning(Running: Boolean);
@@ -1283,28 +1526,6 @@ begin
     StatusBar.Panels[2].Text := GetLanguageMsg('msgSatusBarKodiWorking', lngRus)
   else
     StatusBar.Panels[2].Text := GetLanguageMsg('msgSatusBarKodiNotWorking', lngRus);
-end;
-
-procedure TMain.SaveWindowSetting();
-var
-  IniFile: TIniFile;
-begin
-  IniFile := TIniFile.Create(ExtractFileDir(Application.ExeName) + '\' + FileSetting);
-  try
-    if WindowState = wsMaximized then
-      IniFile.WriteBool('Window', 'Maximized', True)
-    else
-    begin
-      IniFile.WriteBool('Window', 'Maximized', False);
-      IniFile.WriteInteger('Window', 'Left', Main.Left);
-      IniFile.WriteInteger('Window', 'Top', Main.Top);
-      IniFile.WriteInteger('Window', 'Width', Main.Width);
-      IniFile.WriteInteger('Window', 'Height', Main.Height);
-    end;
-    IniFile.WriteInteger('Window', 'Splitter', Main.pComPort.Width);
-  finally
-    IniFile.Free;
-  end;
 end;
 
 procedure TMain.ShowNotification(const Title, AlertBode: string);
