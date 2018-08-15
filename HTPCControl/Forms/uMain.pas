@@ -1269,6 +1269,7 @@ procedure TMain.OnWindowsHook(Sender: TObject; const HSHELL: NativeInt;
   const ApplicationData: TEXEVersionData);
 var
   LItem: TListItem;
+  Send: string;
 begin
   lvShellApplication.Items.BeginUpdate;
   try
@@ -1305,6 +1306,14 @@ begin
     LItem.SubItems.Add(ApplicationData.FileName);
   finally
     lvShellApplication.Items.EndUpdate;
+  end;
+
+  if Assigned(FArduino) and FArduino.Connected then
+  begin
+    Send := ExtractFileName(ApplicationData.FileName);
+    while (length(Send) < 17) do
+      Send := Send + ' ';
+    FArduino.WriteStr(Send);
   end;
 
   if (GetWindowLong(lvShellApplication.Handle, GWL_STYLE) and WS_HSCROLL) > 0 then

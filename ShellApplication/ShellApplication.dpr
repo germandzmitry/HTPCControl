@@ -9,7 +9,11 @@ uses
 {$R *.res}
 
 const
-  HookMap = '{F3E25943-FCC7-43E5-BE22-7CF35EA5FCC6}';
+{$IFDEF WIN32}
+  HookMap = '{F3E25943-FCC7-43E5-BE22-7CF35EA5FCC6-32}';
+{$ELSE}
+  HookMap = '{F3E25943-FCC7-43E5-BE22-7CF35EA5FCC6-64}';
+{$ENDIF}
 
 const
   WM_ShellApplication = WM_USER + 177;

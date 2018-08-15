@@ -51,8 +51,6 @@ object Main: TMain
       item
         Width = 50
       end>
-    ExplicitTop = 530
-    ExplicitWidth = 965
   end
   object pComPort: TPanel
     Left = 0
@@ -63,7 +61,6 @@ object Main: TMain
     BevelOuter = bvNone
     Caption = 'pComPort'
     TabOrder = 1
-    ExplicitHeight = 501
     object ActionToolBar1: TActionToolBar
       Left = 0
       Top = 0
@@ -168,7 +165,6 @@ object Main: TMain
         Caption = 'pKodiPlayingFile'
         ParentBackground = False
         TabOrder = 0
-        ExplicitTop = 62
         DesignSize = (
           449
           27)
@@ -209,9 +205,6 @@ object Main: TMain
         Caption = 'pKodiHeader'
         ParentBackground = False
         TabOrder = 1
-        ExplicitLeft = 0
-        ExplicitTop = 0
-        ExplicitWidth = 417
         object lKodiHeader: TLabel
           Left = 17
           Top = 11
@@ -236,7 +229,6 @@ object Main: TMain
         Caption = 'pKodiPlayingLabel'
         ParentBackground = False
         TabOrder = 2
-        ExplicitTop = 28
         DesignSize = (
           449
           29)
@@ -275,7 +267,6 @@ object Main: TMain
         Caption = 'pShellApplicationHeader'
         ParentBackground = False
         TabOrder = 3
-        ExplicitTop = -8
         object lShellApplicationHeader: TLabel
           Left = 17
           Top = 8
@@ -306,9 +297,6 @@ object Main: TMain
     Font.Style = []
     HorzMargin = 8
     Spacing = 0
-    ExplicitLeft = 8
-    ExplicitTop = 56
-    ExplicitWidth = 834
   end
   object ActionList: TActionList
     Images = ilSmall
@@ -456,7 +444,7 @@ object Main: TMain
     Left = 376
     Top = 128
     Bitmap = {
-      494C01010E002001440110001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
+      494C01010E002001500110001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000004000000001002000000000000040
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000

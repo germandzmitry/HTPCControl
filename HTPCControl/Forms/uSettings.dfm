@@ -129,6 +129,10 @@ object Settings: TSettings
     object TabComPort: TTabSheet
       Caption = 'TabComPort'
       ImageIndex = 1
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
       DesignSize = (
         443
         324)
@@ -256,6 +260,10 @@ object Settings: TSettings
     object TabDB: TTabSheet
       Caption = 'TabDB'
       ImageIndex = 3
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
       DesignSize = (
         443
         324)
@@ -377,6 +385,10 @@ object Settings: TSettings
     object TabKodi: TTabSheet
       Caption = 'TabKodi'
       ImageIndex = 4
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
       DesignSize = (
         443
         324)
@@ -607,7 +619,7 @@ object Settings: TSettings
     Left = 16
     Top = 344
     Bitmap = {
-      494C010101000800380010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
+      494C010101000800400010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000001000000001002000000000000010
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000

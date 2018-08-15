@@ -493,7 +493,7 @@ begin
   Reg := TRegistry.Create;
   try
     Reg.RootKey := HKEY_CURRENT_USER;
-    if Reg.OpenKey('\SOFTWARE\' + Application.Title, true) then
+    if Reg.OpenKey('\SOFTWARE\HTPCControl', true) then
     begin
       Reg.WriteBool('WINDOWCREATED', clbEventApplication.Checked
         [clbEventApplication.Items.IndexOf('WINDOWCREATED')]);

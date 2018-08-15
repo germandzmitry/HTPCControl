@@ -415,7 +415,6 @@ begin
     Result.Handle := Icon;
   except
     Result.Free;
-    raise;
   end;
 end;
 

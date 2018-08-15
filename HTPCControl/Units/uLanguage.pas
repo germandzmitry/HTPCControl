@@ -95,7 +95,7 @@ begin
       { CheckBox }
       else if AForm.Components[i] is TCheckBox then
       begin
-        s := lng.ReadString(AForm.Name, TRadioButton(AForm.Components[i]).Name, '');
+        s := lng.ReadString(AForm.Name, TCheckBox(AForm.Components[i]).Name, '');
         if s <> '' then
           (AForm.Components[i] as TCheckBox).Caption := ' ' + s;
       end
