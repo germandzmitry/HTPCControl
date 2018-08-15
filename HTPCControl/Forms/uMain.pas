@@ -166,8 +166,10 @@ type
     procedure onComPortReadData(Sender: TObject; const Data: string);
 
     procedure onShellApplicationRunning(Running: Boolean);
+{$IFDEF WIN64}
     procedure onShellApplicationStatus_x86(Sender: TObject; const Line: string;
       const Pipe: TsaPipe);
+{$ENDIF}
     procedure OnShellApplicationWindowsHook(Sender: TObject; const HSHELL: NativeInt;
       const ApplicationData: TEXEVersionData);
 
@@ -921,7 +923,9 @@ begin
   begin
     FShellApplication := TShellApplications.Create(Main);
     FShellApplication.OnRunning := onShellApplicationRunning;
+{$IFDEF WIN64}
     FShellApplication.OnStatus_x86 := onShellApplicationStatus_x86;
+{$ENDIF}
     FShellApplication.OnWindowsHook := OnShellApplicationWindowsHook;
     FShellApplication.Start();
     lvShellApplication.Items.Clear;
@@ -1477,11 +1481,14 @@ begin
   end;
 end;
 
+{$IFDEF WIN64}
+
 procedure TMain.onShellApplicationStatus_x86(Sender: TObject; const Line: string;
   const Pipe: TsaPipe);
 begin
   SetMemoValue(mShellApplication_x86V, Line);
 end;
+{$ENDIF}
 
 procedure TMain.onComPortOpen(Sender: TObject);
 var

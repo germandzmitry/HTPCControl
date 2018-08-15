@@ -57,8 +57,9 @@ type
   TAppEvent = procedure(Sender: TObject; const ApplicationData: TEXEVersionData) of object;
   TAppEvents = procedure(Sender: TObject; const HSHELL: NativeInt;
     const ApplicationData: TEXEVersionData) of object;
+{$IFDEF WIN64}
   TAppStatus_x86 = procedure(Sender: TObject; const Line: string; const Pipe: TsaPipe) of object;
-
+{$ENDIF}
   PHICON = ^HICON;
 
 type
@@ -76,8 +77,9 @@ type
 {$ENDIF}
     FOnRunning: TAppRunningEvent;
     FOnWindowsHook: TAppEvents;
+{$IFDEF WIN64}
     FOnStatus_x86: TAppStatus_x86;
-
+{$ENDIF}
     FOnWindowCreated: TAppEvent;
     FOnWindowDestroyed: TAppEvent;
     FOnActivateShellWindow: TAppEvent;
@@ -93,7 +95,9 @@ type
     procedure ShellApplication(var Msg: TMessage); message WM_ShellApplication;
 
     procedure DoRunning(Running: boolean); dynamic;
+{$IFDEF WIN64}
     procedure DoStatus_x86(Line: string; Pipe: TsaPipe); dynamic;
+{$ENDIF}
     procedure DoWindowsHook(HSHELL: NativeInt; ApplicationData: TEXEVersionData); dynamic;
     procedure DoWindowCreated(ApplicationData: TEXEVersionData); dynamic;
     procedure DoWindowDestroyed(ApplicationData: TEXEVersionData); dynamic;
@@ -120,8 +124,9 @@ type
     destructor Destroy; override;
 
     property OnRunning: TAppRunningEvent read FOnRunning write FOnRunning;
+{$IFDEF WIN64}
     property OnStatus_x86: TAppStatus_x86 read FOnStatus_x86 write FOnStatus_x86;
-
+{$ENDIF}
     property OnWindowsHook: TAppEvents read FOnWindowsHook write FOnWindowsHook;
     property OnWindowCreated: TAppEvent read FOnWindowCreated write FOnWindowCreated;
     property OnWindowDestroyed: TAppEvent read FOnWindowDestroyed write FOnWindowDestroyed;
@@ -444,11 +449,14 @@ begin
     FOnRunning(Running);
 end;
 
+{$IFDEF WIN64}
+
 procedure TShellApplications.DoStatus_x86(Line: string; Pipe: TsaPipe);
 begin
   if Assigned(FOnStatus_x86) then
     FOnStatus_x86(Self, Line, Pipe);
 end;
+{$ENDIF}
 
 procedure TShellApplications.DoTaskMan(ApplicationData: TEXEVersionData);
 begin
