@@ -1,6 +1,6 @@
 unit uMain;
-
-// https://sourceforge.net/projects/comport/?source=typ_redirect
+
+{ https://sourceforge.net/projects/comport/?source=typ_redirect }
 
 interface
 
@@ -58,18 +58,29 @@ type
     lKodiPlayingLabel: TLabel;
     ActKodiStart: TAction;
     ActKodiStop: TAction;
-    lKodiHeader: TLabel;
-    lKodiPlayingLabelV: TLabel;
     SplitterBottom: TSplitter;
     scrbFooter: TScrollBox;
     plvReadComPort: TPanel;
     lKodiPlayingFile: TLabel;
-    lKodiPlayingFileV: TLabel;
     pKodiPlayingFile: TPanel;
     pKodiHeader: TPanel;
     pKodiPlayingLabel: TPanel;
     pShellApplicationHeader: TPanel;
-    lShellApplicationHeader: TLabel;
+    pShellApplication_x86: TPanel;
+    lShellApplication_x86: TLabel;
+    pShellApplicationFile: TPanel;
+    lShellApplicationFile: TLabel;
+    pRemoteControlHeader: TPanel;
+    pRemoteControlLast: TPanel;
+    mShellApplicationFileV: TMemo;
+    mShellApplication_x86V: TMemo;
+    mKodiPlayingLabelV: TMemo;
+    mKodiPlayingFileV: TMemo;
+    mRemoteControlLastV: TMemo;
+    mRemoteControlLastL: TMemo;
+    mRemoteControlH: TMemo;
+    mShellApplicationH: TMemo;
+    mKodiH: TMemo;
     procedure FormCreate(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure FormShow(Sender: TObject);
@@ -106,6 +117,8 @@ type
     procedure AppEventsMessage(var Msg: tagMSG; var Handled: Boolean);
 
     procedure lvRemoteControlCustomDrawSubItem(Sender: TCustomListView; Item: TListItem;
+      SubItem: Integer; State: TCustomDrawState; var DefaultDraw: Boolean);
+    procedure lvShellApplicationCustomDrawSubItem(Sender: TCustomListView; Item: TListItem;
       SubItem: Integer; State: TCustomDrawState; var DefaultDraw: Boolean);
     procedure ActKodiStartExecute(Sender: TObject);
     procedure ActKodiStopExecute(Sender: TObject);
@@ -147,16 +160,16 @@ type
     procedure StopEventKodi();
 
     procedure ShowNotification(const Title, AlertBode: string);
-    procedure SmallIconFromExecutableFile(const FileName: string; var Icon: TIcon);
 
     procedure onComPortOpen(Sender: TObject);
     procedure onComPortClose(Sender: TObject);
     procedure onComPortReadData(Sender: TObject; const Data: string);
 
-    procedure OnWindowsHook(Sender: TObject; const HSHELL: NativeInt;
+    procedure onShellApplicationRunning(Running: Boolean);
+    procedure onShellApplicationStatus_x86(Sender: TObject; const Line: string;
+      const Pipe: TsaPipe);
+    procedure OnShellApplicationWindowsHook(Sender: TObject; const HSHELL: NativeInt;
       const ApplicationData: TEXEVersionData);
-
-    procedure onAppRunning(Running: Boolean);
 
     procedure onExecuteCommand(ECommand: TECommand; ECType: TecType; RepeatPreview: Boolean);
     procedure onExecuteCommandSetPreviewCommand(RCommand: PRemoteCommand; Opearion: string);
@@ -171,7 +184,8 @@ type
     procedure SettingComponent();
 
     function Processing: Boolean;
-    procedure SetLabelHeight(ALabel: TLabel);
+    procedure SetMemoHeight(AMemo: TMemo);
+    procedure SetMemoValue(AMemo: TMemo; Value: string);
   public
     { Public declarations }
     property DataBase: TDataBase read FDataBase;
@@ -204,23 +218,10 @@ procedure TMain.FormCreate(Sender: TObject);
       endpointVolume.SetMasterVolumeLevelScalar(Volume / 100, nil);
   end;
 
-var
-  i: Integer;
 begin
 
   CreateComponent;
   SettingComponent;
-
-  // чистим контролы
-  for i := 0 to self.ComponentCount - 1 do
-  begin
-    // Label
-    if self.Components[i] is TLabel then
-      TLabel(self.Components[i]).Caption := '';
-    // Panel
-    if self.Components[i] is TPanel then
-      TPanel(self.Components[i]).Caption := '';
-  end;
 
   LoadWindowSetting;
   FSetting := uSettings.getSetting();
@@ -243,7 +244,7 @@ begin
   end;
 
   onComPortClose(nil);
-  onAppRunning(False);
+  onShellApplicationRunning(False);
   onKodiRunning(False);
 
   try
@@ -279,7 +280,7 @@ begin
   Main.Caption := Application.Title + ' (x86)';
 {$ELSE}
   Main.Caption := Application.Title + ' (x64)';
-{$IFEND}
+{$ENDIF}
 end;
 
 procedure TMain.FormClose(Sender: TObject; var Action: TCloseAction);
@@ -560,11 +561,15 @@ end;
 
 procedure TMain.ActKodiStopExecute(Sender: TObject);
 begin
-  if Assigned(FKodi) then
-  begin
-    FKodi.Terminate;
-    FreeAndNil(FKodi);
-  end;
+  try
+    StopEventKodi;
+  except
+    on E: Exception do
+    begin
+      FreeAndNil(FKodi);
+      MessageDlg(E.Message, mtError, [mbOK], 0);
+    end;
+  end
 end;
 
 procedure TMain.ActToolsDeviceManagerExecute(Sender: TObject);
@@ -636,20 +641,47 @@ begin
   end;
 end;
 
-procedure TMain.SetLabelHeight(ALabel: TLabel);
-var
-  Rect: TRect;
-begin
-  // if ALabel.Canvas.TextWidth(Text) < ALabel.Width then
-  // begin
-  Rect.Left := 0;
-  Rect.Top := 0;
-  Rect.Right := ALabel.Width;
-  Rect.Bottom := ALabel.Height;
+// procedure TMain.SetLabelHeight(ALabel: TLabel);
+// var
+// Rect: TRect;
+// begin
+// // if ALabel.Canvas.TextWidth(Text) < ALabel.Width then
+// // begin
+// Rect.Left := 0;
+// Rect.Top := 0;
+// Rect.Right := ALabel.Width;
+// Rect.Bottom := ALabel.Height;
+//
+// ALabel.Height := DrawText(ALabel.Canvas.Handle, PChar(ALabel.Caption), -1, Rect,
+// DT_CALCRECT or DT_WORDBREAK);
+// // end;
+// end;
 
-  ALabel.Height := DrawText(ALabel.Canvas.Handle, PChar(ALabel.Caption), -1, Rect,
-    DT_CALCRECT or DT_WORDBREAK);
-  // end;
+procedure TMain.SetMemoHeight(AMemo: TMemo);
+var
+  Can: TCanvas;
+begin
+  Can := TCanvas.Create;
+  Can.Handle := CreateCompatibleDC(GetDC(0));
+  try
+    Can.Font.Assign(AMemo.Font);
+    AMemo.Height := Can.TextHeight('Wg') * AMemo.Lines.Count;
+  finally
+    DeleteDC(Can.Handle);
+    Can.Handle := 0;
+    Can.Free;
+  end;
+end;
+
+procedure TMain.SetMemoValue(AMemo: TMemo; Value: string);
+begin
+  AMemo.Lines.Clear;
+  // AMemo.
+  // AMemo.Lines.Add(Value);
+  // SetScrollPos(AMemo.Handle, SB_VERT, 0, False);
+  AMemo.Lines.Text := Value;
+  // AMemo.Lines.CommaText := Value;
+  SetMemoHeight(AMemo);
 end;
 
 procedure TMain.LoadWindowSetting;
@@ -698,8 +730,13 @@ end;
 
 procedure TMain.scrbFooterResize(Sender: TObject);
 begin
-  SetLabelHeight(lKodiPlayingLabelV);
-  SetLabelHeight(lKodiPlayingFileV);
+  SetMemoHeight(mRemoteControlLastV);
+
+  SetMemoHeight(mShellApplication_x86V);
+  SetMemoHeight(mShellApplicationFileV);
+
+  SetMemoHeight(mKodiPlayingLabelV);
+  SetMemoHeight(mKodiPlayingFileV);
 end;
 
 procedure TMain.lvRemoteControlCustomDrawSubItem(Sender: TCustomListView; Item: TListItem;
@@ -728,9 +765,43 @@ begin
           else
             ilSmall.GetIcon(12, LIcon);
         ecApplication:
-          if FileExists(LEPCommand.ECommand.Application) then
-            SmallIconFromExecutableFile(LEPCommand.ECommand.Application, LIcon)
+          if FileExists(String(LEPCommand.ECommand.Application)) then
+            SmallIconEXE(String(LEPCommand.ECommand.Application), LIcon)
+            // SmallIconFromExecutableFile(LEPCommand.ECommand.Application, LIcon)
       end;
+
+      Sender.Canvas.Draw(aRect.Left + 5, aRect.Top + 1, LIcon);
+      LLeft := LIcon.Width + 5;
+    finally
+      LIcon.Free;
+    end;
+
+    Sender.Canvas.TextOut(aRect.Left + 5 + LLeft, aRect.Top + 1, LSubItemText);
+    DefaultDraw := False;
+  end;
+end;
+
+procedure TMain.lvShellApplicationCustomDrawSubItem(Sender: TCustomListView; Item: TListItem;
+  SubItem: Integer; State: TCustomDrawState; var DefaultDraw: Boolean);
+var
+  aRect: TRect;
+  LIcon: TIcon;
+  LSubItemText: string;
+  LLeft: Integer;
+begin
+  if (SubItem = 1) then
+  begin
+    ListView_GetSubItemRect(Sender.Handle, Item.Index, SubItem, LVIR_BOUNDS, @aRect);
+    SetBkMode(Sender.Canvas.Handle, TRANSPARENT);
+    LSubItemText := Item.SubItems[SubItem - 1];
+    LLeft := 0;
+
+    LIcon := TIcon.Create();
+    try
+
+      if FileExists(LSubItemText) then
+        SmallIconEXE(LSubItemText, LIcon);
+      // SmallIconFromExecutableFile(LSubItemText, LIcon);
 
       Sender.Canvas.Draw(aRect.Left + 5, aRect.Top + 1, LIcon);
       LLeft := LIcon.Width + 5;
@@ -849,8 +920,9 @@ begin
   if not Assigned(FShellApplication) or not FShellApplication.Starting then
   begin
     FShellApplication := TShellApplications.Create(Main);
-    FShellApplication.OnRunning := onAppRunning;
-    FShellApplication.OnWindowsHook := OnWindowsHook;
+    FShellApplication.OnRunning := onShellApplicationRunning;
+    FShellApplication.OnStatus_x86 := onShellApplicationStatus_x86;
+    FShellApplication.OnWindowsHook := OnShellApplicationWindowsHook;
     FShellApplication.Start();
     lvShellApplication.Items.Clear;
   end;
@@ -884,13 +956,17 @@ end;
 
 procedure TMain.StopEventKodi();
 begin
-  //
+  if Assigned(FKodi) then
+    try
+      FKodi.Terminate;
+    finally
+      FreeAndNil(FKodi);
+    end;
 end;
 
 procedure TMain.CreateActionMenu;
 var
-  LItem, LItemGlobal, LItemSub: TActionClientItem;
-  LActionBarIndex: Integer;
+  LItem, LItemGlobal: TActionClientItem;
 begin
   with ActionManager.ActionBars[0] do
   begin
@@ -1101,6 +1177,7 @@ begin
     ReadOnly := True;
     RowSelect := True;
     ColumnClick := False;
+    OnCustomDrawSubItem := lvShellApplicationCustomDrawSubItem;
 
     LColumn := Columns.Add;
     LColumn.Caption := GetLanguageText(Main.Name, 'lvShellApplication:0', lngRus);
@@ -1161,13 +1238,14 @@ end;
 
 procedure TMain.SettingComponent();
 var
-  LLeft, LWidth: Integer;
+  LLeft, LWidth, i: Integer;
 
   procedure SettingPanelHeader(APanel: TPanel);
   begin
     with APanel do
     begin
       AutoSize := True;
+      Enabled := False;
       BevelOuter := bvNone;
       AlignWithMargins := True;
       ParentBackground := True;
@@ -1178,18 +1256,16 @@ var
     end;
   end;
 
-  procedure SettingLabelHeader(ALabel: TLabel);
+  procedure SettingLabelHeader(AMemo: TMemo);
   begin
-    with ALabel do
+    with AMemo do
     begin
-      AutoSize := False;
       Top := 0;
       Left := LLeft;
       Width := Parent.Width - LLeft;
       Height := 13;
       Font.Style := [fsBold];
-      // TRANSPARENT := False;
-      // Color := clGreen;
+      BorderStyle := bsNone;
     end;
   end;
 
@@ -1198,17 +1274,18 @@ var
     with APanel do
     begin
       AutoSize := True;
+      Enabled := False;
       BevelOuter := bvNone;
       AlignWithMargins := True;
       ParentBackground := True;
       Margins.Bottom := 0;
       Margins.Left := 0;
-      Margins.Right := 0;
+      Margins.Right := 3;
       Margins.Top := 6;
     end;
   end;
 
-  procedure SettingLabel(ALabel: TLabel);
+  procedure SettingLabel(ALabel: TLabel); overload;
   begin
     with ALabel do
     begin
@@ -1218,43 +1295,101 @@ var
       Left := LLeft * 2;
       Width := LWidth;
       Height := 13;
+      WordWrap := True;
+
+      // ParentColor := False;
       // TRANSPARENT := False;
       // Color := clGreen;
     end;
   end;
 
-  procedure SettingValue(ALabel: TLabel);
+  procedure SettingLabel(AMemo: TMemo); overload;
   begin
-    with ALabel do
+    with AMemo do
     begin
-      AutoSize := False;
+      Alignment := taRightJustify;
+      Top := 0;
+      Left := LLeft * 2;
+      Width := LWidth;
+      Height := 13;
+      BorderStyle := bsNone;
+      ReadOnly := True;
+
+      // ParentColor := False;
+      // Color := clGreen;
+    end;
+  end;
+
+// procedure SettingValue(ALabel: TLabel);
+// begin
+// with ALabel do
+// begin
+// AutoSize := False;
+// Top := 0;
+// Left := (LLeft * 2) + LWidth + 4;
+// Width := scrbFooter.Width - ALabel.Left - 10;
+// Height := 13;
+// WordWrap := True;
+// Anchors := [akLeft, akTop, akRight];
+//
+// // ParentColor := False;
+// // TRANSPARENT := False;
+// // Color := clRed;
+// end;
+// end;
+
+  procedure SettingValue(AMemo: TMemo);
+  begin
+    with AMemo do
+    begin
       Top := 0;
       Left := (LLeft * 2) + LWidth + 4;
-      Width := scrbFooter.Width - ALabel.Left - 5;
+      Width := scrbFooter.Width - AMemo.Left - 10;
       Height := 13;
-      // TRANSPARENT := True;
+      Anchors := [akLeft, akTop, akRight];
+      BorderStyle := bsNone;
+      ReadOnly := True;
+
+      // ParentColor := False;
       // Color := clRed;
     end;
   end;
 
 begin
   LLeft := 8;
-  LWidth := 120;
+  LWidth := 150;
 
+  // RemoteControl
+  SettingPanelHeader(pRemoteControlHeader);
+  SettingLabelHeader(mRemoteControlH);
+
+  SettingPanel(pRemoteControlLast);
+  SettingLabel(mRemoteControlLastL);
+  SettingValue(mRemoteControlLastV);
+
+  // ShellApplication
   SettingPanelHeader(pShellApplicationHeader);
-  SettingLabelHeader(lShellApplicationHeader);
+  SettingLabelHeader(mShellApplicationH);
+
+  SettingPanel(pShellApplication_x86);
+  SettingLabel(lShellApplication_x86);
+  SettingValue(mShellApplication_x86V);
+
+  SettingPanel(pShellApplicationFile);
+  SettingLabel(lShellApplicationFile);
+  SettingValue(mShellApplicationFileV);
 
   // Kodi
   SettingPanelHeader(pKodiHeader);
-  SettingLabelHeader(lKodiHeader);
+  SettingLabelHeader(mKodiH);
 
   SettingPanel(pKodiPlayingLabel);
   SettingLabel(lKodiPlayingLabel);
-  SettingValue(lKodiPlayingLabelV);
+  SettingValue(mKodiPlayingLabelV);
 
   SettingPanel(pKodiPlayingFile);
   SettingLabel(lKodiPlayingFile);
-  SettingValue(lKodiPlayingFileV);
+  SettingValue(mKodiPlayingFileV);
 
   plvReadComPort.Align := alClient;
   lvReadComPort.Align := alClient;
@@ -1263,13 +1398,26 @@ begin
   Tray.Icon := Application.Icon;
   pClient.Align := alClient;
 
+  // чистим контролы
+  for i := 0 to self.ComponentCount - 1 do
+  begin
+    // Label
+    if self.Components[i] is TLabel then
+      TLabel(self.Components[i]).Caption := '';
+    // Memo
+    if self.Components[i] is TMemo then
+      TMemo(self.Components[i]).Lines.Clear;
+    // Panel
+    if self.Components[i] is TPanel then
+      TPanel(self.Components[i]).Caption := '';
+  end;
+
 end;
 
-procedure TMain.OnWindowsHook(Sender: TObject; const HSHELL: NativeInt;
+procedure TMain.OnShellApplicationWindowsHook(Sender: TObject; const HSHELL: NativeInt;
   const ApplicationData: TEXEVersionData);
 var
   LItem: TListItem;
-  Send: string;
 begin
   lvShellApplication.Items.BeginUpdate;
   try
@@ -1304,29 +1452,35 @@ begin
         LItem.Caption := 'WindowReplaced';
     end;
     LItem.SubItems.Add(ApplicationData.FileName);
+
+    lvShellApplication.Selected := LItem;
+    lvShellApplication.Items[lvShellApplication.Items.Count - 1].MakeVisible(True);
   finally
     lvShellApplication.Items.EndUpdate;
-  end;
-
-  if Assigned(FArduino) and FArduino.Connected then
-  begin
-    Send := ExtractFileName(ApplicationData.FileName);
-    while (length(Send) < 17) do
-      Send := Send + ' ';
-    FArduino.WriteStr(Send);
   end;
 
   if (GetWindowLong(lvShellApplication.Handle, GWL_STYLE) and WS_HSCROLL) > 0 then
     lvShellApplication.Perform(CM_RecreateWnd, 0, 0);
 
+  SetMemoValue(mShellApplicationFileV, ApplicationData.FileName);
+
 end;
 
-procedure TMain.onAppRunning(Running: Boolean);
+procedure TMain.onShellApplicationRunning(Running: Boolean);
 begin
   if Running then
     StatusBar.Panels[1].Text := GetLanguageMsg('msgSatusBarAppWorking', lngRus)
   else
+  begin
+    SetMemoValue(mShellApplication_x86V, '');
     StatusBar.Panels[1].Text := GetLanguageMsg('msgSatusBarAppNotWorking', lngRus);
+  end;
+end;
+
+procedure TMain.onShellApplicationStatus_x86(Sender: TObject; const Line: string;
+  const Pipe: TsaPipe);
+begin
+  SetMemoValue(mShellApplication_x86V, Line);
 end;
 
 procedure TMain.onComPortOpen(Sender: TObject);
@@ -1423,8 +1577,8 @@ begin
       begin
         TReadComPort(LItem.Data^).Exists := True;
 
-        if length(Trim(RCommand.Desc)) > 0 then
-          LItem.SubItems[0] := Data + ' (' + RCommand.Desc + ')';
+        if length(Trim(String(RCommand.Desc))) > 0 then
+          LItem.SubItems[0] := Data + ' (' + String(RCommand.Desc) + ')';
 
         FExecuteCommand.Execute(RCommand);
       end;
@@ -1449,7 +1603,7 @@ begin
   lvRemoteControl.Items.BeginUpdate;
   try
     LItem := lvRemoteControl.Items.Add;
-    LItem.Caption := ECommand.Command.Command;
+    LItem.Caption := String(ECommand.Command.Command);
 
     new(LEPCommand);
     LEPCommand^.ECommand := ECommand;
@@ -1476,9 +1630,9 @@ end;
 procedure TMain.onExecuteCommandSetPreviewCommand(RCommand: PRemoteCommand; Opearion: string);
 begin
   if RCommand = nil then
-    StatusBar.Panels[3].Text := ''
+    SetMemoValue(mRemoteControlLastV, '')
   else
-    StatusBar.Panels[3].Text := Opearion;
+    SetMemoValue(mRemoteControlLastV, Opearion);
 end;
 
 procedure TMain.onKodiPlayer(Player: string);
@@ -1522,11 +1676,8 @@ end;
 
 procedure TMain.onKodiPlaying(Player: string; Playing: TPlaying);
 begin
-  lKodiPlayingLabelV.Caption := Playing.PLabel;
-  SetLabelHeight(lKodiPlayingLabelV);
-
-  lKodiPlayingFileV.Caption := Playing.PFile;
-  SetLabelHeight(lKodiPlayingFileV);
+  SetMemoValue(mKodiPlayingLabelV, Playing.PLabel);
+  SetMemoValue(mKodiPlayingFileV, Playing.PFile);
 end;
 
 procedure TMain.onKodiRunning(Running: Boolean);
@@ -1534,7 +1685,11 @@ begin
   if Running then
     StatusBar.Panels[2].Text := GetLanguageMsg('msgSatusBarKodiWorking', lngRus)
   else
+  begin
     StatusBar.Panels[2].Text := GetLanguageMsg('msgSatusBarKodiNotWorking', lngRus);
+    SetMemoValue(mKodiPlayingLabelV, '');
+    SetMemoValue(mKodiPlayingFileV, '');
+  end;
 end;
 
 procedure TMain.ShowNotification(const Title, AlertBode: string);
@@ -1553,18 +1708,5 @@ begin
   end;
 end;
 
-procedure TMain.SmallIconFromExecutableFile(const FileName: string; var Icon: TIcon);
-var
-  LIcon: HICON;
-  ExtractedIconCount: UINT;
-begin
-  try
-    ExtractedIconCount := ExtractIconEx(PChar(FileName), 0, nil, @LIcon, 1);
-    Win32Check(ExtractedIconCount = 1);
-    Icon.Handle := LIcon;
-  except
-
-  end;
-end;
-
 end.
+

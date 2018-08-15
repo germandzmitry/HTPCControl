@@ -1,5 +1,5 @@
 unit uLanguage;
-
+
 interface
 
 uses
@@ -65,6 +65,9 @@ begin
 
     for i := 0 to AForm.ComponentCount - 1 do
     begin
+      if length(AForm.Components[i].Name) = 0 then
+        Continue;
+
       { Button }
       if AForm.Components[i] is TButton then
       begin
@@ -115,6 +118,13 @@ begin
         s := lng.ReadString(AForm.Name, TLinkLabel(AForm.Components[i]).Name + ':h', '');
         if s <> '' then
           TLinkLabel(AForm.Components[i]).Hint := s;
+      end
+      { Memo }
+      else if AForm.Components[i] is TMemo then
+      begin
+        s := lng.ReadString(AForm.Name, TMemo(AForm.Components[i]).Name, '');
+        if s <> '' then
+          TMemo(AForm.Components[i]).lines.Text := s
       end
       { Panel }
       else if AForm.Components[i] is TPanel then
@@ -171,3 +181,4 @@ begin
 end;
 
 end.
+

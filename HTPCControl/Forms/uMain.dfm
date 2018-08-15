@@ -2,7 +2,7 @@ object Main: TMain
   Left = 0
   Top = 0
   Caption = 'Main'
-  ClientHeight = 553
+  ClientHeight = 579
   ClientWidth = 832
   Color = clBtnFace
   DoubleBuffered = True
@@ -23,7 +23,7 @@ object Main: TMain
     Left = 337
     Top = 29
     Width = 6
-    Height = 505
+    Height = 531
     Color = clBtnFace
     ParentColor = False
     ResizeStyle = rsUpdate
@@ -32,7 +32,7 @@ object Main: TMain
   end
   object StatusBar: TStatusBar
     Left = 0
-    Top = 534
+    Top = 560
     Width = 832
     Height = 19
     Panels = <
@@ -56,7 +56,7 @@ object Main: TMain
     Left = 0
     Top = 29
     Width = 337
-    Height = 505
+    Height = 531
     Align = alLeft
     BevelOuter = bvNone
     Caption = 'pComPort'
@@ -121,15 +121,15 @@ object Main: TMain
   end
   object pClient: TPanel
     Left = 349
-    Top = 193
+    Top = 168
     Width = 460
-    Height = 335
+    Height = 376
     BevelOuter = bvNone
     Caption = 'pClient'
     TabOrder = 2
     object SplitterBottom: TSplitter
       Left = 0
-      Top = 146
+      Top = 58
       Width = 460
       Height = 6
       Cursor = crVSplit
@@ -141,9 +141,9 @@ object Main: TMain
     object scrbFooter: TScrollBox
       AlignWithMargins = True
       Left = 0
-      Top = 152
+      Top = 64
       Width = 457
-      Height = 180
+      Height = 309
       Margins.Left = 0
       Margins.Top = 0
       Align = alBottom
@@ -158,19 +158,16 @@ object Main: TMain
       object pKodiPlayingFile: TPanel
         AlignWithMargins = True
         Left = 3
-        Top = 102
+        Top = 226
         Width = 449
         Height = 27
         Align = alTop
         Caption = 'pKodiPlayingFile'
         ParentBackground = False
         TabOrder = 0
-        DesignSize = (
-          449
-          27)
         object lKodiPlayingFile: TLabel
           Left = 17
-          Top = 10
+          Top = 7
           Width = 72
           Height = 13
           Margins.Left = 16
@@ -182,35 +179,31 @@ object Main: TMain
           Caption = 'lKodiPlayingFile'
           ParentBiDiMode = False
         end
-        object lKodiPlayingFileV: TLabel
-          Left = 364
-          Top = 10
-          Width = 78
-          Height = 13
-          Anchors = [akLeft, akTop, akRight]
-          Caption = 'lKodiPlayingFileV'
-          Color = clRed
-          ParentColor = False
-          Transparent = True
-          WordWrap = True
+        object mKodiPlayingFileV: TMemo
+          Left = 296
+          Top = 5
+          Width = 147
+          Height = 17
+          Lines.Strings = (
+            'mKodiPlayingFileV')
+          TabOrder = 0
         end
       end
       object pKodiHeader: TPanel
         AlignWithMargins = True
         Left = 3
-        Top = 34
+        Top = 158
         Width = 449
         Height = 27
         Align = alTop
         Caption = 'pKodiHeader'
         ParentBackground = False
         TabOrder = 1
-        object lKodiHeader: TLabel
+        object TLabel
           Left = 17
-          Top = 11
-          Width = 57
+          Top = 7
+          Width = 3
           Height = 13
-          Caption = 'lKodiHeader'
           Font.Charset = DEFAULT_CHARSET
           Font.Color = clWindowText
           Font.Height = -11
@@ -218,23 +211,29 @@ object Main: TMain
           Font.Style = []
           ParentFont = False
         end
+        object mKodiH: TMemo
+          Left = 17
+          Top = 5
+          Width = 128
+          Height = 17
+          Lines.Strings = (
+            'mKodiH')
+          TabOrder = 0
+        end
       end
       object pKodiPlayingLabel: TPanel
         AlignWithMargins = True
         Left = 3
-        Top = 67
+        Top = 191
         Width = 449
         Height = 29
         Align = alTop
         Caption = 'pKodiPlayingLabel'
         ParentBackground = False
         TabOrder = 2
-        DesignSize = (
-          449
-          29)
         object lKodiPlayingLabel: TLabel
           Left = 17
-          Top = 10
+          Top = 8
           Width = 81
           Height = 13
           Margins.Left = 16
@@ -244,35 +243,137 @@ object Main: TMain
           Alignment = taRightJustify
           Caption = 'lKodiPlayingLabel'
         end
-        object lKodiPlayingLabelV: TLabel
-          Left = 356
-          Top = 10
-          Width = 87
-          Height = 13
-          Anchors = [akLeft, akTop, akRight]
-          Caption = 'lKodiPlayingLabelV'
-          Color = clYellow
-          ParentColor = False
-          Transparent = True
-          WordWrap = True
+        object mKodiPlayingLabelV: TMemo
+          Left = 296
+          Top = 6
+          Width = 147
+          Height = 17
+          Lines.Strings = (
+            'mKodiPlayingLabelV')
+          TabOrder = 0
         end
       end
       object pShellApplicationHeader: TPanel
         AlignWithMargins = True
         Left = 3
-        Top = 3
+        Top = 65
         Width = 449
         Height = 25
         Align = alTop
         Caption = 'pShellApplicationHeader'
         ParentBackground = False
         TabOrder = 3
-        object lShellApplicationHeader: TLabel
+        object mShellApplicationH: TMemo
           Left = 17
-          Top = 8
-          Width = 111
+          Top = 4
+          Width = 128
+          Height = 17
+          Lines.Strings = (
+            'mShellApplicationH')
+          TabOrder = 0
+        end
+      end
+      object pShellApplication_x86: TPanel
+        AlignWithMargins = True
+        Left = 3
+        Top = 96
+        Width = 449
+        Height = 25
+        Align = alTop
+        Caption = 'pShellApplication_x86'
+        ParentBackground = False
+        TabOrder = 4
+        object lShellApplication_x86: TLabel
+          Left = 17
+          Top = 6
+          Width = 100
           Height = 13
-          Caption = 'lShellApplicationHeader'
+          Caption = 'lShellApplication_x86'
+        end
+        object mShellApplication_x86V: TMemo
+          Left = 296
+          Top = 4
+          Width = 147
+          Height = 17
+          Lines.Strings = (
+            'mShellApplication_x86')
+          TabOrder = 0
+        end
+      end
+      object pShellApplicationFile: TPanel
+        AlignWithMargins = True
+        Left = 3
+        Top = 127
+        Width = 449
+        Height = 25
+        Align = alTop
+        Caption = 'pShellApplicationFile'
+        ParentBackground = False
+        TabOrder = 5
+        object lShellApplicationFile: TLabel
+          Left = 17
+          Top = 6
+          Width = 92
+          Height = 13
+          Caption = 'lShellApplicationFile'
+        end
+        object mShellApplicationFileV: TMemo
+          Left = 296
+          Top = 4
+          Width = 147
+          Height = 17
+          Lines.Strings = (
+            'mShellApplicationFile')
+          TabOrder = 0
+        end
+      end
+      object pRemoteControlHeader: TPanel
+        AlignWithMargins = True
+        Left = 3
+        Top = 3
+        Width = 449
+        Height = 25
+        Align = alTop
+        Caption = 'pRemoteControlHeader'
+        ParentBackground = False
+        TabOrder = 6
+        object mRemoteControlH: TMemo
+          Left = 17
+          Top = 4
+          Width = 128
+          Height = 17
+          Lines.Strings = (
+            'mRemoteControlH')
+          TabOrder = 0
+        end
+      end
+      object pRemoteControlLast: TPanel
+        AlignWithMargins = True
+        Left = 3
+        Top = 34
+        Width = 449
+        Height = 25
+        Align = alTop
+        Caption = 'pRemoteControlLast'
+        ParentBackground = False
+        TabOrder = 7
+        object mRemoteControlLastV: TMemo
+          Left = 296
+          Top = 4
+          Width = 147
+          Height = 17
+          Lines.Strings = (
+            'mRemoteControlLastV')
+          TabOrder = 0
+        end
+        object mRemoteControlLastL: TMemo
+          Left = 17
+          Top = 4
+          Width = 128
+          Height = 17
+          Lines.Strings = (
+            'mRemoteControlLastL')
+          TabOrder = 1
         end
       end
     end
@@ -444,7 +545,7 @@ object Main: TMain
     Left = 376
     Top = 128
     Bitmap = {
-      494C01010E002001500110001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
+      494C01010E0020015C0110001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000004000000001002000000000000040
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000
