@@ -45,13 +45,15 @@ void loop()
         for (int i = 0;  i < 6;  i++) {
           data = data << 1 | bitRead(results.value, i);
         }
-        // Выводим код клавиши в порт
-        Serial.println(data, DEC); 
 
         // Слишком бцстро приходит повтор команды, 
         // после песле первой команды, не повтора делаем паузу
         if (prevToggle != toggle) {
+          // Выводим код клавиши в порт
+          Serial.println(data, DEC); 
           delay(100);
+        } else {
+          Serial.println(0xFFFFFFFF, DEC); 
         }
         prevToggle = toggle;
         break;
