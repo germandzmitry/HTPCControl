@@ -59,6 +59,7 @@
 
 # Database
 *.accdb
+*.laccdb
 *.mdb
 
 # Delphi history and backups
