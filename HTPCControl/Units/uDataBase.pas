@@ -11,92 +11,140 @@ const
   tcKeyboard = 'K';
 
 type
+  // Таблица KeyboardGroup
+  TKeyboardGroup = Record
+    Group: integer;
+    Descciption: string[255];
+  end;
 
-  TKeyKeyboard = record
+  TKeyboardGroups = array of TKeyboardGroup;
+
+  // Таблица Keyboard
+  TKeyboard = record
     Key: integer;
     Desc: String[255];
     Group: integer;
   end;
 
-  PKeyKeyboard = ^TKeyKeyboard;
-  TKeyboards = array of TKeyKeyboard;
+  PKeyboard = ^TKeyboard;
+  TKeyboards = array of TKeyboard;
 
+  // Таблица RemoteControl
   TRemoteCommand = record
     Command: string[100];
     Desc: string[255];
-    RepeatPreview: boolean;
+    RepeatPrevious: boolean;
   end;
 
   PRemoteCommand = ^TRemoteCommand;
+  TRemoteCommands = array of TRemoteCommand;
 
-  TVCommand = Record
+  // Таблица OperationRunApplication
+  TORunApplication = record
+    id: integer;
     Command: string[100];
-    Desc: string[255];
-    OId: string;
+    Application: string[255];
+  end;
+
+  // Таблица OperationPressKeyboard
+  TOPressKeyboard = record
+    id: integer;
+    Command: string[100];
+    Key1: integer;
+    Key2: integer;
+    Key3: integer;
+    LongPress: boolean;
+    ForApplication: string[255];
+  end;
+
+  // Все операции для команды
+  TOperation = Record
+    Command: string[100];
+    OType: TopType;
     Operation: string;
-    ORepeat: boolean;
-    ODescription: string;
-    OGroup: integer;
+    PressKeyboard: TOPressKeyboard;
+    RunApplication: TORunApplication;
   End;
 
-  TVCommands = array of TVCommand;
+  POperation = ^TOperation;
+  TOperations = array of TOperation;
 
+  // TVCommand = Record
+  // Command: string[100];
+  // Desc: string[255];
+  // OId: string;
+  // Operation: string;
+  // ORepeat: boolean;
+  // ODescription: string;
+  // OGroup: integer;
+  // End;
+  //
+  // TVCommands = array of TVCommand;
+  //
   TECommand = Record
     Command: TRemoteCommand;
-    ECType: TecType;
+    ECType: TopType;
     Operation: string;
     Application: string[255];
     Key1: integer;
     Key2: integer;
+    Key3: integer;
     Rep: boolean;
   End;
 
-  PECommand = ^TECommand;
-  TECommands = array of TECommand;
-
-  TEPCommand = record
-    ECommand: TECommand;
-    RepeatPreview: boolean;
-  end;
-
-  PEPCommand = ^TEPCommand;
-
-  TKeyboardGroup = Record
-    Group: integer;
-    Descciption: string;
-  End;
-
-  TKeyboardGroups = array of TKeyboardGroup;
+  // PECommand = ^TECommand;
+  // TECommands = array of TECommand;
+  //
+  // TEPCommand = record
+  // ECommand: TECommand;
+  // RepeatPreview: boolean;
+  // end;
+  //
+  // PEPCommand = ^TEPCommand;
 
 type
   TDataBase = class
     procedure Connect;
     procedure Disconnect;
 
-    function CommandExists(const ACommand: string; var Command: TRemoteCommand): boolean;
-    function GetCommand(const Command: string): TRemoteCommand;
-    procedure DeleteCommand(const Command: string);
+    function getKeyboardGroups(): TKeyboardGroups;
 
-    function GetVCommands(const Command: string = ''): TVCommands;
-
-    function GetExecuteCommands(const Command: string): TECommands;
-
-    function GetKeyboardKey(Key: integer): PKeyKeyboard;
     function GetKeyboards(): TKeyboards;
-    function GetKeyboardGroups(): TKeyboardGroups;
+    function GetKeyboard(Key: integer): TKeyboard;
 
-    procedure CreateRunApplication(const RCommand: TRemoteCommand; AppFileName: string);
-    procedure UpdateRunApplication(const RCommand: TRemoteCommand; AppFileName: string);
-
-    procedure CreatePressKeyKeyboard(const RCommand: TRemoteCommand; Key1, Key2: integer;
-      ARepeat: boolean);
-    procedure UpdatePressKeyKeyboard(const RCommand: TRemoteCommand; Key1, Key2: integer;
-      ARepeat: boolean);
-
+    function GetRemoteCommand(const Command: string): TRemoteCommand;
+    function GetRemoteCommands(): TRemoteCommands;
+    function RemoteCommandExists(const Command: string): boolean; overload;
+    function RemoteCommandExists(const Command: string; var RCommand: TRemoteCommand)
+      : boolean; overload;
     function CreateRemoteCommand(const Command, Description: string;
-      const ARepeat: boolean = false): string;
+      const RepeatPrevious: boolean = false): string; overload;
+    function CreateRemoteCommand(const Command, Description: string; const RepeatPrevious: boolean;
+      var Exists: boolean): string; overload;
     function UpdateRemoteCommand(const Command, Description: string;
-      const ARepeat: boolean = false): string;
+      const RepeatPrevious: boolean = false): string;
+    procedure DeleteRemoteCommand(const Command: string);
+
+    procedure CreateRunApplication(const Command, AppFileName: string);
+    procedure UpdateRunApplication(const id: integer; const AppFileName: string);
+    procedure DeleteRunApplication(const id: integer);
+
+    procedure CreatePressKeyKeyboard(const Command: string; const Key1, Key2, Key3: integer;
+      LongPress: boolean);
+
+    // function GetVCommands(const Command: string = ''): TVCommands;
+    //
+    // function GetExecuteCommands(const Command: string): TECommands;
+    //
+    // function GetKeyboardKey(Key: integer): PKeyKeyboard;
+    // function GetKeyboardGroups(): TKeyboardGroups;
+    //
+    // procedure CreatePressKeyKeyboard(const RCommand: TRemoteCommand; Key1, Key2: integer;
+    // ARepeat: boolean);
+    // procedure UpdatePressKeyKeyboard(const RCommand: TRemoteCommand; Key1, Key2: integer;
+    // ARepeat: boolean);
+
+    function getOperation(const Command: string): TOperations;
 
   private
     FConnection: TADOConnection;
@@ -182,12 +230,12 @@ begin
       'CREATE TABLE RemoteCommand(                                                   ' +
       '  [command] string(100) primary key,                                          ' +
       '  [description] string(255),                                                  ' +
-      '  [repeat] bit)';
+      '  [repeatPrevious] bit)';
     Query.ExecSQL;
 
     // Запуск приложений
     Query.Sql.Text :=
-      'CREATE TABLE RunApplication(                                                  ' +
+      'CREATE TABLE OperationRunApplication(                                         ' +
       '  [id] counter primary key,                                                   ' +
       '  [command] string(100) references RemoteCommand([command]) on delete cascade,' +
       '  [application] string(255),                                                  ' +
@@ -196,13 +244,14 @@ begin
 
     // Запуск приложений
     Query.Sql.Text :=
-      'CREATE TABLE PressKeyKeyboard(                                                ' +
+      'CREATE TABLE OperationPressKeyboard(                                          ' +
       '  [id] counter primary key,                                                   ' +
       '  [command] string(100) references RemoteCommand([command]) on delete cascade,' +
       '  [key1] integer default null references Keyboard([key]),                     ' +
       '  [key2] integer default null references Keyboard([key]),                     ' +
-      '  [repeat] bit,                                                               ' +
-      '  [for_application] string(255),                                              ' +
+      '  [key3] integer default null references Keyboard([key]),                     ' +
+      '  [longPress] bit,                                                            ' +
+      '  [forApplication] string(255),                                               ' +
       '  [description] string(255))';
     Query.ExecSQL;
 
@@ -308,7 +357,7 @@ begin
     addKeybord(Query, 178, 'Стоп', 6);
     addKeybord(Query, 179, 'Играть/Пауза', 6);
 
-    addKeybordGroup(Query, 9, 'Запуск приложений');
+    // addKeybordGroup(Query, 9, 'Запуск приложений');
 
     Connection.Connected := false;
     Query.Free;
@@ -335,188 +384,6 @@ begin
 
   if FileExists(FileName) then
     FFileName := FileName;
-end;
-
-procedure TDataBase.CreatePressKeyKeyboard(const RCommand: TRemoteCommand; Key1, Key2: integer;
-  ARepeat: boolean);
-var
-  Query: TADOQuery;
-  LCommand, sKey1, sKey2: string;
-begin
-  if not FConnection.Connected then
-    exit;
-
-  sKey1 := 'null';
-  sKey2 := 'null';
-
-  if Key1 > 0 then
-    sKey1 := IntToStr(Key1);
-  if Key2 > 0 then
-    sKey2 := IntToStr(Key2);
-
-  LCommand := CreateRemoteCommand(RCommand.Command, RCommand.Desc);
-
-  try
-    // Создание запуска приложения
-    Query := TADOQuery.Create(nil);
-    Query.Connection := FConnection;
-    Query.Sql.Clear;
-    Query.Sql.Text := 'insert into PressKeyKeyboard (command, key1, key2, repeat) values ("' +
-      RCommand.Command + '", ' + sKey1 + ', ' + sKey2 + ', ' + BoolToStr(ARepeat) + ')';
-    Query.ExecSQL;
-
-  finally
-    Query.Free;
-  end;
-end;
-
-procedure TDataBase.UpdatePressKeyKeyboard(const RCommand: TRemoteCommand; Key1, Key2: integer;
-  ARepeat: boolean);
-var
-  Query: TADOQuery;
-  LCommand, sKey1, sKey2: string;
-begin
-  if not FConnection.Connected then
-    exit;
-
-  sKey1 := 'null';
-  sKey2 := 'null';
-
-  if Key1 > 0 then
-    sKey1 := IntToStr(Key1);
-  if Key2 > 0 then
-    sKey2 := IntToStr(Key2);
-
-  LCommand := UpdateRemoteCommand(RCommand.Command, RCommand.Desc);
-
-  Query := TADOQuery.Create(nil);
-  try
-    Query.Connection := FConnection;
-    Query.Sql.Clear;
-    Query.Sql.Text := 'update PressKeyKeyboard set key1 = ' + sKey1 + ',  key2 = ' + sKey2 +
-      ', repeat = ' + BoolToStr(ARepeat) + ' where command = ' + QuotedStr(LCommand);
-    Query.ExecSQL;
-  finally
-    Query.Free;
-  end;
-end;
-
-function TDataBase.CreateRemoteCommand(const Command, Description: string;
-  const ARepeat: boolean = false): string;
-var
-  Query: TADOQuery;
-  RCommand: TRemoteCommand;
-begin
-  Result := '';
-  if not FConnection.Connected then
-    exit;
-
-  // проверка существования команды
-  if CommandExists(Command, RCommand) then
-  begin
-    Result := RCommand.Command;
-    exit;
-  end;
-
-  // Создание команды
-  Query := TADOQuery.Create(nil);
-  try
-    Query.Connection := FConnection;
-    Query.Sql.Clear;
-    Query.Sql.Text := 'insert into RemoteCommand (command, description, repeat) values ("' + Command
-      + '", "' + Description + '", ' + BoolToStr(ARepeat) + ')';
-    Query.ExecSQL;
-
-    Result := Command;
-  finally
-    Query.Free;
-  end;
-end;
-
-function TDataBase.UpdateRemoteCommand(const Command, Description: string;
-  const ARepeat: boolean = false): string;
-var
-  Query: TADOQuery;
-  RCommand: TRemoteCommand;
-begin
-  Result := '';
-  if not FConnection.Connected then
-    exit;
-
-  // проверка существования команды
-  if not CommandExists(Command, RCommand) then
-  begin
-    raise Exception.Create(Format(GetLanguageMsg('msgDBRemoteCommandNotFound', lngRus), [Command]));
-  end;
-
-  // Изменение команды
-  Query := TADOQuery.Create(nil);
-  try
-    Query.Connection := FConnection;
-    Query.Sql.Clear;
-    Query.Sql.Text := 'update RemoteCommand set description = "' + Description + '",' + 'repeat = '
-      + BoolToStr(ARepeat) + ' where command = "' + Command + '"';
-    Query.ExecSQL;
-
-    Result := Command;
-  finally
-    Query.Free;
-  end;
-end;
-
-procedure TDataBase.CreateRunApplication(const RCommand: TRemoteCommand; AppFileName: string);
-var
-  Query: TADOQuery;
-  LCommand: string;
-begin
-  if not FConnection.Connected then
-    exit;
-
-  if not FileExists(AppFileName) then
-    raise Exception.Create(Format(GetLanguageMsg('msgDBRunApplicationFileNotFound', lngRus),
-      [AppFileName]));
-
-  LCommand := CreateRemoteCommand(RCommand.Command, RCommand.Desc);
-
-  // Создание запуска приложения
-  Query := TADOQuery.Create(nil);
-  try
-    Query.Connection := FConnection;
-    Query.Sql.Clear;
-    Query.Sql.Text := 'insert into RunApplication (command, application) values ("' +
-      RCommand.Command + '", "' + AppFileName + '")';
-    Query.ExecSQL;
-
-  finally
-    Query.Free;
-  end;
-
-end;
-
-procedure TDataBase.UpdateRunApplication(const RCommand: TRemoteCommand; AppFileName: string);
-var
-  Query: TADOQuery;
-  LCommand: string;
-begin
-  if not FConnection.Connected then
-    exit;
-
-  if not FileExists(AppFileName) then
-    raise Exception.Create(Format(GetLanguageMsg('msgDBRunApplicationFileNotFound', lngRus),
-      [AppFileName]));
-
-  LCommand := UpdateRemoteCommand(RCommand.Command, RCommand.Desc);
-
-  Query := TADOQuery.Create(nil);
-  try
-    Query.Connection := FConnection;
-    Query.Sql.Clear;
-    Query.Sql.Text := 'update RunApplication set application = "' + AppFileName +
-      '" where command= "' + LCommand + '"';
-    Query.ExecSQL;
-  finally
-    Query.Free;
-  end;
 end;
 
 destructor TDataBase.Destroy;
@@ -553,12 +420,11 @@ begin
   Result := FConnection.Connected;
 end;
 
-function TDataBase.GetKeyboardGroups: TKeyboardGroups;
+function TDataBase.getKeyboardGroups(): TKeyboardGroups;
 var
   Query: TADOQuery;
   KeyboardGroups: TKeyboardGroups;
 begin
-
   if not FConnection.Connected then
     exit;
 
@@ -584,36 +450,7 @@ begin
   end;
 end;
 
-function TDataBase.GetKeyboardKey(Key: integer): PKeyKeyboard;
-var
-  Query: TADOQuery;
-begin
-  Result := nil;
-  if not FConnection.Connected then
-    exit;
-
-  Query := TADOQuery.Create(nil);
-  try
-    Query.Connection := FConnection;
-    Query.Sql.Clear;
-    Query.Sql.Text := 'SELECT Key, description, group from Keyboard where key = ' + IntToStr(Key);
-    Query.ExecSQL;
-    Query.Active := True;
-    if Query.RecordCount > 0 then
-    begin
-      Query.First;
-      new(Result);
-      Result.Key := Query.FieldByName('Key').AsInteger;
-      Result.Desc := Query.FieldByName('description').AsString;
-      Result.Group := Query.FieldByName('group').AsInteger;
-    end;
-  finally
-    Query.Active := false;
-    Query.Free;
-  end;
-end;
-
-function TDataBase.GetKeyboards: TKeyboards;
+function TDataBase.GetKeyboards(): TKeyboards;
 var
   Query: TADOQuery;
   Keyboards: TKeyboards;
@@ -646,10 +483,45 @@ begin
   end;
 end;
 
-function TDataBase.GetVCommands(const Command: string = ''): TVCommands;
+function TDataBase.GetKeyboard(Key: integer): TKeyboard;
 var
   Query: TADOQuery;
-  ResVCommands: TVCommands;
+begin
+  if not FConnection.Connected then
+    exit;
+
+  try
+    Query := TADOQuery.Create(nil);
+    Query.Connection := FConnection;
+    Query.Sql.Clear;
+    Query.Sql.Text := 'select key, description, group from Keyboard where key = ' + IntToStr(Key);
+    Query.ExecSQL;
+    Query.Active := True;
+    Query.First;
+    while not Query.Eof do
+    begin
+      Result.Key := Query.FieldByName('key').AsInteger;
+      Result.Desc := Query.FieldByName('description').AsString;
+      Result.Group := Query.FieldByName('group').AsInteger;
+      Query.Next;
+    end;
+  finally
+    Query.Active := false;
+    Query.Free;
+  end;
+end;
+
+function TDataBase.GetRemoteCommand(const Command: string): TRemoteCommand;
+var
+  RCommand: TRemoteCommand;
+begin
+  if RemoteCommandExists(Command, RCommand) then
+    Result := RCommand;
+end;
+
+function TDataBase.GetRemoteCommands(): TRemoteCommands;
+var
+  Query: TADOQuery;
 begin
   Result := nil;
 
@@ -661,141 +533,33 @@ begin
     Query.Connection := FConnection;
     Query.Sql.Clear;
     Query.Sql.Text :=
-      'select rc.command,                                                           ' +
-      '       rc.description,                                                       ' +
-      '       em.id, em.operation, em.repeat, em.grp                                ' +
-      '  from remotecommand as rc                                                   ' +
-      '  left join(                                                                 ' +
-      '    select "' + tcKeyboard + '" & pk.id as id,                               ' +
-      '           pk.command as command,                                            ' +
-      '           k1.description                                                    ' +
-      '            & IIF(isNull(pk.key2), "", " + " &  k2.description) as operation,' +
-      '           pk.repeat as repeat,                                              ' +
-      '           k1.group as grp                                                   ' +
-      '      from (                                                                 ' +
-      '        PressKeyKeyboard as pk                                               ' +
-      '          inner join keyboard as k1 on k1.key = pk.key1                      ' +
-      '      )                                                                      ' +
-      '    left join keyboard as k2 on k2.key = pk.key2                             ' +
-      '    union all                                                                ' +
-      '    select "' + tcApplication + '" & ra.id as id,                            ' +
-      '           ra.command as command,                                            ' +
-      '           ra.application as operation,                                      ' +
-      '           null as repeat,                                                   ' +
-      '           9 as grp                                                          ' +
-      '      from runapplication AS ra                                              ' +
-      '  ) as em on rc.command = em.command';
-
-    if Length(trim(Command)) > 0 then
-    begin
-      Query.Sql.Text := Query.Sql.Text + ' where rc.command = "' + Command + '"';
-    end;
-    Query.Sql.Text := Query.Sql.Text + ' order by rc.command';
+      'select command, description, repeatPrevious from RemoteCommand order by command';
     Query.ExecSQL;
     Query.Active := True;
     Query.First;
     while not Query.Eof do
     begin
-      SetLength(ResVCommands, Length(ResVCommands) + 1);
-      ResVCommands[Query.RecNo - 1].Command := Query.FieldByName('command').AsString;
-      ResVCommands[Query.RecNo - 1].Desc := Query.FieldByName('description').AsString;
-      ResVCommands[Query.RecNo - 1].OId := Query.FieldByName('id').AsString;
-      ResVCommands[Query.RecNo - 1].Operation := Query.FieldByName('operation').AsString;
-      ResVCommands[Query.RecNo - 1].ORepeat := Query.FieldByName('repeat').AsBoolean;
-      ResVCommands[Query.RecNo - 1].OGroup := Query.FieldByName('grp').AsInteger;
+      SetLength(Result, Length(Result) + 1);
+      Result[Query.RecNo - 1].Command := Query.FieldByName('command').AsString;
+      Result[Query.RecNo - 1].Desc := Query.FieldByName('description').AsString;
+      Result[Query.RecNo - 1].RepeatPrevious := Query.FieldByName('repeatPrevious').AsBoolean;
       Query.Next;
     end;
-    Result := ResVCommands;
   finally
     Query.Active := false;
     Query.Free;
   end;
 end;
 
-function TDataBase.GetExecuteCommands(const Command: string): TECommands;
+function TDataBase.RemoteCommandExists(const Command: string): boolean;
 var
-  Query: TADOQuery;
-  ResECommands: TECommands;
+  RCommand: TRemoteCommand;
 begin
-  Result := nil;
-
-  if not FConnection.Connected then
-    exit;
-
-  try
-    Query := TADOQuery.Create(nil);
-    Query.Connection := FConnection;
-    Query.Sql.Clear;
-    Query.Sql.Text := 'select * from (                                              ' +
-      '    select rc.command,                                                       ' +
-      '           rc.description,                                                   ' +
-      '           rc.repeat as rcrepeat,                                            ' +
-      '           "' + tcKeyboard + '" as type,                                     ' +
-      '           null as application,                                              ' +
-      '           pk.key1 as key1,                                                  ' +
-      '           pk.key2 as key2,                                                  ' +
-      '           pk.repeat as repeat,                                              ' +
-      '           opk2.operation as operation                                       ' +
-      '      from (                                                                 ' +
-      '        remotecommand as rc                                                  ' +
-      '          inner join pressKeyKeyboard as pk on pk.command = rc.command       ' +
-      '      )                                                                      ' +
-      '      inner join (                                                           ' +
-      '                  select opk.command as command,                             ' +
-      '                         k1.description & IIF(isNull(opk.key2),              ' +
-      '                                               "",                           ' +
-      '                                               " + " &  k2.description       ' +
-      '                                             ) as operation                  ' +
-      '                    from (                                                   ' +
-      '                      PressKeyKeyboard as opk                                ' +
-      '                        inner join keyboard as k1 on k1.key = opk.key1       ' +
-      '                    )                                                        ' +
-      '                    left join keyboard as k2 on k2.key = opk.key2            ' +
-      '                 ) as opk2 on opk2.command = rc.command                      ' +
-      '    union all                                                                ' +
-      '    select rc.command,                                                       ' +
-      '           rc.description,                                                   ' +
-      '           rc.repeat as rcrepeat,                                            ' +
-      '           "' + tcApplication + '" as type,                                  ' +
-      '           ra.application,                                                   ' +
-      '           null as key1,                                                     ' +
-      '           null as key2,                                                     ' +
-      '           null as repeat,                                                   ' +
-      '           ra.application as operation                                       ' +
-      '      from remotecommand as rc                                               ' +
-      '      inner join runapplication as ra on ra.command = rc.command             ' +
-      ')                                                                            ' +
-      'where command = "' + Command + '"';
-
-    Query.ExecSQL;
-    Query.Active := True;
-    Query.First;
-    while not Query.Eof do
-    begin
-      SetLength(ResECommands, Length(ResECommands) + 1);
-      ResECommands[Query.RecNo - 1].Command.Command := Query.FieldByName('command').AsString;
-      ResECommands[Query.RecNo - 1].Command.Desc := Query.FieldByName('description').AsString;
-      ResECommands[Query.RecNo - 1].Command.RepeatPreview := Query.FieldByName('rcrepeat')
-        .AsBoolean;
-      if Query.FieldByName('type').AsString = tcApplication then
-        ResECommands[Query.RecNo - 1].ECType := ecApplication
-      else if Query.FieldByName('type').AsString = tcKeyboard then
-        ResECommands[Query.RecNo - 1].ECType := ecKyeboard;
-      ResECommands[Query.RecNo - 1].Application := Query.FieldByName('application').AsString;
-      ResECommands[Query.RecNo - 1].Key1 := Query.FieldByName('key1').AsInteger;
-      ResECommands[Query.RecNo - 1].Key2 := Query.FieldByName('key2').AsInteger;
-      ResECommands[Query.RecNo - 1].Rep := Query.FieldByName('repeat').AsBoolean;
-      ResECommands[Query.RecNo - 1].Operation := Query.FieldByName('operation').AsString;
-      Query.Next;
-    end;
-    Result := ResECommands;
-  finally
-    Query.Active := false;
-    Query.Free;
-  end;
+  Result := RemoteCommandExists(Command, RCommand);
 end;
 
-function TDataBase.CommandExists(const ACommand: string; var Command: TRemoteCommand): boolean;
+function TDataBase.RemoteCommandExists(const Command: string; var RCommand: TRemoteCommand)
+  : boolean;
 var
   Query: TADOQuery;
   LCommand: String;
@@ -804,14 +568,15 @@ begin
   if not FConnection.Connected then
     exit;
 
-  LCommand := ACommand;
+  LCommand := Command;
 
   Query := TADOQuery.Create(nil);
   try
     Query.Connection := FConnection;
     Query.Sql.Clear;
-    Query.Sql.Text := 'select command, description, repeat from RemoteCommand where command = "' +
-      ACommand + '"';
+    Query.Sql.Text :=
+      'select command, description, repeatPrevious from RemoteCommand where command = "' +
+      Command + '"';
     Query.ExecSQL;
     Query.Active := True;
     if Query.RecordCount > 0 then
@@ -819,9 +584,9 @@ begin
       Query.First;
 
       Result := True;
-      Command.Command := Query.FieldByName('command').AsString;
-      Command.Desc := Query.FieldByName('description').AsString;
-      Command.RepeatPreview := Query.FieldByName('repeat').AsBoolean;
+      RCommand.Command := Query.FieldByName('command').AsString;
+      RCommand.Desc := Query.FieldByName('description').AsString;
+      RCommand.RepeatPrevious := Query.FieldByName('repeatPrevious').AsBoolean;
     end;
   finally
     Query.Active := false;
@@ -829,15 +594,92 @@ begin
   end;
 end;
 
-function TDataBase.GetCommand(const Command: string): TRemoteCommand;
+function TDataBase.CreateRemoteCommand(const Command, Description: string;
+  const RepeatPrevious: boolean = false): string;
+var
+  Query: TADOQuery;
+  RCommand: TRemoteCommand;
+begin
+  Result := '';
+  if not FConnection.Connected then
+    exit;
+
+  // проверка существования команды
+  if RemoteCommandExists(Command, RCommand) then
+  begin
+    Result := RCommand.Command;
+    exit;
+  end;
+
+  // Создание команды
+  Query := TADOQuery.Create(nil);
+  try
+    Query.Connection := FConnection;
+    Query.Sql.Clear;
+    Query.Sql.Text := 'insert into RemoteCommand (command, description, repeatPrevious) values ("' +
+      Command + '", "' + Description + '", ' + BoolToStr(RepeatPrevious) + ')';
+    Query.ExecSQL;
+
+    Result := Command;
+  finally
+    Query.Free;
+  end;
+end;
+
+function TDataBase.CreateRemoteCommand(const Command, Description: string;
+  const RepeatPrevious: boolean; var Exists: boolean): string;
 var
   RCommand: TRemoteCommand;
 begin
-  if CommandExists(Command, RCommand) then
-    Result := RCommand;
+  Result := '';
+  Exists := false;
+
+  if not FConnection.Connected then
+    exit;
+
+  // проверка существования команды
+  if RemoteCommandExists(Command, RCommand) then
+  begin
+    Result := RCommand.Command;
+    Exists := True;
+    exit;
+  end;
+
+  Result := CreateRemoteCommand(Command, Description, RepeatPrevious);
 end;
 
-procedure TDataBase.DeleteCommand(const Command: string);
+function TDataBase.UpdateRemoteCommand(const Command, Description: string;
+  const RepeatPrevious: boolean = false): string;
+var
+  Query: TADOQuery;
+  RCommand: TRemoteCommand;
+begin
+  Result := '';
+  if not FConnection.Connected then
+    exit;
+
+  // проверка существования команды
+  if not RemoteCommandExists(Command, RCommand) then
+  begin
+    raise Exception.Create(Format(GetLanguageMsg('msgDBRemoteCommandNotFound', lngRus), [Command]));
+  end;
+
+  // Изменение команды
+  Query := TADOQuery.Create(nil);
+  try
+    Query.Connection := FConnection;
+    Query.Sql.Clear;
+    Query.Sql.Text := 'update RemoteCommand set description = "' + Description + '",' +
+      'repeatPrevious = ' + BoolToStr(RepeatPrevious) + ' where command = "' + Command + '"';
+    Query.ExecSQL;
+
+    Result := Command;
+  finally
+    Query.Free;
+  end;
+end;
+
+procedure TDataBase.DeleteRemoteCommand(const Command: string);
 var
   Query: TADOQuery;
   RCommand: TRemoteCommand;
@@ -846,7 +688,7 @@ begin
     exit;
 
   // проверка существования команды
-  if not CommandExists(Command, RCommand) then
+  if not RemoteCommandExists(Command, RCommand) then
   begin
     raise Exception.Create(Format(GetLanguageMsg('msgDBRemoteCommandNotFound', lngRus), [Command]));
   end;
@@ -860,6 +702,445 @@ begin
   finally
     Query.Free;
   end;
+end;
+
+procedure TDataBase.CreateRunApplication(const Command, AppFileName: string);
+var
+  Query: TADOQuery;
+  // LCommand: string;
+begin
+  if not FConnection.Connected then
+    exit;
+
+  if not FileExists(AppFileName) then
+    raise Exception.Create(Format(GetLanguageMsg('msgDBRunApplicationFileNotFound', lngRus),
+      [AppFileName]));
+
+  if not RemoteCommandExists(Command) then
+    raise Exception.CreateFmt(GetLanguageMsg('msgDBRemoteCommandNotFound', lngRus), [Command]);
+
+  // Создание запуска приложения
+  Query := TADOQuery.Create(nil);
+  try
+    Query.Connection := FConnection;
+    Query.Sql.Clear;
+    Query.Sql.Text := 'insert into OperationRunApplication (command, application) values ("' +
+      Command + '", "' + AppFileName + '")';
+    Query.ExecSQL;
+
+  finally
+    Query.Free;
+  end;
+
+end;
+
+procedure TDataBase.UpdateRunApplication(const id: integer; const AppFileName: string);
+var
+  Query: TADOQuery;
+begin
+  if not FConnection.Connected then
+    exit;
+
+  if not FileExists(AppFileName) then
+    raise Exception.Create(Format(GetLanguageMsg('msgDBRunApplicationFileNotFound', lngRus),
+      [AppFileName]));
+
+  Query := TADOQuery.Create(nil);
+  try
+    Query.Connection := FConnection;
+    Query.Sql.Clear;
+    Query.Sql.Text := 'update OperationRunApplication set application = "' + AppFileName +
+      '" where id = ' + IntToStr(id);
+    Query.ExecSQL;
+  finally
+    Query.Free;
+  end;
+end;
+
+procedure TDataBase.DeleteRunApplication(const id: integer);
+var
+  Query: TADOQuery;
+begin
+  if not FConnection.Connected then
+    exit;
+
+  Query := TADOQuery.Create(nil);
+  try
+    Query.Connection := FConnection;
+    Query.Sql.Clear;
+    Query.Sql.Text := 'delete from OperationRunApplication where id = ' + IntToStr(id);
+    Query.ExecSQL;
+  finally
+    Query.Free;
+  end;
+end;
+
+procedure TDataBase.CreatePressKeyKeyboard(const Command: string; const Key1, Key2, Key3: integer;
+  LongPress: boolean);
+var
+  Query: TADOQuery;
+  sKey1, sKey2, sKey3: string;
+begin
+  if not FConnection.Connected then
+    exit;
+
+  sKey1 := 'null';
+  sKey2 := 'null';
+  sKey3 := 'null';
+
+  if Key1 > 0 then
+    sKey1 := IntToStr(Key1);
+  if Key2 > 0 then
+    sKey2 := IntToStr(Key2);
+  if Key3 > 0 then
+    sKey3 := IntToStr(Key3);
+
+  try
+    // Создание запуска приложения
+    Query := TADOQuery.Create(nil);
+    Query.Connection := FConnection;
+    Query.Sql.Clear;
+    Query.Sql.Text :=
+      'insert into OperationPressKeyboard (command, key1, key2, key3, longPress) values ("' +
+      Command + '", ' + sKey1 + ', ' + sKey2 + ', ' + sKey3 + ', ' + BoolToStr(LongPress) + ')';
+    Query.ExecSQL;
+
+  finally
+    Query.Free;
+  end;
+end;
+
+// procedure TDataBase.CreatePressKeyKeyboard(const RCommand: TRemoteCommand; Key1, Key2: integer;
+// ARepeat: boolean);
+// var
+// Query: TADOQuery;
+// LCommand, sKey1, sKey2: string;
+// begin
+// if not FConnection.Connected then
+// exit;
+//
+// sKey1 := 'null';
+// sKey2 := 'null';
+//
+// if Key1 > 0 then
+// sKey1 := IntToStr(Key1);
+// if Key2 > 0 then
+// sKey2 := IntToStr(Key2);
+//
+// LCommand := CreateRemoteCommand(RCommand.Command, RCommand.Desc);
+//
+// try
+// // Создание запуска приложения
+// Query := TADOQuery.Create(nil);
+// Query.Connection := FConnection;
+// Query.Sql.Clear;
+// Query.Sql.Text := 'insert into PressKeyKeyboard (command, key1, key2, repeat) values ("' +
+// RCommand.Command + '", ' + sKey1 + ', ' + sKey2 + ', ' + BoolToStr(ARepeat) + ')';
+// Query.ExecSQL;
+//
+// finally
+// Query.Free;
+// end;
+// end;
+
+// procedure TDataBase.UpdatePressKeyKeyboard(const RCommand: TRemoteCommand; Key1, Key2: integer;
+// ARepeat: boolean);
+// var
+// Query: TADOQuery;
+// LCommand, sKey1, sKey2: string;
+// begin
+// if not FConnection.Connected then
+// exit;
+//
+// sKey1 := 'null';
+// sKey2 := 'null';
+//
+// if Key1 > 0 then
+// sKey1 := IntToStr(Key1);
+// if Key2 > 0 then
+// sKey2 := IntToStr(Key2);
+//
+// LCommand := UpdateRemoteCommand(RCommand.Command, RCommand.Desc);
+//
+// Query := TADOQuery.Create(nil);
+// try
+// Query.Connection := FConnection;
+// Query.Sql.Clear;
+// Query.Sql.Text := 'update PressKeyKeyboard set key1 = ' + sKey1 + ',  key2 = ' + sKey2 +
+// ', repeat = ' + BoolToStr(ARepeat) + ' where command = ' + QuotedStr(LCommand);
+// Query.ExecSQL;
+// finally
+// Query.Free;
+// end;
+// end;
+
+// function TDataBase.GetKeyboardKey(Key: integer): PKeyKeyboard;
+// var
+// Query: TADOQuery;
+// begin
+// Result := nil;
+// if not FConnection.Connected then
+// exit;
+//
+// Query := TADOQuery.Create(nil);
+// try
+// Query.Connection := FConnection;
+// Query.Sql.Clear;
+// Query.Sql.Text := 'SELECT Key, description, group from Keyboard where key = ' + IntToStr(Key);
+// Query.ExecSQL;
+// Query.Active := True;
+// if Query.RecordCount > 0 then
+// begin
+// Query.First;
+// new(Result);
+// Result.Key := Query.FieldByName('Key').AsInteger;
+// Result.Desc := Query.FieldByName('description').AsString;
+// Result.Group := Query.FieldByName('group').AsInteger;
+// end;
+// finally
+// Query.Active := false;
+// Query.Free;
+// end;
+// end;
+
+// function TDataBase.GetVCommands(const Command: string = ''): TVCommands;
+// var
+// Query: TADOQuery;
+// ResVCommands: TVCommands;
+// begin
+// Result := nil;
+//
+// if not FConnection.Connected then
+// exit;
+//
+// try
+// Query := TADOQuery.Create(nil);
+// Query.Connection := FConnection;
+// Query.Sql.Clear;
+// Query.Sql.Text :=
+// 'select rc.command,                                                           ' +
+// '       rc.description,                                                       ' +
+// '       em.id, em.operation, em.repeat, em.grp                                ' +
+// '  from remotecommand as rc                                                   ' +
+// '  left join(                                                                 ' +
+// '    select "' + tcKeyboard + '" & pk.id as id,                               ' +
+// '           pk.command as command,                                            ' +
+// '           k1.description                                                    ' +
+// '            & IIF(isNull(pk.key2), "", " + " &  k2.description) as operation,' +
+// '           pk.repeat as repeat,                                              ' +
+// '           k1.group as grp                                                   ' +
+// '      from (                                                                 ' +
+// '        PressKeyKeyboard as pk                                               ' +
+// '          inner join keyboard as k1 on k1.key = pk.key1                      ' +
+// '      )                                                                      ' +
+// '    left join keyboard as k2 on k2.key = pk.key2                             ' +
+// '    union all                                                                ' +
+// '    select "' + tcApplication + '" & ra.id as id,                            ' +
+// '           ra.command as command,                                            ' +
+// '           ra.application as operation,                                      ' +
+// '           null as repeat,                                                   ' +
+// '           9 as grp                                                          ' +
+// '      from runapplication AS ra                                              ' +
+// '  ) as em on rc.command = em.command';
+//
+// if Length(trim(Command)) > 0 then
+// begin
+// Query.Sql.Text := Query.Sql.Text + ' where rc.command = "' + Command + '"';
+// end;
+// Query.Sql.Text := Query.Sql.Text + ' order by rc.command';
+// Query.ExecSQL;
+// Query.Active := True;
+// Query.First;
+// while not Query.Eof do
+// begin
+// SetLength(ResVCommands, Length(ResVCommands) + 1);
+// ResVCommands[Query.RecNo - 1].Command := Query.FieldByName('command').AsString;
+// ResVCommands[Query.RecNo - 1].Desc := Query.FieldByName('description').AsString;
+// ResVCommands[Query.RecNo - 1].OId := Query.FieldByName('id').AsString;
+// ResVCommands[Query.RecNo - 1].Operation := Query.FieldByName('operation').AsString;
+// ResVCommands[Query.RecNo - 1].ORepeat := Query.FieldByName('repeat').AsBoolean;
+// ResVCommands[Query.RecNo - 1].OGroup := Query.FieldByName('grp').AsInteger;
+// Query.Next;
+// end;
+// Result := ResVCommands;
+// finally
+// Query.Active := false;
+// Query.Free;
+// end;
+// end;
+
+// function TDataBase.GetExecuteCommands(const Command: string): TECommands;
+// var
+// Query: TADOQuery;
+// ResECommands: TECommands;
+// begin
+// Result := nil;
+//
+// if not FConnection.Connected then
+// exit;
+//
+// try
+// Query := TADOQuery.Create(nil);
+// Query.Connection := FConnection;
+// Query.Sql.Clear;
+// Query.Sql.Text := 'select * from (                                              ' +
+// '    select rc.command,                                                       ' +
+// '           rc.description,                                                   ' +
+// '           rc.repeat as rcrepeat,                                            ' +
+// '           "' + tcKeyboard + '" as type,                                     ' +
+// '           null as application,                                              ' +
+// '           pk.key1 as key1,                                                  ' +
+// '           pk.key2 as key2,                                                  ' +
+// '           pk.repeat as repeat,                                              ' +
+// '           opk2.operation as operation                                       ' +
+// '      from (                                                                 ' +
+// '        remotecommand as rc                                                  ' +
+// '          inner join pressKeyKeyboard as pk on pk.command = rc.command       ' +
+// '      )                                                                      ' +
+// '      inner join (                                                           ' +
+// '                  select opk.command as command,                             ' +
+// '                         k1.description & IIF(isNull(opk.key2),              ' +
+// '                                               "",                           ' +
+// '                                               " + " &  k2.description       ' +
+// '                                             ) as operation                  ' +
+// '                    from (                                                   ' +
+// '                      PressKeyKeyboard as opk                                ' +
+// '                        inner join keyboard as k1 on k1.key = opk.key1       ' +
+// '                    )                                                        ' +
+// '                    left join keyboard as k2 on k2.key = opk.key2            ' +
+// '                 ) as opk2 on opk2.command = rc.command                      ' +
+// '    union all                                                                ' +
+// '    select rc.command,                                                       ' +
+// '           rc.description,                                                   ' +
+// '           rc.repeat as rcrepeat,                                            ' +
+// '           "' + tcApplication + '" as type,                                  ' +
+// '           ra.application,                                                   ' +
+// '           null as key1,                                                     ' +
+// '           null as key2,                                                     ' +
+// '           null as repeat,                                                   ' +
+// '           ra.application as operation                                       ' +
+// '      from remotecommand as rc                                               ' +
+// '      inner join runapplication as ra on ra.command = rc.command             ' +
+// ')                                                                            ' +
+// 'where command = "' + Command + '"';
+//
+// Query.ExecSQL;
+// Query.Active := True;
+// Query.First;
+// while not Query.Eof do
+// begin
+// SetLength(ResECommands, Length(ResECommands) + 1);
+// ResECommands[Query.RecNo - 1].Command.Command := Query.FieldByName('command').AsString;
+// ResECommands[Query.RecNo - 1].Command.Desc := Query.FieldByName('description').AsString;
+// ResECommands[Query.RecNo - 1].Command.RepeatPreview := Query.FieldByName('rcrepeat')
+// .AsBoolean;
+// if Query.FieldByName('type').AsString = tcApplication then
+// ResECommands[Query.RecNo - 1].ECType := ecApplication
+// else if Query.FieldByName('type').AsString = tcKeyboard then
+// ResECommands[Query.RecNo - 1].ECType := ecKyeboard;
+// ResECommands[Query.RecNo - 1].Application := Query.FieldByName('application').AsString;
+// ResECommands[Query.RecNo - 1].Key1 := Query.FieldByName('key1').AsInteger;
+// ResECommands[Query.RecNo - 1].Key2 := Query.FieldByName('key2').AsInteger;
+// ResECommands[Query.RecNo - 1].Rep := Query.FieldByName('repeat').AsBoolean;
+// ResECommands[Query.RecNo - 1].Operation := Query.FieldByName('operation').AsString;
+// Query.Next;
+// end;
+// Result := ResECommands;
+// finally
+// Query.Active := false;
+// Query.Free;
+// end;
+// end;
+
+function TDataBase.getOperation(const Command: string): TOperations;
+var
+  Query: TADOQuery;
+begin
+  if not FConnection.Connected then
+    exit;
+
+  try
+    Query := TADOQuery.Create(nil);
+    Query.Connection := FConnection;
+    Query.Sql.Clear;
+    Query.Sql.Text := 'select * from (                                              ' +
+      '    select rc.command,                                                       ' +
+      '           rc.description,                                                   ' +
+      '           pk.id,                                                            ' +
+      '           "' + tcKeyboard + '" as type,                                     ' +
+      '           null as application,                                              ' +
+      '           pk.key1 as key1,                                                  ' +
+      '           pk.key2 as key2,                                                  ' +
+      '           pk.longPress as longPress,                                        ' +
+      '           opk2.operation as operation                                       ' +
+      '      from (                                                                 ' +
+      '        remotecommand as rc                                                  ' +
+      '          inner join OperationPressKeyboard as pk on pk.command = rc.command ' +
+      '      )                                                                      ' +
+      '      inner join (                                                           ' +
+      '                  select opk.command as command,                             ' +
+      '                         opk.id,                                             ' +
+      '                         k1.description & IIF(isNull(opk.key2),              ' +
+      '                                               "",                           ' +
+      '                                               " + " &  k2.description       ' +
+      '                                             ) as operation                  ' +
+      '                    from (                                                   ' +
+      '                      OperationPressKeyboard as opk                          ' +
+      '                        inner join keyboard as k1 on k1.key = opk.key1       ' +
+      '                    )                                                        ' +
+      '                    left join keyboard as k2 on k2.key = opk.key2            ' +
+      '                 ) as opk2 on opk2.command = rc.command and opk2.id = pk.id  ' +
+      '    union all                                                                ' +
+      '    select rc.command,                                                       ' +
+      '           rc.description,                                                   ' +
+      '           ra.id,                                                            ' +
+      '           "' + tcApplication + '" as type,                                  ' +
+      '           ra.application,                                                   ' +
+      '           null as key1,                                                     ' +
+      '           null as key2,                                                     ' +
+      '           null as longPress,                                                ' +
+      '           ra.application as operation                                       ' +
+      '      from remotecommand as rc                                               ' +
+      '      inner join OperationRunApplication as ra on ra.command = rc.command    ' +
+      ')                                                                            ' +
+      'where command = "' + Command + '"                                            ' +
+      'order by type, operation';
+
+    Query.ExecSQL;
+    Query.Active := True;
+    Query.First;
+    while not Query.Eof do
+    begin
+      SetLength(Result, Length(Result) + 1);
+      Result[Query.RecNo - 1].Command := Query.FieldByName('command').AsString;
+      Result[Query.RecNo - 1].Operation := Query.FieldByName('operation').AsString;
+
+      if Query.FieldByName('type').AsString = tcApplication then
+      begin
+        Result[Query.RecNo - 1].OType := opApplication;
+        Result[Query.RecNo - 1].RunApplication.id := Query.FieldByName('id').AsInteger;
+        Result[Query.RecNo - 1].RunApplication.Command := Result[Query.RecNo - 1].Command;
+        Result[Query.RecNo - 1].RunApplication.Application :=
+          Query.FieldByName('application').AsString;
+      end
+      else if Query.FieldByName('type').AsString = tcKeyboard then
+      begin
+        Result[Query.RecNo - 1].OType := opKyeboard;
+        Result[Query.RecNo - 1].PressKeyboard.id := Query.FieldByName('id').AsInteger;
+        Result[Query.RecNo - 1].PressKeyboard.Command := Result[Query.RecNo - 1].Command;
+        Result[Query.RecNo - 1].PressKeyboard.Key1 := Query.FieldByName('key1').AsInteger;
+        Result[Query.RecNo - 1].PressKeyboard.Key2 := Query.FieldByName('key2').AsInteger;
+        Result[Query.RecNo - 1].PressKeyboard.LongPress := Query.FieldByName('LongPress').AsBoolean;
+      end;
+
+      Query.Next;
+    end;
+    // Result := ResECommands;
+  finally
+    Query.Active := false;
+    Query.Free;
+  end;
+
 end;
 
 end.

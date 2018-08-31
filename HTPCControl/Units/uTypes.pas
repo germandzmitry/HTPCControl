@@ -6,7 +6,7 @@ const
   FileSetting = 'Setting.ini';
 
 type
-  TecType = (ecKyeboard, ecApplication);
+  TopType = (opKyeboard, opApplication);
 
 type
   TReadComPort = Record

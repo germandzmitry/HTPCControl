@@ -393,7 +393,7 @@ object Main: TMain
     ColorMap.UnusedColor = clWhite
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clBlack
-    Font.Height = -13
+    Font.Height = -12
     Font.Name = 'Segoe UI'
     Font.Style = []
     HorzMargin = 8
@@ -495,10 +495,10 @@ object Main: TMain
       ImageIndex = 7
       OnExecute = ActRCDeleteExecute
     end
-    object ActRCAllCommand: TAction
+    object ActRCRCommandsControl: TAction
       Category = 'RemoteControl'
-      Caption = 'ActRCAllCommand'
-      OnExecute = ActRCAllCommandExecute
+      Caption = 'ActRCRCommandsControl'
+      OnExecute = ActRCRCommandsControlExecute
     end
     object ActFileExit: TAction
       Category = 'File'
@@ -545,7 +545,7 @@ object Main: TMain
     Left = 376
     Top = 128
     Bitmap = {
-      494C01010E0020015C0110001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
+      494C01010E002001700110001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000004000000001002000000000000040
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000
@@ -1118,14 +1118,14 @@ object Main: TMain
     Left = 448
     Top = 128
   end
-  object AppNotification: TNotificationCenter
-    Left = 532
-    Top = 130
-  end
   object AppEvents: TApplicationEvents
     OnMessage = AppEventsMessage
     OnMinimize = AppEventsMinimize
     Left = 620
     Top = 130
+  end
+  object AppNotification: TNotificationCenter
+    Left = 536
+    Top = 128
   end
 end

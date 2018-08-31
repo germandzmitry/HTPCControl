@@ -6,7 +6,7 @@ uses Winapi.Windows, System.SysUtils, uDataBase, uLanguage, uTypes;
 
 type
 
-  TExecuteCommandEvent = procedure(ECommand: TECommand; ECType: TecType; RepeatPreview: boolean)
+  TExecuteCommandEvent = procedure(ECommand: TECommand; ECType: TopType; RepeatPreview: boolean)
     of object;
   TSetPreviewCommandEvent = procedure(RCommand: PRemoteCommand; Opearion: string) of object;
 
@@ -23,7 +23,7 @@ type
     procedure RunApplication(ECommand: TECommand); overload;
     procedure PressKeyboard(ECommand: TECommand; RepeatPreview: boolean = false); overload;
 
-    procedure DoExecuteCommand(ECommand: TECommand; ECType: TecType;
+    procedure DoExecuteCommand(ECommand: TECommand; ECType: TopType;
       RepeatPreview: boolean); dynamic;
     procedure DoSetPreviewCommand(RCommand: PRemoteCommand; Opearion: string); dynamic;
 
@@ -59,51 +59,51 @@ begin
 end;
 
 procedure TExecuteCommand.Execute(RCommand: TRemoteCommand; RepeatPreview: boolean = false);
-var
-  ECommands: TECommands;
-  i: integer;
-  g: TRemoteCommand;
-  LOperation: string;
+// var
+// ECommands: TECommands;
+// i: integer;
+// g: TRemoteCommand;
+// LOperation: string;
 begin
 
-  // Повтор предыдущей команды
-  if RCommand.RepeatPreview and (FPrevRCommand <> nil) then
-  begin
-    Execute(TRemoteCommand(FPrevRCommand^), true);
-    exit;
-  end;
-
-  ECommands := FDB.getExecuteCommands(RCommand.Command);
-
-  if Length(ECommands) > 0 then
-  begin
-
-    if ECommands[0].Rep then
-    begin
-      if FPrevRCommand = nil then
-        New(FPrevRCommand);
-      FPrevRCommand^ := ECommands[0].Command;
-      LOperation := ECommands[0].Operation;
-    end
-    else
-    begin
-      if FPrevRCommand <> nil then
-      begin
-        Dispose(FPrevRCommand);
-        FPrevRCommand := nil;
-      end;
-    end;
-    DoSetPreviewCommand(FPrevRCommand, LOperation);
-
-    for i := 0 to Length(ECommands) - 1 do
-      if ECommands[i].ECType = ecApplication then
-        RunApplication(ECommands[i])
-      else if ECommands[i].ECType = ecKyeboard then
-        PressKeyboard(ECommands[i], RepeatPreview)
-      else
-        raise Exception.Create(GetLanguageMsg('msgExecuteCommandTypeNotFound', lngRus));
-
-  end;
+  // // Повтор предыдущей команды
+  // if RCommand.RepeatPreview and (FPrevRCommand <> nil) then
+  // begin
+  // Execute(TRemoteCommand(FPrevRCommand^), true);
+  // exit;
+  // end;
+  //
+  // ECommands := FDB.getExecuteCommands(RCommand.Command);
+  //
+  // if Length(ECommands) > 0 then
+  // begin
+  //
+  // if ECommands[0].Rep then
+  // begin
+  // if FPrevRCommand = nil then
+  // New(FPrevRCommand);
+  // FPrevRCommand^ := ECommands[0].Command;
+  // LOperation := ECommands[0].Operation;
+  // end
+  // else
+  // begin
+  // if FPrevRCommand <> nil then
+  // begin
+  // Dispose(FPrevRCommand);
+  // FPrevRCommand := nil;
+  // end;
+  // end;
+  // DoSetPreviewCommand(FPrevRCommand, LOperation);
+  //
+  // for i := 0 to Length(ECommands) - 1 do
+  // if ECommands[i].ECType = ecApplication then
+  // RunApplication(ECommands[i])
+  // else if ECommands[i].ECType = ecKyeboard then
+  // PressKeyboard(ECommands[i], RepeatPreview)
+  // else
+  // raise Exception.Create(GetLanguageMsg('msgExecuteCommandTypeNotFound', lngRus));
+  //
+  // end;
 
 end;
 
@@ -132,7 +132,7 @@ begin
       CloseHandle(ProcessInfo.hThread); // закрываем дескриптор процесса
       CloseHandle(ProcessInfo.hProcess); // закрываем дескриптор потока
 
-      DoExecuteCommand(ECommand, ecApplication, false);
+      DoExecuteCommand(ECommand, opApplication, false);
     end
     else
       raise Exception.Create(Format(GetLanguageMsg('msgExecuteCommandRunApplication', lngRus),
@@ -150,14 +150,14 @@ begin
     if ECommand.Key2 <> 0 then
       keybd_event(ECommand.Key2, 0, 0, 0); // Нажатие кнопки.
 
-    DoExecuteCommand(ECommand, ecKyeboard, RepeatPreview);
+    DoExecuteCommand(ECommand, opKyeboard, RepeatPreview);
   finally
     keybd_event(ECommand.Key2, 0, KEYEVENTF_KEYUP, 0); // Отпускание кнопки.
     keybd_event(ECommand.Key1, 0, KEYEVENTF_KEYUP, 0); // Отпускание кнопки.
   end;
 end;
 
-procedure TExecuteCommand.DoExecuteCommand(ECommand: TECommand; ECType: TecType;
+procedure TExecuteCommand.DoExecuteCommand(ECommand: TECommand; ECType: TopType;
   RepeatPreview: boolean);
 begin
   if Assigned(FOnExecuteCommand) then

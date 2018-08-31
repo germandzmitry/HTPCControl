@@ -39,9 +39,8 @@ type
     ActPopupRCAdd: TMenuItem;
     ActPopupRCEdit: TMenuItem;
     ActPopupRCDelete: TMenuItem;
-    ActRCAllCommand: TAction;
+    ActRCRCommandsControl: TAction;
     Tray: TTrayIcon;
-    AppNotification: TNotificationCenter;
     AppEvents: TApplicationEvents;
     ActionMainMenuBar: TActionMainMenuBar;
     ActFileExit: TAction;
@@ -81,6 +80,7 @@ type
     mRemoteControlH: TMemo;
     mShellApplicationH: TMemo;
     mKodiH: TMemo;
+    AppNotification: TNotificationCenter;
     procedure FormCreate(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure FormShow(Sender: TObject);
@@ -97,7 +97,7 @@ type
     procedure ActRCDeleteExecute(Sender: TObject);
     procedure lvReadComPortContextPopup(Sender: TObject; MousePos: TPoint; var Handled: Boolean);
     procedure FormDestroy(Sender: TObject);
-    procedure ActRCAllCommandExecute(Sender: TObject);
+    procedure ActRCRCommandsControlExecute(Sender: TObject);
     procedure AppEventsMinimize(Sender: TObject);
     procedure TrayClick(Sender: TObject);
     procedure TrayDblClick(Sender: TObject);
@@ -170,10 +170,10 @@ type
     procedure onShellApplicationStatus_x86(Sender: TObject; const Line: string;
       const Pipe: TsaPipe);
 {$ENDIF}
-    procedure OnShellApplicationWindowsHook(Sender: TObject; const HSHELL: NativeInt;
+    procedure onShellApplicationWindowsHook(Sender: TObject; const HSHELL: NativeInt;
       const ApplicationData: TEXEVersionData);
 
-    procedure onExecuteCommand(ECommand: TECommand; ECType: TecType; RepeatPreview: Boolean);
+    procedure onExecuteCommand(ECommand: TECommand; ECType: TopType; RepeatPreview: Boolean);
     procedure onExecuteCommandSetPreviewCommand(RCommand: PRemoteCommand; Opearion: string);
 
     procedure onKodiRunning(Running: Boolean);
@@ -201,7 +201,7 @@ implementation
 
 {$R *.dfm}
 
-uses uAbout, uControlCommand, uLanguage, uAllCommand, USendComPort;
+uses uAbout, uControlCommand, uLanguage, uRCommandsControl, USendComPort;
 
 procedure TMain.FormCreate(Sender: TObject);
 
@@ -347,17 +347,17 @@ begin
   FPageClient.Free;
 end;
 
-procedure TMain.ActRCAllCommandExecute(Sender: TObject);
+procedure TMain.ActRCRCommandsControlExecute(Sender: TObject);
 var
-  LAC: TfrmAllCommand;
+  frmRCommandsControl: TfrmRCommandsControl;
 begin
   if Assigned(FDataBase) and FDataBase.Connected then
   begin
-    LAC := TfrmAllCommand.Create(self);
+    frmRCommandsControl := TfrmRCommandsControl.Create(self);
     try
-      LAC.ShowModal;
+      frmRCommandsControl.ShowModal;
     finally
-      LAC.Free;
+      frmRCommandsControl.Free;
     end;
   end;
 end;
@@ -401,7 +401,7 @@ begin
   if MessageDlg(Format(GetLanguageMsg('msgDBDeleteRemoteCommand', lngRus), [LCommand]),
     mtConfirmation, mbOKCancel, 1) = mrOk then
     try
-      FDataBase.DeleteCommand(LCommand);
+      FDataBase.DeleteRemoteCommand(LCommand);
       MessageDlg(GetLanguageMsg('msgDBDeleteRemoteCommandSuccess', lngRus), mtInformation,
         [mbOK], 0);
     except
@@ -626,7 +626,7 @@ begin
     ActComPortClose.Enabled := LComPortConnected;
 
     { DataBase }
-    ActRCAllCommand.Enabled := LDataBaseConnected;
+    ActRCRCommandsControl.Enabled := LDataBaseConnected;
 
     { ShellApplication }
     ActShellAppStart.Enabled := not LShellApplicationStarting;
@@ -743,44 +743,44 @@ end;
 
 procedure TMain.lvRemoteControlCustomDrawSubItem(Sender: TCustomListView; Item: TListItem;
   SubItem: Integer; State: TCustomDrawState; var DefaultDraw: Boolean);
-var
-  aRect: TRect;
-  LIcon: TIcon;
-  LSubItemText: string;
-  LLeft: Integer;
-  LEPCommand: TEPCommand;
+// var
+// aRect: TRect;
+// LIcon: TIcon;
+// LSubItemText: string;
+// LLeft: Integer;
+// LEPCommand: TEPCommand;
 begin
-  if (SubItem = 1) then
-  begin
-    LEPCommand := TEPCommand(Item.Data^);
-    ListView_GetSubItemRect(Sender.Handle, Item.Index, SubItem, LVIR_BOUNDS, @aRect);
-    SetBkMode(Sender.Canvas.Handle, TRANSPARENT);
-    LSubItemText := Item.SubItems[SubItem - 1];
-    LLeft := 0;
-
-    LIcon := TIcon.Create();
-    try
-      case LEPCommand.ECommand.ECType of
-        ecKyeboard:
-          if LEPCommand.RepeatPreview then
-            ilSmall.GetIcon(13, LIcon)
-          else
-            ilSmall.GetIcon(12, LIcon);
-        ecApplication:
-          if FileExists(String(LEPCommand.ECommand.Application)) then
-            SmallIconEXE(String(LEPCommand.ECommand.Application), LIcon)
-            // SmallIconFromExecutableFile(LEPCommand.ECommand.Application, LIcon)
-      end;
-
-      Sender.Canvas.Draw(aRect.Left + 5, aRect.Top + 1, LIcon);
-      LLeft := LIcon.Width + 5;
-    finally
-      LIcon.Free;
-    end;
-
-    Sender.Canvas.TextOut(aRect.Left + 5 + LLeft, aRect.Top + 1, LSubItemText);
-    DefaultDraw := False;
-  end;
+  // if (SubItem = 1) then
+  // begin
+  // LEPCommand := TEPCommand(Item.Data^);
+  // ListView_GetSubItemRect(Sender.Handle, Item.Index, SubItem, LVIR_BOUNDS, @aRect);
+  // SetBkMode(Sender.Canvas.Handle, TRANSPARENT);
+  // LSubItemText := Item.SubItems[SubItem - 1];
+  // LLeft := 0;
+  //
+  // LIcon := TIcon.Create();
+  // try
+  // case LEPCommand.ECommand.ECType of
+  // ecKyeboard:
+  // if LEPCommand.RepeatPreview then
+  // ilSmall.GetIcon(13, LIcon)
+  // else
+  // ilSmall.GetIcon(12, LIcon);
+  // ecApplication:
+  // if FileExists(String(LEPCommand.ECommand.Application)) then
+  // SmallIconEXE(String(LEPCommand.ECommand.Application), LIcon)
+  // // SmallIconFromExecutableFile(LEPCommand.ECommand.Application, LIcon)
+  // end;
+  //
+  // Sender.Canvas.Draw(aRect.Left + 5, aRect.Top + 1, LIcon);
+  // LLeft := LIcon.Width + 5;
+  // finally
+  // LIcon.Free;
+  // end;
+  //
+  // Sender.Canvas.TextOut(aRect.Left + 5 + LLeft, aRect.Top + 1, LSubItemText);
+  // DefaultDraw := False;
+  // end;
 end;
 
 procedure TMain.lvShellApplicationCustomDrawSubItem(Sender: TCustomListView; Item: TListItem;
@@ -836,7 +836,7 @@ begin
     end;
 
     LCommand := TReadComPort(lvReadComPort.Selected.Data^).Command;
-    CommandExists := FDataBase.CommandExists(LCommand, RCommand);
+    CommandExists := FDataBase.RemoteCommandExists(LCommand, RCommand);
     ActRCAdd.Enabled := not CommandExists;
     ActRCEdit.Enabled := CommandExists;
     ActRCDelete.Enabled := CommandExists;
@@ -926,7 +926,7 @@ begin
 {$IFDEF WIN64}
     FShellApplication.OnStatus_x86 := onShellApplicationStatus_x86;
 {$ENDIF}
-    FShellApplication.OnWindowsHook := OnShellApplicationWindowsHook;
+    FShellApplication.OnWindowsHook := onShellApplicationWindowsHook;
     FShellApplication.Start();
     lvShellApplication.Items.Clear;
   end;
@@ -996,7 +996,7 @@ begin
     LItemGlobal := Items.Add;
     LItemGlobal.Index := 2;
     LItemGlobal.Action := ActRC;
-    LItemGlobal.Items.Add.Action := ActRCAllCommand;
+    LItemGlobal.Items.Add.Action := ActRCRCommandsControl;
     // LItemGlobal.Items.Add.Caption := '-';
     // LItemGlobal.Items.Add.Action := ActRCAdd;
     // LItemGlobal.Items.Add.Action := ActRCEdit;
@@ -1046,7 +1046,7 @@ begin
     LItem.ShowCaption := True;
 
     LItem := Items.Add;
-    LItem.Action := ActRCAllCommand;
+    LItem.Action := ActRCRCommandsControl;
     LItem.ShowCaption := True;
 
     LItem := Items.Add;
@@ -1418,7 +1418,7 @@ begin
 
 end;
 
-procedure TMain.OnShellApplicationWindowsHook(Sender: TObject; const HSHELL: NativeInt;
+procedure TMain.onShellApplicationWindowsHook(Sender: TObject; const HSHELL: NativeInt;
   const ApplicationData: TEXEVersionData);
 var
   LItem: TListItem;
@@ -1580,7 +1580,7 @@ begin
     lvReadComPort.Items[lvReadComPort.Items.Count - 1].MakeVisible(True);
 
     try
-      if FDataBase.Connected and FDataBase.CommandExists(Data, RCommand) then
+      if FDataBase.Connected and FDataBase.RemoteCommandExists(Data, RCommand) then
       begin
         TReadComPort(LItem.Data^).Exists := True;
 
@@ -1602,36 +1602,36 @@ begin
     lvReadComPort.Perform(CM_RecreateWnd, 0, 0);
 end;
 
-procedure TMain.onExecuteCommand(ECommand: TECommand; ECType: TecType; RepeatPreview: Boolean);
-var
-  LItem: TListItem;
-  LEPCommand: PEPCommand;
+procedure TMain.onExecuteCommand(ECommand: TECommand; ECType: TopType; RepeatPreview: Boolean);
+// var
+// LItem: TListItem;
+// LEPCommand: PEPCommand;
 begin
-  lvRemoteControl.Items.BeginUpdate;
-  try
-    LItem := lvRemoteControl.Items.Add;
-    LItem.Caption := String(ECommand.Command.Command);
-
-    new(LEPCommand);
-    LEPCommand^.ECommand := ECommand;
-    LEPCommand^.RepeatPreview := RepeatPreview;
-    LItem.Data := LEPCommand;
-
-    case ECType of
-      ecKyeboard:
-        LItem.SubItems.Add(ECommand.Operation);
-      ecApplication:
-        LItem.SubItems.Add(ExtractFileName(ECommand.Operation));
-    end;
-
-    lvRemoteControl.Selected := LItem;
-    lvRemoteControl.Items[lvRemoteControl.Items.Count - 1].MakeVisible(True);
-  finally
-    lvRemoteControl.Items.EndUpdate;
-  end;
-
-  if (GetWindowLong(lvRemoteControl.Handle, GWL_STYLE) and WS_HSCROLL) > 0 then
-    lvRemoteControl.Perform(CM_RecreateWnd, 0, 0);
+  // lvRemoteControl.Items.BeginUpdate;
+  // try
+  // LItem := lvRemoteControl.Items.Add;
+  // LItem.Caption := String(ECommand.Command.Command);
+  //
+  // new(LEPCommand);
+  // LEPCommand^.ECommand := ECommand;
+  // LEPCommand^.RepeatPreview := RepeatPreview;
+  // LItem.Data := LEPCommand;
+  //
+  // case ECType of
+  // ecKyeboard:
+  // LItem.SubItems.Add(ECommand.Operation);
+  // ecApplication:
+  // LItem.SubItems.Add(ExtractFileName(ECommand.Operation));
+  // end;
+  //
+  // lvRemoteControl.Selected := LItem;
+  // lvRemoteControl.Items[lvRemoteControl.Items.Count - 1].MakeVisible(True);
+  // finally
+  // lvRemoteControl.Items.EndUpdate;
+  // end;
+  //
+  // if (GetWindowLong(lvRemoteControl.Handle, GWL_STYLE) and WS_HSCROLL) > 0 then
+  // lvRemoteControl.Perform(CM_RecreateWnd, 0, 0);
 end;
 
 procedure TMain.onExecuteCommandSetPreviewCommand(RCommand: PRemoteCommand; Opearion: string);

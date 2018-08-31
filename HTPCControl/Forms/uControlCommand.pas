@@ -63,9 +63,9 @@ type
   private
     { Private declarations }
 
-    FKey1: PKeyKeyboard;
-    FKey2: PKeyKeyboard;
-    FKey3: PKeyKeyboard;
+    FKey1: PKeyboard;
+    FKey2: PKeyboard;
+    FKey3: PKeyboard;
 
     FCType: TccType;
 
@@ -117,87 +117,87 @@ var
   Key1, Key2, Key3: integer;
 begin
 
-  if not Assigned(Main.DataBase) or not Main.DataBase.Connected then
-  begin
-    MessageDlg(uLanguage.GetLanguageMsg('msgDBNotConnected', lngRus), mtWarning, [mbOK], 0);
-    exit;
-  end;
-
-  if Length(Trim(edCCCommand.Text)) = 0 then
-  begin
-    MessageDlg(Format(uLanguage.GetLanguageMsg('msgRCCommandEmpty', lngRus), [lCCCommand.Caption]),
-      mtWarning, [mbOK], 0);
-    exit;
-  end;
-
-  RCommand.Command := edCCCommand.Text;
-  RCommand.Desc := edCCDescription.Text;
-
-  try
-    // TabKeyboard
-    if pcControlCommand.ActivePage = TabKeyboard then
-    begin
-      Key1 := 0;
-      Key2 := 0;
-      Key3 := 0;
-
-      if FKey1 <> nil then
-        Key1 := FKey1.Key;
-      if FKey2 <> nil then
-        Key2 := FKey2.Key;
-      if FKey3 <> nil then
-        Key3 := FKey3.Key;
-
-      if FCType in [ccNew, ccAdd] then
-        Main.DataBase.CreatePressKeyKeyboard(RCommand, Key1, Key2, cbCCKeyRepeat.Checked)
-      else
-        Main.DataBase.UpdatePressKeyKeyboard(RCommand, Key1, Key2, cbCCKeyRepeat.Checked);
-    end
-    // TabApplication
-    else if pcControlCommand.ActivePage = TabApplication then
-    begin
-      if FCType in [ccNew, ccAdd] then
-        Main.DataBase.CreateRunApplication(RCommand, edCCAppFileName.Text)
-      else
-        Main.DataBase.UpdateRunApplication(RCommand, edCCAppFileName.Text);
-    end
-    // TabRepeat
-    else if pcControlCommand.ActivePage = TabRepeat then
-    begin
-      if FCType in [ccNew, ccAdd] then
-        Main.DataBase.CreateRemoteCommand(RCommand.Command, RCommand.Desc, cbCommandRepeat.Checked)
-      else
-        Main.DataBase.UpdateRemoteCommand(RCommand.Command, RCommand.Desc, cbCommandRepeat.Checked);
-    end
-    // Если не определенная вкладка
-    else
-      raise Exception.Create('Error Message');
-
-    self.ModalResult := mrOk;
-    // self.Close;
-  except
-    on E: Exception do
-      MessageDlg(E.Message, mtWarning, [mbOK], 0);
-  end;
+  // if not Assigned(Main.DataBase) or not Main.DataBase.Connected then
+  // begin
+  // MessageDlg(uLanguage.GetLanguageMsg('msgDBNotConnected', lngRus), mtWarning, [mbOK], 0);
+  // exit;
+  // end;
+  //
+  // if Length(Trim(edCCCommand.Text)) = 0 then
+  // begin
+  // MessageDlg(Format(uLanguage.GetLanguageMsg('msgRCCommandEmpty', lngRus), [lCCCommand.Caption]),
+  // mtWarning, [mbOK], 0);
+  // exit;
+  // end;
+  //
+  // RCommand.Command := edCCCommand.Text;
+  // RCommand.Desc := edCCDescription.Text;
+  //
+  // try
+  // // TabKeyboard
+  // if pcControlCommand.ActivePage = TabKeyboard then
+  // begin
+  // Key1 := 0;
+  // Key2 := 0;
+  // Key3 := 0;
+  //
+  // if FKey1 <> nil then
+  // Key1 := FKey1.Key;
+  // if FKey2 <> nil then
+  // Key2 := FKey2.Key;
+  // if FKey3 <> nil then
+  // Key3 := FKey3.Key;
+  //
+  // if FCType in [ccNew, ccAdd] then
+  // Main.DataBase.CreatePressKeyKeyboard(RCommand, Key1, Key2, cbCCKeyRepeat.Checked)
+  // else
+  // Main.DataBase.UpdatePressKeyKeyboard(RCommand, Key1, Key2, cbCCKeyRepeat.Checked);
+  // end
+  // // TabApplication
+  // else if pcControlCommand.ActivePage = TabApplication then
+  // begin
+  // if FCType in [ccNew, ccAdd] then
+  // Main.DataBase.CreateRunApplication(RCommand, edCCAppFileName.Text)
+  // else
+  // Main.DataBase.UpdateRunApplication(RCommand, edCCAppFileName.Text);
+  // end
+  // // TabRepeat
+  // else if pcControlCommand.ActivePage = TabRepeat then
+  // begin
+  // if FCType in [ccNew, ccAdd] then
+  // Main.DataBase.CreateRemoteCommand(RCommand.Command, RCommand.Desc, cbCommandRepeat.Checked)
+  // else
+  // Main.DataBase.UpdateRemoteCommand(RCommand.Command, RCommand.Desc, cbCommandRepeat.Checked);
+  // end
+  // // Если не определенная вкладка
+  // else
+  // raise Exception.Create('Error Message');
+  //
+  // self.ModalResult := mrOk;
+  // // self.Close;
+  // except
+  // on E: Exception do
+  // MessageDlg(E.Message, mtWarning, [mbOK], 0);
+  // end;
 
 end;
 
 procedure TfrmControlCommand.cbCCKeyManualKey1Select(Sender: TObject);
 begin
-  FKey1 := Main.DataBase.GetKeyboardKey
-    (integer(cbCCKeyManualKey1.Items.Objects[cbCCKeyManualKey1.ItemIndex]));
+  // FKey1 := Main.DataBase.GetKeyboardKey
+  // (integer(cbCCKeyManualKey1.Items.Objects[cbCCKeyManualKey1.ItemIndex]));
 end;
 
 procedure TfrmControlCommand.cbCCKeyManualKey2Select(Sender: TObject);
 begin
-  FKey2 := Main.DataBase.GetKeyboardKey
-    (integer(cbCCKeyManualKey2.Items.Objects[cbCCKeyManualKey2.ItemIndex]));
+  // FKey2 := Main.DataBase.GetKeyboardKey
+  // (integer(cbCCKeyManualKey2.Items.Objects[cbCCKeyManualKey2.ItemIndex]));
 end;
 
 procedure TfrmControlCommand.cbCCKeyManualKey3Select(Sender: TObject);
 begin
-  FKey3 := Main.DataBase.GetKeyboardKey
-    (integer(cbCCKeyManualKey3.Items.Objects[cbCCKeyManualKey3.ItemIndex]));
+  // FKey3 := Main.DataBase.GetKeyboardKey
+  // (integer(cbCCKeyManualKey3.Items.Objects[cbCCKeyManualKey3.ItemIndex]));
 end;
 
 procedure TfrmControlCommand.edCCCommandKeyPress(Sender: TObject; var Key: Char);
@@ -209,55 +209,55 @@ procedure TfrmControlCommand.edCCKeyKeyboardKeyDown(Sender: TObject; var Key: Wo
   Shift: TShiftState);
 var
   btn: string;
-  KeyKeyboard: PKeyKeyboard;
+  KeyKeyboard: PKeyboard;
 begin
-  HideCaret(TEdit(Sender).Handle);
-
-  FKey1 := nil;
-  FKey2 := nil;
-  FKey3 := nil;
-
-  KeyKeyboard := Main.DataBase.GetKeyboardKey(Key);
-  if KeyKeyboard <> nil then
-    btn := KeyKeyboard.Desc;
-
-  if (ssAlt in Shift) and (btn <> 'Alt') then
-  begin
-    FKey1 := Main.DataBase.GetKeyboardKey(18);
-    FKey2 := KeyKeyboard;
-  end
-  else if (ssCtrl in Shift) and (btn <> 'Ctrl') then
-  begin
-    FKey1 := Main.DataBase.GetKeyboardKey(17);
-    FKey2 := KeyKeyboard;
-  end
-  else if (ssShift in Shift) and (btn <> 'Shift') then
-  begin
-    FKey1 := Main.DataBase.GetKeyboardKey(16);
-    FKey2 := KeyKeyboard;
-  end
-  else
-  begin
-    FKey1 := KeyKeyboard;
-  end;
-
-  // Отмена F10
-  if Key = VK_F10 then
-    Key := 0;
-
-  // Отмена Alt + F4
-  if ((ssAlt in Shift) and (Key = VK_F4)) then
-    Key := 0;
-
-  if (ssAlt in Shift) then
-    Key := 0;
-
-  if FKey1 <> nil then
-    edCCKeyKeyboard.Text := FKey1.Desc;
-  if FKey2 <> nil then
-    edCCKeyKeyboard.Text := edCCKeyKeyboard.Text + ' + ' + FKey2.Desc;
-  if FKey3 <> nil then
-    edCCKeyKeyboard.Text := edCCKeyKeyboard.Text + ' + ' + FKey3.Desc;
+  // HideCaret(TEdit(Sender).Handle);
+  //
+  // FKey1 := nil;
+  // FKey2 := nil;
+  // FKey3 := nil;
+  //
+  // KeyKeyboard := Main.DataBase.GetKeyboardKey(Key);
+  // if KeyKeyboard <> nil then
+  // btn := KeyKeyboard.Desc;
+  //
+  // if (ssAlt in Shift) and (btn <> 'Alt') then
+  // begin
+  // FKey1 := Main.DataBase.GetKeyboardKey(18);
+  // FKey2 := KeyKeyboard;
+  // end
+  // else if (ssCtrl in Shift) and (btn <> 'Ctrl') then
+  // begin
+  // FKey1 := Main.DataBase.GetKeyboardKey(17);
+  // FKey2 := KeyKeyboard;
+  // end
+  // else if (ssShift in Shift) and (btn <> 'Shift') then
+  // begin
+  // FKey1 := Main.DataBase.GetKeyboardKey(16);
+  // FKey2 := KeyKeyboard;
+  // end
+  // else
+  // begin
+  // FKey1 := KeyKeyboard;
+  // end;
+  //
+  // // Отмена F10
+  // if Key = VK_F10 then
+  // Key := 0;
+  //
+  // // Отмена Alt + F4
+  // if ((ssAlt in Shift) and (Key = VK_F4)) then
+  // Key := 0;
+  //
+  // if (ssAlt in Shift) then
+  // Key := 0;
+  //
+  // if FKey1 <> nil then
+  // edCCKeyKeyboard.Text := FKey1.Desc;
+  // if FKey2 <> nil then
+  // edCCKeyKeyboard.Text := edCCKeyKeyboard.Text + ' + ' + FKey2.Desc;
+  // if FKey3 <> nil then
+  // edCCKeyKeyboard.Text := edCCKeyKeyboard.Text + ' + ' + FKey3.Desc;
 end;
 
 procedure TfrmControlCommand.edCCKeyKeyboardKeyUp(Sender: TObject; var Key: Word;
@@ -272,107 +272,107 @@ var
   Keyboards: TKeyboards;
 begin
 
-  // чистим контролы
-  for i := 0 to self.ComponentCount - 1 do
-  begin
-    // Label
-    if self.Components[i] is TLabel then
-      TLabel(self.Components[i]).Caption := '';
-    // Edit
-    if self.Components[i] is TEdit then
-      TEdit(self.Components[i]).Text := '';
-    // Button
-    if self.Components[i] is TButton then
-      TButton(self.Components[i]).Caption := '';
-    // Panel
-    if self.Components[i] is TPanel then
-      TPanel(self.Components[i]).Caption := '';
-  end;
-
-  pcControlCommand.ActivePageIndex := 0;
-  rbCCKeyKeyboard.Checked := True;
-  rbCCKeyKeyboardClick(rbCCKeyKeyboard);
-
-  UpdateLanguage(self, lngRus);
-
-  Keyboards := Main.DataBase.GetKeyboards;
-  for i := 0 to Length(Keyboards) - 1 do
-  begin
-    cbCCKeyManualKey1.Items.AddObject(Keyboards[i].Desc, TObject(Keyboards[i].Key));
-    cbCCKeyManualKey2.Items.AddObject(Keyboards[i].Desc, TObject(Keyboards[i].Key));
-    cbCCKeyManualKey3.Items.AddObject(Keyboards[i].Desc, TObject(Keyboards[i].Key));
-  end;
+  // // чистим контролы
+  // for i := 0 to self.ComponentCount - 1 do
+  // begin
+  // // Label
+  // if self.Components[i] is TLabel then
+  // TLabel(self.Components[i]).Caption := '';
+  // // Edit
+  // if self.Components[i] is TEdit then
+  // TEdit(self.Components[i]).Text := '';
+  // // Button
+  // if self.Components[i] is TButton then
+  // TButton(self.Components[i]).Caption := '';
+  // // Panel
+  // if self.Components[i] is TPanel then
+  // TPanel(self.Components[i]).Caption := '';
+  // end;
+  //
+  // pcControlCommand.ActivePageIndex := 0;
+  // rbCCKeyKeyboard.Checked := True;
+  // rbCCKeyKeyboardClick(rbCCKeyKeyboard);
+  //
+  // UpdateLanguage(self, lngRus);
+  //
+  // Keyboards := Main.DataBase.GetKeyboards;
+  // for i := 0 to Length(Keyboards) - 1 do
+  // begin
+  // cbCCKeyManualKey1.Items.AddObject(Keyboards[i].Desc, TObject(Keyboards[i].Key));
+  // cbCCKeyManualKey2.Items.AddObject(Keyboards[i].Desc, TObject(Keyboards[i].Key));
+  // cbCCKeyManualKey3.Items.AddObject(Keyboards[i].Desc, TObject(Keyboards[i].Key));
+  // end;
 end;
 
 procedure TfrmControlCommand.FormShow(Sender: TObject);
-var
-  RCommand: TRemoteCommand;
-  ECommand: TECommand;
-  ECommands: TECommands;
+// var
+// RCommand: TRemoteCommand;
+// ECommand: TECommand;
+// ECommands: TECommands;
 begin
-  case FCType of
-    ccNew: // Новая команда
-      begin
-        edCCCommand.ReadOnly := False;
-        edCCCommand.SetFocus;
-      end;
-    ccAdd: // Добавляем принятую команду из COM порта
-      begin
-        edCCCommand.ReadOnly := True;
-        edCCDescription.SetFocus;
-      end;
-    ccEdit: // Изменить команду
-      begin
-        edCCCommand.ReadOnly := True;
-        edCCDescription.SetFocus;
-
-        TabKeyboard.TabVisible := False;
-        TabApplication.TabVisible := False;
-        TabRepeat.TabVisible := False;
-
-        RCommand := Main.DataBase.GetCommand(edCCCommand.Text);
-        ECommands := Main.DataBase.getExecuteCommands(edCCCommand.Text);
-        edCCDescription.Text := RCommand.Desc;
-
-        if RCommand.RepeatPreview or (Length(ECommands) = 0) then
-        begin
-          pcControlCommand.ActivePage := TabRepeat;
-          cbCommandRepeat.Checked := RCommand.RepeatPreview;
-          exit;
-        end;
-
-        ECommand := ECommands[0];
-        case ECommand.ECType of
-          ecKyeboard:
-            begin
-              pcControlCommand.ActivePage := TabKeyboard;
-
-              rbCCKeyManual.Checked := True;
-              rbCCKeyManualClick(rbCCKeyManual);
-
-              cbCCKeyManualKey1.ItemIndex := cbCCKeyManualKey1.Items.IndexOfObject
-                (TObject(ECommand.Key1));
-              cbCCKeyManualKey1Select(cbCCKeyManualKey1);
-
-              if ECommand.Key2 > 0 then
-              begin
-                cbCCKeyManualKey2.ItemIndex := cbCCKeyManualKey2.Items.IndexOfObject
-                  (TObject(ECommand.Key2));
-                cbCCKeyManualKey2Select(cbCCKeyManualKey2);
-              end;
-
-              cbCCKeyRepeat.Checked := ECommand.Rep;
-            end;
-          ecApplication:
-            begin
-              pcControlCommand.ActivePage := TabApplication;
-              edCCAppFileName.Text := ECommand.Application;
-              LoadIcon(ECommand.Application, ImageCCApp);
-            end
-        end;
-
-      end;
-  end;
+  // case FCType of
+  // ccNew: // Новая команда
+  // begin
+  // edCCCommand.ReadOnly := False;
+  // edCCCommand.SetFocus;
+  // end;
+  // ccAdd: // Добавляем принятую команду из COM порта
+  // begin
+  // edCCCommand.ReadOnly := True;
+  // edCCDescription.SetFocus;
+  // end;
+  // ccEdit: // Изменить команду
+  // begin
+  // edCCCommand.ReadOnly := True;
+  // edCCDescription.SetFocus;
+  //
+  // TabKeyboard.TabVisible := False;
+  // TabApplication.TabVisible := False;
+  // TabRepeat.TabVisible := False;
+  //
+  // RCommand := Main.DataBase.GetRemoteCommand(edCCCommand.Text);
+  // ECommands := Main.DataBase.getExecuteCommands(edCCCommand.Text);
+  // edCCDescription.Text := RCommand.Desc;
+  //
+  // if RCommand.RepeatPreview or (Length(ECommands) = 0) then
+  // begin
+  // pcControlCommand.ActivePage := TabRepeat;
+  // cbCommandRepeat.Checked := RCommand.RepeatPreview;
+  // exit;
+  // end;
+  //
+  // ECommand := ECommands[0];
+  // case ECommand.ECType of
+  // ecKyeboard:
+  // begin
+  // pcControlCommand.ActivePage := TabKeyboard;
+  //
+  // rbCCKeyManual.Checked := True;
+  // rbCCKeyManualClick(rbCCKeyManual);
+  //
+  // cbCCKeyManualKey1.ItemIndex := cbCCKeyManualKey1.Items.IndexOfObject
+  // (TObject(ECommand.Key1));
+  // cbCCKeyManualKey1Select(cbCCKeyManualKey1);
+  //
+  // if ECommand.Key2 > 0 then
+  // begin
+  // cbCCKeyManualKey2.ItemIndex := cbCCKeyManualKey2.Items.IndexOfObject
+  // (TObject(ECommand.Key2));
+  // cbCCKeyManualKey2Select(cbCCKeyManualKey2);
+  // end;
+  //
+  // cbCCKeyRepeat.Checked := ECommand.Rep;
+  // end;
+  // ecApplication:
+  // begin
+  // pcControlCommand.ActivePage := TabApplication;
+  // edCCAppFileName.Text := ECommand.Application;
+  // LoadIcon(ECommand.Application, ImageCCApp);
+  // end
+  // end;
+  //
+  // end;
+  // end;
 end;
 
 procedure TfrmControlCommand.LoadIcon(FileName: String; Image: TImage);

@@ -3,23 +3,29 @@ program HTPCControl;
 uses
   Vcl.Forms,
   Windows,
-  uMain in 'Forms\uMain.pas' {Main} ,
+  uMain in 'Forms\uMain.pas' {Main},
   uComPort in 'Units\uComPort.pas',
   uCustomPageControl in 'Customs\uCustomPageControl.pas',
-  uAbout in 'Forms\uAbout.pas' {About} ,
+  uAbout in 'Forms\uAbout.pas' {About},
   uCustomActionDrawDisableImage in 'Customs\uCustomActionDrawDisableImage.pas',
-  uSettings in 'Forms\uSettings.pas' {Settings} ,
+  uSettings in 'Forms\uSettings.pas' {Settings},
   uLanguage in 'Units\uLanguage.pas',
   uShellApplication in 'Units\uShellApplication.pas',
   uTypes in 'Units\uTypes.pas',
   uSuperObject in 'Customs\uSuperObject.pas',
   uDataBase in 'Units\uDataBase.pas',
   uEventKodi in 'Units\uEventKodi.pas',
-  uControlCommand in 'Forms\uControlCommand.pas' {frmControlCommand} ,
-  uAllCommand in 'Forms\uAllCommand.pas' {frmAllCommand} ,
+  uControlCommand in 'Forms\uControlCommand.pas' {frmControlCommand},
+  uRCommandsControl in 'Forms\CommandsControl\uRCommandsControl.pas' {frmRCommandsControl},
   uExecuteCommand in 'Units\uExecuteCommand.pas',
   MMDevApi in 'Units\MMDevApi.pas',
-  uSendComPort in 'Forms\uSendComPort.pas' {frmSendComPort};
+  uSendComPort in 'Forms\uSendComPort.pas' {frmSendComPort},
+  Vcl.Themes,
+  Vcl.Styles,
+  uRCommand in 'Forms\CommandsControl\uRCommand.pas' {frmRCommand},
+  uLine in 'Customs\uLine.pas',
+  uORunApplication in 'Forms\CommandsControl\uORunApplication.pas' {frmORunApplication},
+  uOPressKeyboard in 'Forms\CommandsControl\uOPressKeyboard.pas' {frmOPressKeyboard};
 
 {$R *.res}
 
