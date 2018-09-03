@@ -1,4 +1,4 @@
-unit uExecuteCommand;
+п»їunit uExecuteCommand;
 
 interface
 
@@ -66,7 +66,7 @@ procedure TExecuteCommand.Execute(RCommand: TRemoteCommand; RepeatPreview: boole
 // LOperation: string;
 begin
 
-  // // Повтор предыдущей команды
+  // // РџРѕРІС‚РѕСЂ РїСЂРµРґС‹РґСѓС‰РµР№ РєРѕРјР°РЅРґС‹
   // if RCommand.RepeatPreview and (FPrevRCommand <> nil) then
   // begin
   // Execute(TRemoteCommand(FPrevRCommand^), true);
@@ -128,9 +128,9 @@ begin
       StartUpInfo, ProcessInfo);
     if Rlst then
     begin
-      WaitForInputIdle(ProcessInfo.hProcess, INFINITE); // ждем завершения инициализации
-      CloseHandle(ProcessInfo.hThread); // закрываем дескриптор процесса
-      CloseHandle(ProcessInfo.hProcess); // закрываем дескриптор потока
+      WaitForInputIdle(ProcessInfo.hProcess, INFINITE); // Р¶РґРµРј Р·Р°РІРµСЂС€РµРЅРёСЏ РёРЅРёС†РёР°Р»РёР·Р°С†РёРё
+      CloseHandle(ProcessInfo.hThread); // Р·Р°РєСЂС‹РІР°РµРј РґРµСЃРєСЂРёРїС‚РѕСЂ РїСЂРѕС†РµСЃСЃР°
+      CloseHandle(ProcessInfo.hProcess); // Р·Р°РєСЂС‹РІР°РµРј РґРµСЃРєСЂРёРїС‚РѕСЂ РїРѕС‚РѕРєР°
 
       DoExecuteCommand(ECommand, opApplication, false);
     end
@@ -143,17 +143,17 @@ end;
 procedure TExecuteCommand.PressKeyboard(ECommand: TECommand; RepeatPreview: boolean = false);
 begin
   try
-    // Кнопка 1
+    // РљРЅРѕРїРєР° 1
     if ECommand.Key1 <> 0 then
-      keybd_event(ECommand.Key1, 0, 0, 0); // Нажатие кнопки.
-    // Кнопка 2
+      keybd_event(ECommand.Key1, 0, 0, 0); // РќР°Р¶Р°С‚РёРµ РєРЅРѕРїРєРё.
+    // РљРЅРѕРїРєР° 2
     if ECommand.Key2 <> 0 then
-      keybd_event(ECommand.Key2, 0, 0, 0); // Нажатие кнопки.
+      keybd_event(ECommand.Key2, 0, 0, 0); // РќР°Р¶Р°С‚РёРµ РєРЅРѕРїРєРё.
 
     DoExecuteCommand(ECommand, opKyeboard, RepeatPreview);
   finally
-    keybd_event(ECommand.Key2, 0, KEYEVENTF_KEYUP, 0); // Отпускание кнопки.
-    keybd_event(ECommand.Key1, 0, KEYEVENTF_KEYUP, 0); // Отпускание кнопки.
+    keybd_event(ECommand.Key2, 0, KEYEVENTF_KEYUP, 0); // РћС‚РїСѓСЃРєР°РЅРёРµ РєРЅРѕРїРєРё.
+    keybd_event(ECommand.Key1, 0, KEYEVENTF_KEYUP, 0); // РћС‚РїСѓСЃРєР°РЅРёРµ РєРЅРѕРїРєРё.
   end;
 end;
 
