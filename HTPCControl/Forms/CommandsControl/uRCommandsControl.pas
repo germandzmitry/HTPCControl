@@ -32,7 +32,6 @@ type
     ActTBCommand: TActionToolBar;
     ActOPressKeyboard: TAction;
     ActORunApplication: TAction;
-    ActOPressKeyboardForApplication: TAction;
     lCommandV: TLabel;
     lDescriptionV: TLabel;
     ColorMap: TStandardColorMap;
@@ -329,6 +328,7 @@ end;
 procedure TfrmRCommandsControl.ActOEditExecute(Sender: TObject);
 var
   frmORunApp: TfrmORunApplication;
+  frmOPressKey: TfrmOPressKeyboard;
   Operation: TOperation;
 begin
 
@@ -342,6 +342,27 @@ begin
   case Operation.OType of
     opKyeboard:
       begin
+        frmOPressKey := TfrmOPressKeyboard.Create(self);
+        try
+          frmOPressKey.pkType := pkEdit;
+          frmOPressKey.Id := Operation.PressKeyboard.Id;
+          frmOPressKey.Command := Operation.Command;
+          if Operation.PressKeyboard.Key1 > 0 then
+            frmOPressKey.DownKey.addObject(Main.DataBase.GetKeyboard(Operation.PressKeyboard.Key1)
+              .Desc, TObject(Operation.PressKeyboard.Key1));
+          if Operation.PressKeyboard.Key2 > 0 then
+            frmOPressKey.DownKey.addObject(Main.DataBase.GetKeyboard(Operation.PressKeyboard.Key2)
+              .Desc, TObject(Operation.PressKeyboard.Key2));
+          if Operation.PressKeyboard.Key3 > 0 then
+            frmOPressKey.DownKey.addObject(Main.DataBase.GetKeyboard(Operation.PressKeyboard.Key3)
+              .Desc, TObject(Operation.PressKeyboard.Key3));
+          frmOPressKey.cbLongPress.Checked := Operation.PressKeyboard.LongPress;
+
+          if frmOPressKey.ShowModal = mrOK then
+            ReadOperation(lvRCommands.Selected.Caption);
+        finally
+          frmOPressKey.Free;
+        end;
       end;
     opApplication:
       begin
@@ -380,8 +401,7 @@ begin
     try
       case Operation.OType of
         opKyeboard:
-          begin
-          end;
+          Main.DataBase.DeletePressKeyboard(Operation.PressKeyboard.Id);
         opApplication:
           Main.DataBase.DeleteRunApplication(Operation.RunApplication.Id);
       end;

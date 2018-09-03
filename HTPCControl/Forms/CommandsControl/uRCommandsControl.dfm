@@ -136,7 +136,7 @@ object frmRCommandsControl: TfrmRCommandsControl
       object lCommandV: TLabel
         Left = 168
         Top = 8
-        Width = 345
+        Width = 343
         Height = 13
         Anchors = [akLeft, akTop, akRight]
         AutoSize = False
@@ -147,20 +147,22 @@ object frmRCommandsControl: TfrmRCommandsControl
         Font.Name = 'Tahoma'
         Font.Style = [fsBold]
         ParentFont = False
+        ExplicitWidth = 345
       end
       object lDescriptionV: TLabel
         Left = 168
         Top = 27
-        Width = 345
+        Width = 343
         Height = 13
         Anchors = [akLeft, akTop, akRight]
         AutoSize = False
         Caption = 'lDescriptionV'
+        ExplicitWidth = 345
       end
       object cbRepeat: TCheckBox
         Left = 168
         Top = 46
-        Width = 345
+        Width = 343
         Height = 17
         TabStop = False
         Anchors = [akLeft, akTop, akRight]
@@ -214,7 +216,7 @@ object frmRCommandsControl: TfrmRCommandsControl
       Left = 0
       Top = 0
       Width = 151
-      Height = 26
+      Height = 54
       ActionManager = amAllCommand
       Caption = 'ActTBCommand'
       Color = clMenuBar
@@ -231,6 +233,7 @@ object frmRCommandsControl: TfrmRCommandsControl
       ParentShowHint = False
       ShowHint = True
       Spacing = 0
+      ExplicitHeight = 26
     end
   end
   object alAllCommand: TActionList
@@ -243,15 +246,10 @@ object frmRCommandsControl: TfrmRCommandsControl
       ImageIndex = 12
       OnExecute = ActOPressKeyboardExecute
     end
-    object ActOPressKeyboardForApplication: TAction
-      Category = 'Operation'
-      Caption = 'ActOPressKeyboardForApplication'
-      ImageIndex = 12
-      OnExecute = ActOPressKeyboardForApplicationExecute
-    end
     object ActORunApplication: TAction
       Category = 'Operation'
       Caption = 'ActORunApplication'
+      ImageIndex = 14
       OnExecute = ActORunApplicationExecute
     end
     object ActOEdit: TAction
@@ -295,13 +293,9 @@ object frmRCommandsControl: TfrmRCommandsControl
             ImageIndex = 12
           end
           item
-            Action = ActOPressKeyboardForApplication
-            Caption = 'Act&OPressKeyboardForApplication'
-            ImageIndex = 12
-          end
-          item
             Action = ActORunApplication
             Caption = 'ActO&RunApplication'
+            ImageIndex = 14
           end
           item
             Caption = '-'

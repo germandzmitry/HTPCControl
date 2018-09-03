@@ -129,8 +129,10 @@ type
     procedure UpdateRunApplication(const id: integer; const AppFileName: string);
     procedure DeleteRunApplication(const id: integer);
 
-    procedure CreatePressKeyKeyboard(const Command: string; const Key1, Key2, Key3: integer;
+    procedure CreatePressKeyboard(const Command: string; const Key1, Key2, Key3: integer;
       LongPress: boolean);
+    procedure UpdatePressKeyboard(const id, Key1, Key2, Key3: integer; LongPress: boolean);
+    procedure DeletePressKeyboard(const id: integer);
 
     // function GetVCommands(const Command: string = ''): TVCommands;
     //
@@ -775,7 +777,7 @@ begin
   end;
 end;
 
-procedure TDataBase.CreatePressKeyKeyboard(const Command: string; const Key1, Key2, Key3: integer;
+procedure TDataBase.CreatePressKeyboard(const Command: string; const Key1, Key2, Key3: integer;
   LongPress: boolean);
 var
   Query: TADOQuery;
@@ -810,38 +812,57 @@ begin
   end;
 end;
 
-// procedure TDataBase.CreatePressKeyKeyboard(const RCommand: TRemoteCommand; Key1, Key2: integer;
-// ARepeat: boolean);
-// var
-// Query: TADOQuery;
-// LCommand, sKey1, sKey2: string;
-// begin
-// if not FConnection.Connected then
-// exit;
-//
-// sKey1 := 'null';
-// sKey2 := 'null';
-//
-// if Key1 > 0 then
-// sKey1 := IntToStr(Key1);
-// if Key2 > 0 then
-// sKey2 := IntToStr(Key2);
-//
-// LCommand := CreateRemoteCommand(RCommand.Command, RCommand.Desc);
-//
-// try
-// // Создание запуска приложения
-// Query := TADOQuery.Create(nil);
-// Query.Connection := FConnection;
-// Query.Sql.Clear;
-// Query.Sql.Text := 'insert into PressKeyKeyboard (command, key1, key2, repeat) values ("' +
-// RCommand.Command + '", ' + sKey1 + ', ' + sKey2 + ', ' + BoolToStr(ARepeat) + ')';
-// Query.ExecSQL;
-//
-// finally
-// Query.Free;
-// end;
-// end;
+procedure TDataBase.UpdatePressKeyboard(const id, Key1, Key2, Key3: integer; LongPress: boolean);
+var
+  Query: TADOQuery;
+  sKey1, sKey2, sKey3: string;
+begin
+  if not FConnection.Connected then
+    exit;
+
+  sKey1 := 'null';
+  sKey2 := 'null';
+  sKey3 := 'null';
+
+  if Key1 > 0 then
+    sKey1 := IntToStr(Key1);
+  if Key2 > 0 then
+    sKey2 := IntToStr(Key2);
+  if Key3 > 0 then
+    sKey3 := IntToStr(Key3);
+
+  Query := TADOQuery.Create(nil);
+  try
+    Query.Connection := FConnection;
+    Query.Sql.Clear;
+    Query.Sql.Text := 'update OperationPressKeyboard set key1 = ' + sKey1 + ',  key2 = ' + sKey2 +
+      ',  key3 = ' + sKey3 + ', longPress = ' + BoolToStr(LongPress) + ' where id = ' +
+      IntToStr(id);
+    Query.ExecSQL;
+  finally
+    Query.Free;
+  end;
+end;
+
+procedure TDataBase.DeletePressKeyboard(const id: integer);
+var
+  Query: TADOQuery;
+begin
+  if not FConnection.Connected then
+    exit;
+
+  Query := TADOQuery.Create(nil);
+  try
+    Query.Connection := FConnection;
+    Query.Sql.Clear;
+    Query.Sql.Text := 'delete from OperationPressKeyboard where id = ' + IntToStr(id);
+    Query.ExecSQL;
+  finally
+    Query.Free;
+  end;
+end;
+
+
 
 // procedure TDataBase.UpdatePressKeyKeyboard(const RCommand: TRemoteCommand; Key1, Key2: integer;
 // ARepeat: boolean);
@@ -1071,6 +1092,7 @@ begin
       '           null as application,                                              ' +
       '           pk.key1 as key1,                                                  ' +
       '           pk.key2 as key2,                                                  ' +
+      '           pk.key3 as key3,                                                  ' +
       '           pk.longPress as longPress,                                        ' +
       '           opk2.operation as operation                                       ' +
       '      from (                                                                 ' +
@@ -1098,6 +1120,7 @@ begin
       '           ra.application,                                                   ' +
       '           null as key1,                                                     ' +
       '           null as key2,                                                     ' +
+      '           null as key3,                                                     ' +
       '           null as longPress,                                                ' +
       '           ra.application as operation                                       ' +
       '      from remotecommand as rc                                               ' +
@@ -1130,6 +1153,7 @@ begin
         Result[Query.RecNo - 1].PressKeyboard.Command := Result[Query.RecNo - 1].Command;
         Result[Query.RecNo - 1].PressKeyboard.Key1 := Query.FieldByName('key1').AsInteger;
         Result[Query.RecNo - 1].PressKeyboard.Key2 := Query.FieldByName('key2').AsInteger;
+        Result[Query.RecNo - 1].PressKeyboard.Key3 := Query.FieldByName('key3').AsInteger;
         Result[Query.RecNo - 1].PressKeyboard.LongPress := Query.FieldByName('LongPress').AsBoolean;
       end;
 
