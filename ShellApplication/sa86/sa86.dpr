@@ -1,4 +1,4 @@
-program sa86;
+п»їprogram sa86;
 
 { https://www.experts-exchange.com/questions/20720668/Need-to-disable-StdOut-buffer-for-a-console-app-in-delphi.html }
 
@@ -47,14 +47,14 @@ begin
 
     if Length(ParamStr(1)) = 0 then
     begin
-      WriteLn('Параметр на найден');
+      WriteLn('РџР°СЂР°РјРµС‚СЂ РЅР° РЅР°Р№РґРµРЅ');
       // Readln;
       exit;
     end;
 
     Handle := StrToInt(ParamStr(1));
 
-    // загружаем библиотеку
+    // Р·Р°РіСЂСѓР¶Р°РµРј Р±РёР±Р»РёРѕС‚РµРєСѓ
     FHook := LoadLibrary('ShellApplication.dll');
     if FHook = 0 then
     begin
@@ -63,7 +63,7 @@ begin
       exit;
     end;
 
-    // получаем адресс функции
+    // РїРѕР»СѓС‡Р°РµРј Р°РґСЂРµСЃСЃ С„СѓРЅРєС†РёРё
     @SetHook := GetProcAddress(FHook, 'SetHook');
     if @SetHook = nil then
     begin
@@ -73,7 +73,7 @@ begin
       exit;
     end;
 
-    // устанавливаем хук
+    // СѓСЃС‚Р°РЅР°РІР»РёРІР°РµРј С…СѓРє
     if not SetHook(Handle, HookError) then
     begin
       WriteLn(SysErrorMessage(HookError));
