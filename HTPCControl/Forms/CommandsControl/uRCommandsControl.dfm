@@ -51,10 +51,6 @@ object frmRCommandsControl: TfrmRCommandsControl
           item
             AutoSize = True
             Caption = 'Operation'
-          end
-          item
-            Alignment = taCenter
-            Caption = 'Repeat'
           end>
         ColumnClick = False
         ReadOnly = True
@@ -92,7 +88,7 @@ object frmRCommandsControl: TfrmRCommandsControl
       Left = 3
       Top = 3
       Width = 524
-      Height = 70
+      Height = 94
       Align = alTop
       BevelOuter = bvNone
       BorderStyle = bsSingle
@@ -105,7 +101,7 @@ object frmRCommandsControl: TfrmRCommandsControl
       TabOrder = 0
       DesignSize = (
         522
-        68)
+        92)
       object lCommand: TLabel
         Left = 3
         Top = 8
@@ -126,7 +122,7 @@ object frmRCommandsControl: TfrmRCommandsControl
       end
       object lRepeat: TLabel
         Left = 3
-        Top = 47
+        Top = 67
         Width = 159
         Height = 13
         Alignment = taRightJustify
@@ -159,15 +155,34 @@ object frmRCommandsControl: TfrmRCommandsControl
         Caption = 'lDescriptionV'
         ExplicitWidth = 345
       end
+      object lLongPress: TLabel
+        Left = 3
+        Top = 47
+        Width = 159
+        Height = 13
+        Alignment = taRightJustify
+        Anchors = [akLeft, akTop, akRight]
+        AutoSize = False
+        Caption = 'lLongPress'
+      end
       object cbRepeat: TCheckBox
         Left = 168
-        Top = 46
+        Top = 66
         Width = 343
         Height = 17
         TabStop = False
         Anchors = [akLeft, akTop, akRight]
         Caption = 'cbRepeat'
         TabOrder = 0
+      end
+      object cbLongPress: TCheckBox
+        Left = 168
+        Top = 46
+        Width = 343
+        Height = 17
+        Anchors = [akLeft, akTop, akRight]
+        Caption = 'cbLongPress'
+        TabOrder = 1
       end
     end
   end
@@ -216,7 +231,7 @@ object frmRCommandsControl: TfrmRCommandsControl
       Left = 0
       Top = 0
       Width = 151
-      Height = 54
+      Height = 26
       ActionManager = amAllCommand
       Caption = 'ActTBCommand'
       Color = clMenuBar
@@ -233,7 +248,6 @@ object frmRCommandsControl: TfrmRCommandsControl
       ParentShowHint = False
       ShowHint = True
       Spacing = 0
-      ExplicitHeight = 26
     end
   end
   object alAllCommand: TActionList

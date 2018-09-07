@@ -1,4 +1,4 @@
-unit uRCommandsControl;
+ï»¿unit uRCommandsControl;
 
 interface
 
@@ -35,6 +35,8 @@ type
     lCommandV: TLabel;
     lDescriptionV: TLabel;
     ColorMap: TStandardColorMap;
+    cbLongPress: TCheckBox;
+    lLongPress: TLabel;
     procedure FormCreate(Sender: TObject);
     procedure ActOEditExecute(Sender: TObject);
     procedure ActODeleteExecute(Sender: TObject);
@@ -71,7 +73,7 @@ implementation
 
 {$R *.dfm}
 
-uses uMain, uLanguage, uTypes, uControlCommand, uRCommand, uORunApplication, uOPressKeyboard;
+uses uMain, uLanguage, uTypes, uRCommand, uORunApplication, uOPressKeyboard;
 
 procedure TfrmRCommandsControl.FormCreate(Sender: TObject);
 var
@@ -121,16 +123,17 @@ var
   Rect: TRect;
   Details: TThemedElementDetails;
 begin
-  if SubItem = 1 then
-  begin
-    if strtoint(Item.SubItems[SubItem - 1]) <> 0 then
-    begin
-      ListView_GetSubItemRect(Sender.Handle, Item.Index, SubItem, LVIR_BOUNDS, @Rect);
-      Details := StyleServices.GetElementDetails(tbCheckBoxCheckedNormal);
-      StyleServices.DrawElement(Sender.Canvas.Handle, Details, Rect);
-    end;
-    DefaultDraw := false;
-  end;
+  // if SubItem = 1 then
+  // begin
+  // DefaultDraw := false;
+  // if strtoint(Item.SubItems[SubItem - 1]) <> 0 then
+  // begin
+  // ListView_GetSubItemRect(Sender.Handle, Item.Index, SubItem, LVIR_BOUNDS, @Rect);
+  // Details := StyleServices.GetElementDetails(tbCheckBoxCheckedNormal);
+  // StyleServices.DrawElement(Sender.Canvas.Handle, Details, Rect);
+  // end;
+  // SetBkMode(Sender.Canvas.Handle, TRANSPARENT); // <- will effect the next [sub]item
+  // end;
 end;
 
 procedure TfrmRCommandsControl.lvRCommandsSelectItem(Sender: TObject; Item: TListItem;
@@ -158,17 +161,19 @@ begin
   plvRCommands.Width := 200;
   lvRCommands.Align := alClient;
 
-  FLineRCommands := TLine.Create(plvRCommands, clWhite, clHotLight);
+  // FLineRCommands := TLine.Create(plvRCommands, clWhite, clHotLight);
+  FLineRCommands := TLine.Create(plvRCommands, clWhite, RGB(Random(256), Random(256), Random(256)));
   ActTBCommand.Top := 0;
 
   pClient.Align := alClient;
   plvOperation.Align := alClient;
   lvOperation.Align := alClient;
 
-  FLineOpearion := TLine.Create(plvOperation, clWhite, clRed);
+  // FLineOpearion := TLine.Create(plvOperation, clWhite, clRed);
+  FLineOpearion := TLine.Create(plvOperation, clWhite, RGB(Random(256), Random(256), Random(256)));
   ActTBOperation.Top := 0;
 
-  // ÷èñòèì êîíòðîëû
+  // Ñ‡Ð¸ÑÑ‚Ð¸Ð¼ ÐºÐ¾Ð½Ñ‚Ñ€Ð¾Ð»Ñ‹
   for i := 0 to self.ComponentCount - 1 do
   begin
     // Label
@@ -218,7 +223,7 @@ begin
   if lvRCommands.SelCount = 0 then
   begin
     MessageDlg(uLanguage.GetLanguageMsg('msgRCSelectCommand', lngRus), mtWarning, [mbOK], 0);
-    exit;
+    Exit;
   end;
 
   try
@@ -227,7 +232,7 @@ begin
     on E: Exception do
     begin
       MessageDlg(E.Message, mtError, [mbOK], 0);
-      exit;
+      Exit;
     end;
   end;
 
@@ -237,6 +242,7 @@ begin
     frmRCommand.edCommand.Text := RCommand.Command;
     frmRCommand.edDescription.Text := RCommand.Desc;
     frmRCommand.cbRepeatPrevious.Checked := RCommand.RepeatPrevious;
+    frmRCommand.cbLongPress.Checked := RCommand.LongPress;
     if frmRCommand.ShowModal = mrOK then
       ReadRemoteCommand(RCommand.Command);
   finally
@@ -251,11 +257,11 @@ begin
   if lvRCommands.SelCount = 0 then
   begin
     MessageDlg(uLanguage.GetLanguageMsg('msgRCSelectCommand', lngRus), mtWarning, [mbOK], 0);
-    exit;
+    Exit;
   end;
 
   if MessageDlg(Format(GetLanguageMsg('msgDBDeleteRemoteCommand', lngRus),
-    [lvRCommands.Selected.Caption]), mtConfirmation, mbOKCancel, 1) = mrOK then
+    [lvRCommands.Selected.Caption]), mtConfirmation, mbYesNo, 1) = mrYes then
     try
       Main.DataBase.DeleteRemoteCommand(lvRCommands.Selected.Caption);
       // MessageDlg(GetLanguageMsg('msgDBDeleteRemoteCommandSuccess', lngRus), mtInformation,
@@ -285,7 +291,7 @@ begin
   if lvRCommands.SelCount = 0 then
   begin
     MessageDlg(uLanguage.GetLanguageMsg('msgRCSelectCommand', lngRus), mtWarning, [mbOK], 0);
-    exit;
+    Exit;
   end;
 
   frmOPressKey := TfrmOPressKeyboard.Create(self);
@@ -311,7 +317,7 @@ begin
   if lvRCommands.SelCount = 0 then
   begin
     MessageDlg(uLanguage.GetLanguageMsg('msgRCSelectCommand', lngRus), mtWarning, [mbOK], 0);
-    exit;
+    Exit;
   end;
 
   frmORunApp := TfrmORunApplication.Create(self);
@@ -335,7 +341,7 @@ begin
   if lvOperation.SelCount = 0 then
   begin
     MessageDlg(uLanguage.GetLanguageMsg('msgRCSelectOperation', lngRus), mtWarning, [mbOK], 0);
-    exit;
+    Exit;
   end;
 
   Operation := TOperation(lvOperation.Selected.Data^);
@@ -356,7 +362,6 @@ begin
           if Operation.PressKeyboard.Key3 > 0 then
             frmOPressKey.DownKey.addObject(Main.DataBase.GetKeyboard(Operation.PressKeyboard.Key3)
               .Desc, TObject(Operation.PressKeyboard.Key3));
-          frmOPressKey.cbLongPress.Checked := Operation.PressKeyboard.LongPress;
 
           if frmOPressKey.ShowModal = mrOK then
             ReadOperation(lvRCommands.Selected.Caption);
@@ -391,13 +396,13 @@ begin
   if lvOperation.SelCount = 0 then
   begin
     MessageDlg(uLanguage.GetLanguageMsg('msgRCSelectOperation', lngRus), mtWarning, [mbOK], 0);
-    exit;
+    Exit;
   end;
 
   Operation := TOperation(lvOperation.Selected.Data^);
 
   if MessageDlg(Format(GetLanguageMsg('msgRCDeleteOperation', lngRus),
-    [Operation.Operation, Operation.Command]), mtConfirmation, mbOKCancel, 1) = mrOK then
+    [Operation.Operation, Operation.Command]), mtConfirmation, mbYesNo, 1) = mrYes then
     try
       case Operation.OType of
         opKyeboard:
@@ -424,6 +429,7 @@ begin
     lCommandV.Caption := RCommand.Command;
     lDescriptionV.Caption := RCommand.Desc;
     cbRepeat.Checked := RCommand.RepeatPrevious;
+    cbLongPress.Checked := RCommand.LongPress;
 
     ReadOperation(Command);
   except
@@ -451,7 +457,7 @@ begin
     begin
       LItem := lvOperation.Items.Add;
       LItem.Caption := Operations[i].Operation;
-      LItem.SubItems.Add(BoolToStr(Operations[i].PressKeyboard.LongPress));
+      // LItem.SubItems.Add(BoolToStr(Operations[i].PressKeyboard.LongPress));
 
       new(Op);
       Op^ := Operations[i];

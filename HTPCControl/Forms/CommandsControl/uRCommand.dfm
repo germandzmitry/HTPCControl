@@ -3,7 +3,7 @@ object frmRCommand: TfrmRCommand
   Top = 0
   BorderStyle = bsDialog
   Caption = 'frmRCommand'
-  ClientHeight = 128
+  ClientHeight = 152
   ClientWidth = 413
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
@@ -18,45 +18,43 @@ object frmRCommand: TfrmRCommand
   OnShow = FormShow
   DesignSize = (
     413
-    128)
+    152)
   PixelsPerInch = 96
   TextHeight = 13
   object btnCancel: TButton
     Left = 330
-    Top = 95
+    Top = 119
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
     Caption = 'btnCancel'
-    TabOrder = 0
+    TabOrder = 2
     OnClick = btnCancelClick
-    ExplicitTop = 98
   end
   object btnSave: TButton
     Left = 249
-    Top = 95
+    Top = 119
     Width = 75
     Height = 25
     Anchors = [akRight, akBottom]
     Caption = 'btnSave'
     TabOrder = 1
     OnClick = btnSaveClick
-    ExplicitTop = 98
   end
   object pTop: TPanel
     Left = 0
     Top = 0
     Width = 413
-    Height = 89
+    Height = 113
     Align = alTop
     BevelOuter = bvNone
     Caption = 'pTop'
     Color = clWhite
     ParentBackground = False
-    TabOrder = 2
+    TabOrder = 0
     DesignSize = (
       413
-      89)
+      113)
     object lCommand: TLabel
       Left = 8
       Top = 11
@@ -77,12 +75,12 @@ object frmRCommand: TfrmRCommand
     end
     object cbRepeatPrevious: TCheckBox
       Left = 160
-      Top = 62
+      Top = 85
       Width = 245
       Height = 17
       Anchors = [akLeft, akTop, akRight]
       Caption = 'cbRepeatPrevious'
-      TabOrder = 0
+      TabOrder = 3
     end
     object edCommand: TEdit
       Left = 160
@@ -90,7 +88,7 @@ object frmRCommand: TfrmRCommand
       Width = 245
       Height = 21
       Anchors = [akLeft, akTop, akRight]
-      TabOrder = 1
+      TabOrder = 0
       Text = 'edCommand'
     end
     object edDescription: TEdit
@@ -99,8 +97,17 @@ object frmRCommand: TfrmRCommand
       Width = 245
       Height = 21
       Anchors = [akLeft, akTop, akRight]
-      TabOrder = 2
+      TabOrder = 1
       Text = 'edDescription'
+    end
+    object cbLongPress: TCheckBox
+      Left = 160
+      Top = 62
+      Width = 245
+      Height = 17
+      Anchors = [akLeft, akTop, akRight]
+      Caption = 'cbLongPress'
+      TabOrder = 2
     end
   end
 end

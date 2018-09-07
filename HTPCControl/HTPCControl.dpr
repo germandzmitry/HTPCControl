@@ -15,7 +15,6 @@ uses
   uSuperObject in 'Customs\uSuperObject.pas',
   uDataBase in 'Units\uDataBase.pas',
   uEventKodi in 'Units\uEventKodi.pas',
-  uControlCommand in 'Forms\uControlCommand.pas' {frmControlCommand},
   uRCommandsControl in 'Forms\CommandsControl\uRCommandsControl.pas' {frmRCommandsControl},
   uExecuteCommand in 'Units\uExecuteCommand.pas',
   MMDevApi in 'Units\MMDevApi.pas',
@@ -25,7 +24,9 @@ uses
   uRCommand in 'Forms\CommandsControl\uRCommand.pas' {frmRCommand},
   uLine in 'Customs\uLine.pas',
   uORunApplication in 'Forms\CommandsControl\uORunApplication.pas' {frmORunApplication},
-  uOPressKeyboard in 'Forms\CommandsControl\uOPressKeyboard.pas' {frmOPressKeyboard};
+  uOPressKeyboard in 'Forms\CommandsControl\uOPressKeyboard.pas' {frmOPressKeyboard},
+  uCustomListBox in 'Customs\uCustomListBox.pas',
+  uFastRCommand in 'Forms\CommandsControl\uFastRCommand.pas' {frmFastRCommand};
 
 {$R *.res}
 

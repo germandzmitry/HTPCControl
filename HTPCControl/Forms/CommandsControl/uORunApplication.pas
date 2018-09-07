@@ -1,4 +1,4 @@
-unit uORunApplication;
+Ôªøunit uORunApplication;
 
 interface
 
@@ -32,7 +32,6 @@ type
     FraType: TraType;
     FID: integer;
     FCommand: string;
-    procedure LoadIcon(FileName: String; Image: TImage);
   public
     { Public declarations }
     property raType: TraType read FraType write FraType;
@@ -47,7 +46,7 @@ implementation
 
 {$R *.dfm}
 
-uses uLanguage, uMain;
+uses uLanguage, uMain, uShellApplication;
 
 procedure TfrmORunApplication.FormCreate(Sender: TObject);
 begin
@@ -55,7 +54,8 @@ begin
   pImageApplication.Caption := '';
   edApplicationFileName.Text := '';
 
-  FLine := TLine.Create(pTop, alBottom, clWhite, clRed);
+  // FLine := TLine.Create(pTop, alBottom, clWhite, clRed);
+  FLine := TLine.Create(pTop, alBottom, clWhite, RGB(Random(256), Random(256), Random(256)));
 
   UpdateLanguage(self, lngRus);
 end;
@@ -77,7 +77,7 @@ var
 begin
   OpenDialog := TOpenDialog.Create(self);
   try
-    OpenDialog.Filter := 'œËÎÓÊÂÌËˇ|*.exe';
+    OpenDialog.Filter := '–ü—Ä–∏–ª–æ–∂–µ–Ω–∏—è|*.exe';
     if FileExists(edApplicationFileName.Text) then
       OpenDialog.InitialDir := ExtractFileDir(edApplicationFileName.Text)
     else
@@ -113,24 +113,6 @@ end;
 procedure TfrmORunApplication.btnCancelClick(Sender: TObject);
 begin
   close;
-end;
-
-procedure TfrmORunApplication.LoadIcon(FileName: String; Image: TImage);
-var
-  Icon: TIcon;
-  FileInfo: SHFILEINFO;
-begin
-  if FileExists(FileName) then
-  begin
-    Icon := TIcon.Create;
-    try
-      SHGetFileInfo(PChar(FileName), 0, FileInfo, SizeOf(FileInfo), SHGFI_ICON);
-      Icon.Handle := FileInfo.hIcon;
-      Image.Picture.Icon := Icon;
-    finally
-      Icon.Free;
-    end;
-  end;
 end;
 
 end.

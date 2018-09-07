@@ -1,4 +1,4 @@
-unit uEventKodi;
+п»їunit uEventKodi;
 
 interface
 
@@ -152,7 +152,7 @@ begin
 
   DoRunning(True);
 
-  // что бы приложение успело загрузиться
+  // С‡С‚Рѕ Р±С‹ РїСЂРёР»РѕР¶РµРЅРёРµ СѓСЃРїРµР»Рѕ Р·Р°РіСЂСѓР·РёС‚СЊСЃСЏ
   Sleep(2000);
   FSleep := FUpdateInterval;
 
@@ -191,7 +191,7 @@ begin
     end
     else if PlayerId <> NoPlayer then
     begin
-      // изменился плеер
+      // РёР·РјРµРЅРёР»СЃСЏ РїР»РµРµСЂ
       if prevPlayerId <> PlayerId then
         Synchronize(
           procedure
@@ -200,7 +200,7 @@ begin
           end);
 
       PlayerState := self.PlayerState(PlayerId);
-      // изменилось состояние плеера
+      // РёР·РјРµРЅРёР»РѕСЃСЊ СЃРѕСЃС‚РѕСЏРЅРёРµ РїР»РµРµСЂР°
       if prevPlayerState <> PlayerState then
         Synchronize(
           procedure

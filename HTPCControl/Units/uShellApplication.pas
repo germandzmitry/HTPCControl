@@ -1,10 +1,10 @@
-unit uShellApplication;
+п»їunit uShellApplication;
 
 interface
 
 uses
   Winapi.Messages, Winapi.windows, System.SysUtils, System.Classes, Winapi.PsApi,
-  Vcl.Controls, Vcl.Forms, Vcl.Graphics, uLanguage;
+  Vcl.Controls, Vcl.Forms, Vcl.Graphics, uLanguage, Vcl.ExtCtrls, Winapi.Shellapi;
 
 const
   WM_ShellApplication = WM_USER + 177;
@@ -112,7 +112,6 @@ type
     procedure DoWindowReplaced(ApplicationData: TEXEVersionData); dynamic;
 
     function GetEXEVersionData(const ProcessHandle: HWND): TEXEVersionData;
-    function GetExePath(const ProcessHandle: HWND): string;
 
 {$IFDEF WIN64}
     procedure Start_x86();
@@ -146,6 +145,8 @@ type
 function ExtractIconEx(lpszFile: LPCWSTR; nIconIndex: Integer; phiconLarge, phiconSmall: PHICON;
   nIcons: UINT): UINT; stdcall; external 'shell32.dll' name 'ExtractIconExW';
 procedure SmallIconEXE(const FileName: string; var Icon: TIcon);
+function GetExePath(const ProcessHandle: HWND): string;
+procedure LoadIcon(FileName: String; Image: TImage);
 
 implementation
 
@@ -225,19 +226,19 @@ begin
   while not Terminated do
   begin
 
-    // получаем состояние дочернего процесса
+    // РїРѕР»СѓС‡Р°РµРј СЃРѕСЃС‚РѕСЏРЅРёРµ РґРѕС‡РµСЂРЅРµРіРѕ РїСЂРѕС†РµСЃСЃР°
     GetExitCodeProcess(FProcessInfo.hProcess, ExitCode);
-    // Если процес завершен, завершаем поток
+    // Р•СЃР»Рё РїСЂРѕС†РµСЃ Р·Р°РІРµСЂС€РµРЅ, Р·Р°РІРµСЂС€Р°РµРј РїРѕС‚РѕРє
     if ExitCode <> STILL_ACTIVE then
     begin
       Terminate;
       Sleep(50);
     end;
 
-    // Смотрим сколько данных должны прочитать
+    // РЎРјРѕС‚СЂРёРј СЃРєРѕР»СЊРєРѕ РґР°РЅРЅС‹С… РґРѕР»Р¶РЅС‹ РїСЂРѕС‡РёС‚Р°С‚СЊ
     if PeekNamedPipe(FOutRead, nil, 0, nil, @BufSize, nil) then
     begin
-      // Если есть что читать, читаем
+      // Р•СЃР»Рё РµСЃС‚СЊ С‡С‚Рѕ С‡РёС‚Р°С‚СЊ, С‡РёС‚Р°РµРј
       if BufSize > 0 then
       begin
         FillChar(Buffer, 1024, #0);
@@ -245,10 +246,10 @@ begin
         if BufSize > 1024 then
           BufSize := 1024;
 
-        // Читаем данные из консоли
+        // Р§РёС‚Р°РµРј РґР°РЅРЅС‹Рµ РёР· РєРѕРЅСЃРѕР»Рё
         ReadFile(FOutRead, Buffer, BufSize, BytesRead, nil);
 
-        // Возвращаем кодировку
+        // Р’РѕР·РІСЂР°С‰Р°РµРј РєРѕРґРёСЂРѕРІРєСѓ
         SetLength(Str, BufSize);
         OemToCharBuffA(PAnsiChar(AnsiString(Buffer)), PAnsiChar(Str), BufSize);
 
@@ -258,7 +259,7 @@ begin
             DoPipe(Str, saRead);
           end);
       end
-      // Если нечего читать, ждем, иначе поток съедает 25-30% процесора
+      // Р•СЃР»Рё РЅРµС‡РµРіРѕ С‡РёС‚Р°С‚СЊ, Р¶РґРµРј, РёРЅР°С‡Рµ РїРѕС‚РѕРє СЃСЉРµРґР°РµС‚ 25-30% РїСЂРѕС†РµСЃРѕСЂР°
       else
         Sleep(10);
     end;
@@ -266,7 +267,7 @@ begin
   end;
 
   GetExitCodeProcess(FProcessInfo.hProcess, ExitCode);
-  // Если процес не завершен, завершаем его
+  // Р•СЃР»Рё РїСЂРѕС†РµСЃ РЅРµ Р·Р°РІРµСЂС€РµРЅ, Р·Р°РІРµСЂС€Р°РµРј РµРіРѕ
   if ExitCode = STILL_ACTIVE then
     TerminateProcess(FProcessInfo.hProcess, NO_ERROR);
 
@@ -533,24 +534,6 @@ begin
   Msg.Result := 1;
 end;
 
-function TShellApplications.GetExePath(const ProcessHandle: HWND): String;
-var
-  ph: THandle;
-  FileName: array [0 .. MAX_PATH - 1] of Char;
-  pid: Cardinal;
-begin
-  Result := '';
-  GetWindowThreadProcessId(ProcessHandle, @pid);
-  ph := OpenProcess(PROCESS_QUERY_INFORMATION or PROCESS_VM_READ, false, pid);
-  if ph <> 0 then
-    try
-      if GetModuleFileNameEx(ph, 0, FileName, SizeOf(FileName)) > 0 then
-        Result := FileName;
-    finally
-      CloseHandle(ph);
-    end;
-end;
-
 function TShellApplications.GetEXEVersionData(const ProcessHandle: HWND): TEXEVersionData;
 type
   PLandCodepage = ^TLandCodepage;
@@ -646,6 +629,42 @@ begin
     // DestroyIcon(LIcon);
   except
     raise;
+  end;
+end;
+
+function GetExePath(const ProcessHandle: HWND): String;
+var
+  ph: THandle;
+  FileName: array [0 .. MAX_PATH - 1] of Char;
+  pid: Cardinal;
+begin
+  Result := '';
+  GetWindowThreadProcessId(ProcessHandle, @pid);
+  ph := OpenProcess(PROCESS_QUERY_INFORMATION or PROCESS_VM_READ, false, pid);
+  if ph <> 0 then
+    try
+      if GetModuleFileNameEx(ph, 0, FileName, SizeOf(FileName)) > 0 then
+        Result := FileName;
+    finally
+      CloseHandle(ph);
+    end;
+end;
+
+procedure LoadIcon(FileName: String; Image: TImage);
+var
+  Icon: TIcon;
+  FileInfo: SHFILEINFO;
+begin
+  if FileExists(FileName) then
+  begin
+    Icon := TIcon.Create;
+    try
+      SHGetFileInfo(PChar(FileName), 0, FileInfo, SizeOf(FileInfo), SHGFI_ICON);
+      Icon.Handle := FileInfo.hIcon;
+      Image.Picture.Icon := Icon;
+    finally
+      Icon.Free;
+    end;
   end;
 end;
 

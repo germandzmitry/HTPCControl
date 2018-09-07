@@ -1,4 +1,4 @@
-unit uSettings;
+п»їunit uSettings;
 
 interface
 
@@ -176,7 +176,7 @@ begin
   IniFile := TIniFile.Create(ExtractFileDir(Application.ExeName) + '\' + FileSetting);
   try
 
-    // Приложение
+    // РџСЂРёР»РѕР¶РµРЅРёРµ
     Result.Application.AutoRun := IniFile.ReadBool('Application', 'AutoRun',
       Result.Application.AutoRun);
     Result.Application.AutoRunTray := IniFile.ReadBool('Application', 'AutoRunTray',
@@ -192,17 +192,17 @@ begin
     Result.Application.CloseTray := IniFile.ReadBool('Application', 'CloseTray',
       Result.Application.CloseTray);
 
-    // Com порт
+    // Com РїРѕСЂС‚
     Result.ComPort.OpenRun := IniFile.ReadBool('Com', 'OpenRun', Result.ComPort.OpenRun);
     Result.ComPort.Port := IniFile.ReadString('Com', 'COM', Result.ComPort.Port);
     Result.ComPort.Speed := IniFile.ReadInteger('Com', 'Speed', Result.ComPort.Speed);
     Result.ComPort.ShowLast := IniFile.ReadInteger('Com', 'ShowLast', Result.ComPort.ShowLast);
 
-    // События приложений
+    // РЎРѕР±С‹С‚РёСЏ РїСЂРёР»РѕР¶РµРЅРёР№
     Result.EventApplication.Using := IniFile.ReadBool('EventApplication', 'Using',
       Result.EventApplication.Using);
 
-    // База данных
+    // Р‘Р°Р·Р° РґР°РЅРЅС‹С…
     Result.DB.FileName := IniFile.ReadString('DB', 'FileName', Result.DB.FileName);
 
     // Kodi
@@ -332,7 +332,7 @@ var
   i: integer;
 begin
 
-  // чистим контролы
+  // С‡РёСЃС‚РёРј РєРѕРЅС‚СЂРѕР»С‹
   for i := 0 to self.ComponentCount - 1 do
   begin
     // Label
@@ -378,7 +378,7 @@ begin
 
   LSetting := getSetting();
 
-  // Приложение
+  // РџСЂРёР»РѕР¶РµРЅРёРµ
   cbApplicationAutoRun.Checked := LSetting.Application.AutoRun;
   cbApplicationAutoRunTray.Checked := LSetting.Application.AutoRunTray;
   cbApplicationAutoRunSetVolume.Checked := LSetting.Application.AutoRunSetVolume;
@@ -387,13 +387,13 @@ begin
   cbApplicationTurnTray.Checked := LSetting.Application.TurnTray;
   cbApplicationCloseTray.Checked := LSetting.Application.CloseTray;
 
-  // Com порт
+  // Com РїРѕСЂС‚
   cbComPortOpenRun.Checked := LSetting.ComPort.OpenRun;
   cbComPortPort.ItemIndex := cbComPortPort.Items.IndexOf(LSetting.ComPort.Port);
   cbComPortSpeed.ItemIndex := cbComPortSpeed.Items.IndexOf(IntToStr(LSetting.ComPort.Speed));
   udComPortShowLast.Position := LSetting.ComPort.ShowLast;
 
-  // События приложений
+  // РЎРѕР±С‹С‚РёСЏ РїСЂРёР»РѕР¶РµРЅРёР№
   cbEventAppicationUsing.Checked := LSetting.EventApplication.Using;
   if LSetting.EventApplication.WINDOWCREATED then
     clbEventApplication.State[clbEventApplication.Items.IndexOf('WINDOWCREATED')] := cbChecked;
@@ -419,7 +419,7 @@ begin
   if LSetting.EventApplication.WINDOWREPLACED then
     clbEventApplication.State[clbEventApplication.Items.IndexOf('WINDOWREPLACED')] := cbChecked;
 
-  // База данных
+  // Р‘Р°Р·Р° РґР°РЅРЅС‹С…
   edDBFileName.Text := LSetting.DB.FileName;
 
   // Kodi
@@ -455,7 +455,7 @@ begin
   IniFile := TIniFile.Create(ExtractFileDir(Application.ExeName) + '\' + FileSetting);
   try
 
-    // Приложение
+    // РџСЂРёР»РѕР¶РµРЅРёРµ
     IniFile.WriteBool('Application', 'AutoRun', cbApplicationAutoRun.Checked);
     IniFile.WriteBool('Application', 'AutoRunTray', cbApplicationAutoRunTray.Checked);
     IniFile.WriteBool('Application', 'AutoRunSetVolume', cbApplicationAutoRunSetVolume.Checked);
@@ -465,16 +465,16 @@ begin
     IniFile.WriteBool('Application', 'TurnTray', cbApplicationTurnTray.Checked);
     IniFile.WriteBool('Application', 'CloseTray', cbApplicationCloseTray.Checked);
 
-    // Com порт
+    // Com РїРѕСЂС‚
     IniFile.WriteBool('Com', 'OpenRun', cbComPortOpenRun.Checked);
     IniFile.WriteString('Com', 'COM', cbComPortPort.Text);
     IniFile.WriteInteger('Com', 'Speed', StrToInt(cbComPortSpeed.Text));
     IniFile.WriteInteger('Com', 'ShowLast', udComPortShowLast.Position);
 
-    // События приложений
+    // РЎРѕР±С‹С‚РёСЏ РїСЂРёР»РѕР¶РµРЅРёР№
     IniFile.WriteBool('EventApplication', 'Using', cbEventAppicationUsing.Checked);
 
-    // База данных
+    // Р‘Р°Р·Р° РґР°РЅРЅС‹С…
     IniFile.WriteString('DB', 'FileName', edDBFileName.Text);
 
     // Kodi
@@ -598,7 +598,7 @@ begin
     else
       OpenDialog.InitialDir := ExtractFileDir(Application.ExeName);
 
-    OpenDialog.Filter := 'Приложения|*.exe';
+    OpenDialog.Filter := 'РџСЂРёР»РѕР¶РµРЅРёСЏ|*.exe';
 
     if (OpenDialog.Execute) and (FileExists(OpenDialog.FileName)) then
       edKodiFileName.Text := OpenDialog.FileName;
@@ -646,7 +646,7 @@ begin
       begin
         lKodiTestConnection.Font.Color := clRed;
         lKodiTestConnection.Caption :=
-          'Не удалось установить соединение с приложением. Возможно, приложение не запущено.';
+          'РќРµ СѓРґР°Р»РѕСЃСЊ СѓСЃС‚Р°РЅРѕРІРёС‚СЊ СЃРѕРµРґРёРЅРµРЅРёРµ СЃ РїСЂРёР»РѕР¶РµРЅРёРµРј. Р’РѕР·РјРѕР¶РЅРѕ, РїСЂРёР»РѕР¶РµРЅРёРµ РЅРµ Р·Р°РїСѓС‰РµРЅРѕ.';
       end
       else
         MessageDlg(E.Message, mtWarning, [mbOK], 0);
@@ -682,7 +682,7 @@ var
 begin
   DBSaveDialog := TSaveDialog.Create(self);
   try
-    DBSaveDialog.Filter := 'Базы данных Microsoft Access 2007-2013|*.accdb';
+    DBSaveDialog.Filter := 'Р‘Р°Р·С‹ РґР°РЅРЅС‹С… Microsoft Access 2007-2013|*.accdb';
     DBSaveDialog.DefaultExt := '*.accdb';
     DBSaveDialog.FileName := 'db';
     DBSaveDialog.InitialDir := ExtractFilePath(Application.ExeName);
@@ -713,7 +713,7 @@ begin
       OpenDialog.InitialDir := ExtractFileDir(Application.ExeName);
 
     OpenDialog.Filter :=
-      'Базы данных Microsoft Access 2007-2013|*.accdb|Базы данных Microsoft Access 2003|*.mdb';
+      'Р‘Р°Р·С‹ РґР°РЅРЅС‹С… Microsoft Access 2007-2013|*.accdb|Р‘Р°Р·С‹ РґР°РЅРЅС‹С… Microsoft Access 2003|*.mdb';
 
     if (OpenDialog.Execute) and (FileExists(OpenDialog.FileName)) then
       edDBFileName.Text := OpenDialog.FileName;
@@ -734,7 +734,7 @@ begin
     try
       Con.Connected := true;
       lDBTestConnection.Font.Color := clBlue;
-      lDBTestConnection.Caption := 'Соединение успешно установлено.';
+      lDBTestConnection.Caption := 'РЎРѕРµРґРёРЅРµРЅРёРµ СѓСЃРїРµС€РЅРѕ СѓСЃС‚Р°РЅРѕРІР»РµРЅРѕ.';
       Con.Connected := false;
     except
       on E: Exception do

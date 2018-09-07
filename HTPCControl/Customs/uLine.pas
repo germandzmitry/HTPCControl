@@ -1,4 +1,4 @@
-unit uLine;
+Ôªøunit uLine;
 
 interface
 
@@ -44,7 +44,7 @@ begin
   FColorFrom := clBtnFace;
   FColorTo := clHotLight;
 
-  // —ÓÁ‰‡ÂÏ PaintBox
+  // –°–æ–∑–¥–∞–µ–º PaintBox
   FLine := TPaintBox.Create(Parent);
   FLine.Parent := Parent;
   FLine.Align := alTop;

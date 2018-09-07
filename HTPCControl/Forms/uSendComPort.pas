@@ -1,4 +1,4 @@
-unit uSendComPort;
+﻿unit uSendComPort;
 
 interface
 

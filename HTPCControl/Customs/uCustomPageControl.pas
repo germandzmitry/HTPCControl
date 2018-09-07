@@ -1,4 +1,4 @@
-unit uCustomPageControl;
+п»їunit uCustomPageControl;
 
 // http://stackoverflow.com/questions/18282728/make-owner-drawn-tpagecontrol-tabs-look-nicer-like-without-owner-draw
 // http://www.sql.ru/forum/177696/kak-izmenit-cvet-podsvetki-zakladki-pagecontrol-a-pri-tabsheet-highlighted-true
@@ -96,7 +96,7 @@ begin
   // FillRect(Message.DrawItemStruct.hDC, R, ColorToRGB(FColorNoSelect));
   // FillRect(Message.DrawItemStruct.hDC, R, clRed);
 
-  // вертикальная линия в конце вкладки для визуального разделения вкладок
+  // РІРµСЂС‚РёРєР°Р»СЊРЅР°СЏ Р»РёРЅРёСЏ РІ РєРѕРЅС†Рµ РІРєР»Р°РґРєРё РґР»СЏ РІРёР·СѓР°Р»СЊРЅРѕРіРѕ СЂР°Р·РґРµР»РµРЅРёСЏ РІРєР»Р°РґРѕРє
   if Page.TabIndex < self.PageCount - 1 then
   begin
     RSeparator := R;
@@ -106,7 +106,7 @@ begin
     StyleServices.DrawElement(Message.DrawItemStruct.hDC, Details, RSeparator);
   end;
 
-  // разрисовываем вкладку в зависимости от состояния (выбрана/невыбрана)
+  // СЂР°Р·СЂРёСЃРѕРІС‹РІР°РµРј РІРєР»Р°РґРєСѓ РІ Р·Р°РІРёСЃРёРјРѕСЃС‚Рё РѕС‚ СЃРѕСЃС‚РѕСЏРЅРёСЏ (РІС‹Р±СЂР°РЅР°/РЅРµРІС‹Р±СЂР°РЅР°)
   if Bool(Message.DrawItemStruct.itemState and ODS_SELECTED) then
     Details := StyleServices.GetElementDetails(ttbButtonPressed)
   else
@@ -121,7 +121,7 @@ begin
   dec(RFrame.Right, 6);
   StyleServices.DrawElement(Message.DrawItemStruct.hDC, Details, RFrame);
 
-  // Если есть картинка, рисуем ее
+  // Р•СЃР»Рё РµСЃС‚СЊ РєР°СЂС‚РёРЅРєР°, СЂРёСЃСѓРµРј РµРµ
   if Assigned(Images) then
   begin
     RIcon.Left := R.Left + 2;
@@ -138,12 +138,12 @@ begin
   else
     inc(RFrame.Left, 2);
 
-  // выводим текст
+  // РІС‹РІРѕРґРёРј С‚РµРєСЃС‚
   Details := StyleServices.GetElementDetails(teEditTextNormal);
   StyleServices.DrawText(Message.DrawItemStruct.hDC, Details, PWideChar(Page.Caption), RFrame,
     [tfVerticalCenter, tfSingleLine] + FTextFormat);
 
-  // рисуем крестик закрытия вкладки
+  // СЂРёСЃСѓРµРј РєСЂРµСЃС‚РёРє Р·Р°РєСЂС‹С‚РёСЏ РІРєР»Р°РґРєРё
   if FClosePageUsing then
     case self.TabPosition of
       tpTop:
@@ -158,7 +158,7 @@ begin
     end;
 
   // we want to clip the DC so that the borders to be drawn are out of region
-  // что бы небыло рамки вокруг вкладки
+  // С‡С‚Рѕ Р±С‹ РЅРµР±С‹Р»Рѕ СЂР°РјРєРё РІРѕРєСЂСѓРі РІРєР»Р°РґРєРё
   Rgn := CreateRectRgn(0, 0, 0, 0);
   try
     SelectClipRgn(Message.DrawItemStruct.hDC, Rgn);
@@ -214,7 +214,7 @@ end;
 
 procedure TCustomPageControl.TCMSetItemSize(var Message: TMessage);
 begin
-  // Вызывается только если указан параметр TabWidth и вызывается только один раз
+  // Р’С‹Р·С‹РІР°РµС‚СЃСЏ С‚РѕР»СЊРєРѕ РµСЃР»Рё СѓРєР°Р·Р°РЅ РїР°СЂР°РјРµС‚СЂ TabWidth Рё РІС‹Р·С‹РІР°РµС‚СЃСЏ С‚РѕР»СЊРєРѕ РѕРґРёРЅ СЂР°Р·
   inherited;
 end;
 
@@ -229,8 +229,8 @@ Var
   LIndex: integer;
 begin
   LPoint := Message.Pos;
-  // если нажали на закрыть, тогда невыполняем переход на вкладку
-  // что бы не моргала закрываемая вкладка
+  // РµСЃР»Рё РЅР°Р¶Р°Р»Рё РЅР° Р·Р°РєСЂС‹С‚СЊ, С‚РѕРіРґР° РЅРµРІС‹РїРѕР»РЅСЏРµРј РїРµСЂРµС…РѕРґ РЅР° РІРєР»Р°РґРєСѓ
+  // С‡С‚Рѕ Р±С‹ РЅРµ РјРѕСЂРіР°Р»Р° Р·Р°РєСЂС‹РІР°РµРјР°СЏ РІРєР»Р°РґРєР°
   if FClosePageUsing then
     for LIndex := 0 to Tabs.Count - 1 do
       if PtInRect(GetButtonCloseRect(LIndex), LPoint) then
@@ -300,7 +300,7 @@ end;
 
 procedure TCustomPageControl.DoOnClosePage(Index: integer);
 begin
-  // Если обработчик назначен, то запускаем его.
+  // Р•СЃР»Рё РѕР±СЂР°Р±РѕС‚С‡РёРє РЅР°Р·РЅР°С‡РµРЅ, С‚Рѕ Р·Р°РїСѓСЃРєР°РµРј РµРіРѕ.
   if Assigned(FOnClosePage) then
     FOnClosePage(self, Index);
 end;

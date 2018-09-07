@@ -1,4 +1,4 @@
-unit uRCommand;
+﻿unit uRCommand;
 
 interface
 
@@ -19,6 +19,7 @@ type
     lCommand: TLabel;
     lDescription: TLabel;
     pTop: TPanel;
+    cbLongPress: TCheckBox;
     procedure FormCreate(Sender: TObject);
     procedure btnCancelClick(Sender: TObject);
     procedure btnSaveClick(Sender: TObject);
@@ -46,10 +47,12 @@ procedure TfrmRCommand.FormCreate(Sender: TObject);
 begin
   edCommand.Text := '';
   edDescription.Text := '';
+  cbLongPress.Checked := false;
   cbRepeatPrevious.Checked := false;
   pTop.Caption := '';
 
-  FLine := TLine.Create(pTop, alBottom, clWhite, clHotLight);
+  // FLine := TLine.Create(pTop, alBottom, clWhite, clHotLight);
+  FLine := TLine.Create(pTop, alBottom, clWhite, RGB(Random(256), Random(256), Random(256)));
 
   UpdateLanguage(self, lngRus);
 end;
@@ -65,10 +68,12 @@ begin
     rcAdd:
       begin
         edCommand.ReadOnly := false;
+        edCommand.SetFocus;
       end;
     rcEdit:
       begin
         edCommand.ReadOnly := true;
+        edDescription.SetFocus;
       end;
   end;
 end;
@@ -86,7 +91,7 @@ begin
       rcAdd:
         begin
           Main.DataBase.CreateRemoteCommand(edCommand.Text, edDescription.Text,
-            cbRepeatPrevious.Checked, RCommandExists);
+            cbRepeatPrevious.Checked, cbLongPress.Checked, RCommandExists);
 
           if RCommandExists then
             raise Exception.CreateFmt(uLanguage.GetLanguageMsg('msgRCCommandExists', lngRus),
@@ -95,7 +100,7 @@ begin
       rcEdit:
         begin
           Main.DataBase.UpdateRemoteCommand(edCommand.Text, edDescription.Text,
-            cbRepeatPrevious.Checked);
+            cbRepeatPrevious.Checked, cbLongPress.Checked);
         end;
     end;
 

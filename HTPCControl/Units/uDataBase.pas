@@ -1,25 +1,25 @@
-unit uDataBase;
+ï»¿unit uDataBase;
 
 interface
 
 uses
   System.Variants, System.SysUtils, Data.DB, Data.Win.ADODB, System.Win.ComObj,
-  uLanguage, uTypes;
+  uLanguage, uTypes, Winapi.Windows, System.UITypes;
 
 const
   tcApplication = 'A';
   tcKeyboard = 'K';
 
 type
-  // Òàáëèöà KeyboardGroup
+  // Ð¢Ð°Ð±Ð»Ð¸Ñ†Ð° KeyboardGroup
   TKeyboardGroup = Record
     Group: integer;
-    Descciption: string[255];
+    Description: string[255];
   end;
 
   TKeyboardGroups = array of TKeyboardGroup;
 
-  // Òàáëèöà Keyboard
+  // Ð¢Ð°Ð±Ð»Ð¸Ñ†Ð° Keyboard
   TKeyboard = record
     Key: integer;
     Desc: String[255];
@@ -29,35 +29,35 @@ type
   PKeyboard = ^TKeyboard;
   TKeyboards = array of TKeyboard;
 
-  // Òàáëèöà RemoteControl
+  // Ð¢Ð°Ð±Ð»Ð¸Ñ†Ð° RemoteCommand
   TRemoteCommand = record
     Command: string[100];
     Desc: string[255];
+    LongPress: boolean;
     RepeatPrevious: boolean;
   end;
 
   PRemoteCommand = ^TRemoteCommand;
   TRemoteCommands = array of TRemoteCommand;
 
-  // Òàáëèöà OperationRunApplication
+  // Ð¢Ð°Ð±Ð»Ð¸Ñ†Ð° OperationRunApplication
   TORunApplication = record
     id: integer;
     Command: string[100];
     Application: string[255];
   end;
 
-  // Òàáëèöà OperationPressKeyboard
+  // Ð¢Ð°Ð±Ð»Ð¸Ñ†Ð° OperationPressKeyboard
   TOPressKeyboard = record
     id: integer;
     Command: string[100];
     Key1: integer;
     Key2: integer;
     Key3: integer;
-    LongPress: boolean;
     ForApplication: string[255];
   end;
 
-  // Âñå îïåðàöèè äëÿ êîìàíäû
+  // Ð’ÑÐµ Ð¾Ð¿ÐµÑ€Ð°Ñ†Ð¸Ð¸ Ð´Ð»Ñ ÐºÐ¾Ð¼Ð°Ð½Ð´Ñ‹
   TOperation = Record
     Command: string[100];
     OType: TopType;
@@ -68,39 +68,6 @@ type
 
   POperation = ^TOperation;
   TOperations = array of TOperation;
-
-  // TVCommand = Record
-  // Command: string[100];
-  // Desc: string[255];
-  // OId: string;
-  // Operation: string;
-  // ORepeat: boolean;
-  // ODescription: string;
-  // OGroup: integer;
-  // End;
-  //
-  // TVCommands = array of TVCommand;
-  //
-  TECommand = Record
-    Command: TRemoteCommand;
-    ECType: TopType;
-    Operation: string;
-    Application: string[255];
-    Key1: integer;
-    Key2: integer;
-    Key3: integer;
-    Rep: boolean;
-  End;
-
-  // PECommand = ^TECommand;
-  // TECommands = array of TECommand;
-  //
-  // TEPCommand = record
-  // ECommand: TECommand;
-  // RepeatPreview: boolean;
-  // end;
-  //
-  // PEPCommand = ^TEPCommand;
 
 type
   TDataBase = class
@@ -118,35 +85,22 @@ type
     function RemoteCommandExists(const Command: string; var RCommand: TRemoteCommand)
       : boolean; overload;
     function CreateRemoteCommand(const Command, Description: string;
-      const RepeatPrevious: boolean = false): string; overload;
-    function CreateRemoteCommand(const Command, Description: string; const RepeatPrevious: boolean;
-      var Exists: boolean): string; overload;
+      const RepeatPrevious, LongPress: boolean): string; overload;
+    function CreateRemoteCommand(const Command, Description: string;
+      const RepeatPrevious, LongPress: boolean; var Exists: boolean): string; overload;
     function UpdateRemoteCommand(const Command, Description: string;
-      const RepeatPrevious: boolean = false): string;
+      const RepeatPrevious, LongPress: boolean): string;
     procedure DeleteRemoteCommand(const Command: string);
 
     procedure CreateRunApplication(const Command, AppFileName: string);
     procedure UpdateRunApplication(const id: integer; const AppFileName: string);
     procedure DeleteRunApplication(const id: integer);
 
-    procedure CreatePressKeyboard(const Command: string; const Key1, Key2, Key3: integer;
-      LongPress: boolean);
-    procedure UpdatePressKeyboard(const id, Key1, Key2, Key3: integer; LongPress: boolean);
+    procedure CreatePressKeyboard(const Command: string; const Key1, Key2, Key3: integer);
+    procedure UpdatePressKeyboard(const id, Key1, Key2, Key3: integer);
     procedure DeletePressKeyboard(const id: integer);
 
-    // function GetVCommands(const Command: string = ''): TVCommands;
-    //
-    // function GetExecuteCommands(const Command: string): TECommands;
-    //
-    // function GetKeyboardKey(Key: integer): PKeyKeyboard;
-    // function GetKeyboardGroups(): TKeyboardGroups;
-    //
-    // procedure CreatePressKeyKeyboard(const RCommand: TRemoteCommand; Key1, Key2: integer;
-    // ARepeat: boolean);
-    // procedure UpdatePressKeyKeyboard(const RCommand: TRemoteCommand; Key1, Key2: integer;
-    // ARepeat: boolean);
-
-    function getOperation(const Command: string): TOperations;
+    function GetOperation(const Command: string): TOperations;
 
   private
     FConnection: TADOConnection;
@@ -189,7 +143,7 @@ begin
   if FileExists(FileName) then
     raise Exception.Create(Format(GetLanguageMsg('msgDBFileNameExists', lngRus), [FileName]));
 
-  // Ñîçäàåì ôàéë áä
+  // Ð¡Ð¾Ð·Ð´Ð°ÐµÐ¼ Ñ„Ð°Ð¹Ð» Ð±Ð´
   try
     Access := CreateOleObject('ADOX.Catalog');
     Access.Create('Provider=Microsoft.ACE.OLEDB.12.0; Data Source=' + FileName + ';');
@@ -200,26 +154,26 @@ begin
   end;
 
   try
-    // êîíåêòèìñÿ ê íîâîé áä
+    // ÐºÐ¾Ð½ÐµÐºÑ‚Ð¸Ð¼ÑÑ Ðº Ð½Ð¾Ð²Ð¾Ð¹ Ð±Ð´
     Connection := TADOConnection.Create(nil);
     Connection.ConnectionString := 'Provider=Microsoft.ACE.OLEDB.12.0;Data Source=' + FileName +
       ';Persist Security Info=False';
     Connection.Connected := True;
 
     {
-      Ñîçäàåì òàáëèöû
+      Ð¡Ð¾Ð·Ð´Ð°ÐµÐ¼ Ñ‚Ð°Ð±Ð»Ð¸Ñ†Ñ‹
     }
     Query := TADOQuery.Create(nil);
     Query.Connection := Connection;
 
-    // Ñïðàâî÷íèê - Ãðóïïû êëàâèàòóðû
+    // Ð¡Ð¿Ñ€Ð°Ð²Ð¾Ñ‡Ð½Ð¸Ðº - Ð“Ñ€ÑƒÐ¿Ð¿Ñ‹ ÐºÐ»Ð°Ð²Ð¸Ð°Ñ‚ÑƒÑ€Ñ‹
     Query.Sql.Text :=
       'CREATE TABLE KeyboardGroup(                                                   ' +
       '  [group] integer primary key,                                                ' +
       '  [description] string (255))';
     Query.ExecSQL;
 
-    // Ñïðàâî÷íèê - Êëàâèàòóðà
+    // Ð¡Ð¿Ñ€Ð°Ð²Ð¾Ñ‡Ð½Ð¸Ðº - ÐšÐ»Ð°Ð²Ð¸Ð°Ñ‚ÑƒÑ€Ð°
     Query.Sql.Text :=
       'CREATE TABLE Keyboard(                                                        ' +
       '  [key] integer primary key,                                                  ' +
@@ -227,15 +181,16 @@ begin
       '  [group] integer references KeyboardGroup([group]))';
     Query.ExecSQL;
 
-    // Ñïðàâî÷íèê - Êíîïêè ïóëüòà
+    // Ð¡Ð¿Ñ€Ð°Ð²Ð¾Ñ‡Ð½Ð¸Ðº - ÐšÐ½Ð¾Ð¿ÐºÐ¸ Ð¿ÑƒÐ»ÑŒÑ‚Ð°
     Query.Sql.Text :=
       'CREATE TABLE RemoteCommand(                                                   ' +
       '  [command] string(100) primary key,                                          ' +
       '  [description] string(255),                                                  ' +
+      '  [longPress] bit,                                                            ' +
       '  [repeatPrevious] bit)';
     Query.ExecSQL;
 
-    // Çàïóñê ïðèëîæåíèé
+    // Ð—Ð°Ð¿ÑƒÑÐº Ð¿Ñ€Ð¸Ð»Ð¾Ð¶ÐµÐ½Ð¸Ð¹
     Query.Sql.Text :=
       'CREATE TABLE OperationRunApplication(                                         ' +
       '  [id] counter primary key,                                                   ' +
@@ -244,7 +199,7 @@ begin
       '  [description] string(255))';
     Query.ExecSQL;
 
-    // Çàïóñê ïðèëîæåíèé
+    // Ð—Ð°Ð¿ÑƒÑÐº Ð¿Ñ€Ð¸Ð»Ð¾Ð¶ÐµÐ½Ð¸Ð¹
     Query.Sql.Text :=
       'CREATE TABLE OperationPressKeyboard(                                          ' +
       '  [id] counter primary key,                                                   ' +
@@ -252,114 +207,134 @@ begin
       '  [key1] integer default null references Keyboard([key]),                     ' +
       '  [key2] integer default null references Keyboard([key]),                     ' +
       '  [key3] integer default null references Keyboard([key]),                     ' +
-      '  [longPress] bit,                                                            ' +
+    // '  [longPress] bit,                                                            ' +
       '  [forApplication] string(255),                                               ' +
       '  [description] string(255))';
     Query.ExecSQL;
 
-    addKeybordGroup(Query, 0, 'Ôóíêöèîíàëüíûå êëàâèøè');
-    addKeybord(Query, 112, 'F1', 0);
-    addKeybord(Query, 113, 'F2', 0);
-    addKeybord(Query, 114, 'F3', 0);
-    addKeybord(Query, 115, 'F4', 0);
-    addKeybord(Query, 116, 'F5', 0);
-    addKeybord(Query, 117, 'F6', 0);
-    addKeybord(Query, 118, 'F7', 0);
-    addKeybord(Query, 119, 'F8', 0);
-    addKeybord(Query, 120, 'F9', 0);
-    addKeybord(Query, 121, 'F10', 0);
-    addKeybord(Query, 122, 'F11', 0);
-    addKeybord(Query, 123, 'F12', 0);
+    addKeybordGroup(Query, 0, 'Ð¤ÑƒÐ½ÐºÑ†Ð¸Ð¾Ð½Ð°Ð»ÑŒÐ½Ñ‹Ðµ ÐºÐ»Ð°Ð²Ð¸ÑˆÐ¸');
+    addKeybord(Query, VK_F1, 'F1', 0);
+    addKeybord(Query, VK_F2, 'F2', 0);
+    addKeybord(Query, VK_F3, 'F3', 0);
+    addKeybord(Query, VK_F4, 'F4', 0);
+    addKeybord(Query, VK_F5, 'F5', 0);
+    addKeybord(Query, VK_F6, 'F6', 0);
+    addKeybord(Query, VK_F7, 'F7', 0);
+    addKeybord(Query, VK_F8, 'F8', 0);
+    addKeybord(Query, VK_F9, 'F9', 0);
+    addKeybord(Query, VK_F10, 'F10', 0);
+    addKeybord(Query, VK_F11, 'F11', 0);
+    addKeybord(Query, VK_F12, 'F12', 0);
 
-    addKeybordGroup(Query, 1, 'Óïðàâëÿþùèå êëàâèøû');
-    addKeybord(Query, 27, 'Esc', 1);
-    addKeybord(Query, 17, 'Ctrl', 1);
-    addKeybord(Query, 18, 'Alt', 1);
-    addKeybord(Query, 91, 'Win', 1);
-    addKeybord(Query, 93, 'Äîï. ìåíþ', 1);
-    addKeybord(Query, 145, 'ScrollLock', 1);
-    addKeybord(Query, 44, 'PrintScreen', 1);
+    addKeybordGroup(Query, 1, 'Ð¡Ð»ÑƒÐ¶ÐµÐ±Ð½Ñ‹Ðµ ÐºÐ´Ð°Ð²Ð¸ÑˆÐ¸');
+    addKeybord(Query, VK_ESCAPE, 'Esc', 1);
+    addKeybord(Query, VK_LCONTROL, 'Ð›ÐµÐ²Ñ‹Ð¹ Ctrl', 1);
+    addKeybord(Query, VK_RCONTROL, 'ÐŸÑ€Ð°Ð²Ñ‹Ð¹ Ctrl', 1);
+    addKeybord(Query, VK_LMENU, 'Ð›ÐµÐ²Ñ‹Ð¹ Alt', 1);
+    addKeybord(Query, VK_RMENU, 'ÐŸÑ€Ð°Ð²Ñ‹Ð¹ Alt', 1);
+    addKeybord(Query, VK_LWIN, 'Ð›ÐµÐ²Ñ‹Ð¹ Win', 1);
+    addKeybord(Query, VK_RWIN, 'ÐŸÑ€Ð°Ð²Ñ‹Ð¹ Win', 1);
+    addKeybord(Query, VK_APPS, 'Ð”Ð¾Ð¿. Ð¼ÐµÐ½ÑŽ', 1);
+    addKeybord(Query, VK_LSHIFT, 'Ð›ÐµÐ²Ñ‹Ð¹ Shift', 1);
+    addKeybord(Query, VK_RSHIFT, 'ÐŸÑ€Ð°Ð²Ñ‹Ð¹ Shift', 1);
+    addKeybord(Query, VK_CAPITAL, 'CapsLock', 1);
+    addKeybord(Query, VK_BACK, 'BackSpace', 1);
+    addKeybord(Query, VK_TAB, 'Tab', 1);
+    addKeybord(Query, VK_RETURN, 'Enter', 1);
+    addKeybord(Query, VK_SPACE, 'ÐŸÑ€Ð¾Ð±ÐµÐ»', 1);
+    addKeybord(Query, VK_INSERT, 'Insert', 1);
+    addKeybord(Query, VK_DELETE, 'Delete', 1);
 
-    addKeybordGroup(Query, 2, 'Êëàâèøè äëÿ ââîäà äàííûõ (áóêâåííî-öèôðîâûå)');
-    addKeybord(Query, 8, 'BackSpace', 2);
-    addKeybord(Query, 9, 'Tab', 2);
-    addKeybord(Query, 13, 'Enter', 2);
-    addKeybord(Query, 16, 'Shift', 2);
-    addKeybord(Query, 20, 'CapsLock', 2);
-    addKeybord(Query, 32, 'Ïðîáåë', 2);
-    addKeybord(Query, 48, '0', 2);
-    addKeybord(Query, 49, '1', 2);
-    addKeybord(Query, 50, '2', 2);
-    addKeybord(Query, 51, '3', 2);
-    addKeybord(Query, 52, '4', 2);
-    addKeybord(Query, 53, '5', 2);
-    addKeybord(Query, 54, '6', 2);
-    addKeybord(Query, 55, '7', 2);
-    addKeybord(Query, 56, '8', 2);
-    addKeybord(Query, 57, '9', 2);
-    addKeybord(Query, 65, 'A', 2);
-    addKeybord(Query, 66, 'B', 2);
-    addKeybord(Query, 67, 'C', 2);
-    addKeybord(Query, 68, 'D', 2);
-    addKeybord(Query, 69, 'E', 2);
-    addKeybord(Query, 70, 'F', 2);
-    addKeybord(Query, 71, 'G', 2);
-    addKeybord(Query, 72, 'H', 2);
-    addKeybord(Query, 73, 'I', 2);
-    addKeybord(Query, 74, 'J', 2);
-    addKeybord(Query, 75, 'K', 2);
-    addKeybord(Query, 76, 'L', 2);
-    addKeybord(Query, 77, 'M', 2);
-    addKeybord(Query, 78, 'N', 2);
-    addKeybord(Query, 79, 'O', 2);
-    addKeybord(Query, 80, 'P', 2);
-    addKeybord(Query, 81, 'Q', 2);
-    addKeybord(Query, 82, 'R', 2);
-    addKeybord(Query, 83, 'S', 2);
-    addKeybord(Query, 84, 'T', 2);
-    addKeybord(Query, 85, 'U', 2);
-    addKeybord(Query, 86, 'V', 2);
-    addKeybord(Query, 87, 'W', 2);
-    addKeybord(Query, 88, 'X', 2);
-    addKeybord(Query, 89, 'Y', 2);
-    addKeybord(Query, 90, 'Z', 2);
-    addKeybord(Query, 186, ';', 2);
-    addKeybord(Query, 187, '=', 2);
-    addKeybord(Query, 188, ',', 2);
-    addKeybord(Query, 189, '-', 2);
-    addKeybord(Query, 190, '.', 2);
-    addKeybord(Query, 191, '/', 2);
-    addKeybord(Query, 192, '`', 2);
-    addKeybord(Query, 219, '[', 2);
-    addKeybord(Query, 220, '\', 2);
-    addKeybord(Query, 221, ']', 2);
-    addKeybord(Query, 222, '''''', 2);
+    addKeybordGroup(Query, 2, 'ÐšÐ»Ð°Ð²Ð¸ÑˆÐ¸ Ð´Ð»Ñ Ð²Ð²Ð¾Ð´Ð° Ð´Ð°Ð½Ð½Ñ‹Ñ… (Ð±ÑƒÐºÐ²ÐµÐ½Ð½Ð¾-Ñ†Ð¸Ñ„Ñ€Ð¾Ð²Ñ‹Ðµ)');
+    addKeybord(Query, vk0, '0', 2);
+    addKeybord(Query, vk1, '1', 2);
+    addKeybord(Query, vk2, '2', 2);
+    addKeybord(Query, vk3, '3', 2);
+    addKeybord(Query, vk4, '4', 2);
+    addKeybord(Query, vk5, '5', 2);
+    addKeybord(Query, vk6, '6', 2);
+    addKeybord(Query, vk7, '7', 2);
+    addKeybord(Query, vk8, '8', 2);
+    addKeybord(Query, vk9, '9', 2);
+    addKeybord(Query, vkA, 'A', 2);
+    addKeybord(Query, vkB, 'B', 2);
+    addKeybord(Query, vkC, 'C', 2);
+    addKeybord(Query, vkD, 'D', 2);
+    addKeybord(Query, vkE, 'E', 2);
+    addKeybord(Query, vkF, 'F', 2);
+    addKeybord(Query, vkG, 'G', 2);
+    addKeybord(Query, vkH, 'H', 2);
+    addKeybord(Query, vkI, 'I', 2);
+    addKeybord(Query, vkJ, 'J', 2);
+    addKeybord(Query, vkK, 'K', 2);
+    addKeybord(Query, vkL, 'L', 2);
+    addKeybord(Query, vkM, 'M', 2);
+    addKeybord(Query, vkN, 'N', 2);
+    addKeybord(Query, vkO, 'O', 2);
+    addKeybord(Query, vkP, 'P', 2);
+    addKeybord(Query, vkQ, 'Q', 2);
+    addKeybord(Query, vkR, 'R', 2);
+    addKeybord(Query, vkS, 'S', 2);
+    addKeybord(Query, vkT, 'T', 2);
+    addKeybord(Query, vkU, 'U', 2);
+    addKeybord(Query, vkV, 'V', 2);
+    addKeybord(Query, vkW, 'W', 2);
+    addKeybord(Query, vkX, 'X', 2);
+    addKeybord(Query, vkY, 'Y', 2);
+    addKeybord(Query, vkZ, 'Z', 2);
+    addKeybord(Query, VK_OEM_1, ';', 2);
+    addKeybord(Query, VK_OEM_PLUS, '=', 2);
+    addKeybord(Query, VK_OEM_COMMA, ',', 2);
+    addKeybord(Query, VK_OEM_MINUS, '-', 2);
+    addKeybord(Query, VK_OEM_PERIOD, '.', 2);
+    addKeybord(Query, VK_OEM_2, '/', 2);
+    addKeybord(Query, VK_OEM_3, '`', 2);
+    addKeybord(Query, VK_OEM_4, '[', 2);
+    addKeybord(Query, VK_OEM_5, '\', 2);
+    addKeybord(Query, VK_OEM_6, ']', 2);
+    addKeybord(Query, VK_OEM_7, '''''', 2);
 
-    addKeybordGroup(Query, 3, 'Öèôðîâàÿ êëàâèàòóðà');
-    addKeybord(Query, 144, 'NumLock', 3);
+    addKeybordGroup(Query, 3, 'Ð¦Ð¸Ñ„Ñ€Ð¾Ð²Ð°Ñ ÐºÐ»Ð°Ð²Ð¸Ð°Ñ‚ÑƒÑ€Ð°');
+    addKeybord(Query, VK_NUMLOCK, 'NumLock', 3);
+    addKeybord(Query, VK_DIVIDE, '/', 3);
+    addKeybord(Query, VK_MULTIPLY, '*', 3);
+    addKeybord(Query, VK_SUBTRACT, '-', 3);
+    addKeybord(Query, VK_ADD, '+', 3);
+    addKeybord(Query, VK_DECIMAL, '.', 3);
+    addKeybord(Query, VK_NUMPAD0, '0', 3);
+    addKeybord(Query, VK_NUMPAD1, '1', 3);
+    addKeybord(Query, VK_NUMPAD2, '2', 3);
+    addKeybord(Query, VK_NUMPAD3, '3', 3);
+    addKeybord(Query, VK_NUMPAD4, '4', 3);
+    addKeybord(Query, VK_NUMPAD5, '5', 3);
+    addKeybord(Query, VK_NUMPAD6, '6', 3);
+    addKeybord(Query, VK_NUMPAD7, '7', 3);
+    addKeybord(Query, VK_NUMPAD8, '8', 3);
+    addKeybord(Query, VK_NUMPAD9, '9', 3);
 
-    addKeybordGroup(Query, 4, 'Êëàâèøè ïåðåìåùåíèÿ');
-    addKeybord(Query, 33, 'PageUp', 4);
-    addKeybord(Query, 34, 'PageDown', 4);
-    addKeybord(Query, 35, 'End', 4);
-    addKeybord(Query, 36, 'Home', 4);
-    addKeybord(Query, 45, 'Insert', 4);
-    addKeybord(Query, 46, 'Delete', 4);
-    addKeybord(Query, 37, 'Ñòðåëêà íàçàä', 4);
-    addKeybord(Query, 38, 'Ñòðåëêà ââåðõ', 4);
-    addKeybord(Query, 39, 'Ñòðåëêà âïåðåä', 4);
-    addKeybord(Query, 40, 'Ñòðåëêà âíèç', 4);
+    addKeybordGroup(Query, 4, 'ÐšÐ»Ð°Ð²Ð¸ÑˆÐ¸ Ð¿ÐµÑ€ÐµÐ¼ÐµÑ‰ÐµÐ½Ð¸Ñ');
+    addKeybord(Query, VK_PRIOR, 'PageUp', 4);
+    addKeybord(Query, VK_NEXT, 'PageDown', 4);
+    addKeybord(Query, VK_END, 'End', 4);
+    addKeybord(Query, VK_HOME, 'Home', 4);
+    addKeybord(Query, VK_LEFT, 'Ð¡Ñ‚Ñ€ÐµÐ»ÐºÐ° Ð½Ð°Ð·Ð°Ð´', 4);
+    addKeybord(Query, VK_UP, 'Ð¡Ñ‚Ñ€ÐµÐ»ÐºÐ° Ð²Ð²ÐµÑ€Ñ…', 4);
+    addKeybord(Query, VK_RIGHT, 'Ð¡Ñ‚Ñ€ÐµÐ»ÐºÐ° Ð²Ð¿ÐµÑ€ÐµÐ´', 4);
+    addKeybord(Query, VK_DOWN, 'Ð¡Ñ‚Ñ€ÐµÐ»ÐºÐ° Ð²Ð½Ð¸Ð·', 4);
 
-    addKeybordGroup(Query, 6, 'Ìóëüòèìåäèà');
-    addKeybord(Query, 173, 'Çâóê - áåçâó÷íî', 6);
-    addKeybord(Query, 174, 'Çâóê - óìåíüøèòü', 6);
-    addKeybord(Query, 175, 'Çâóê - óâåëè÷èòü', 6);
-    addKeybord(Query, 176, 'Ñëóäóþùèé òðåê', 6);
-    addKeybord(Query, 177, 'Ïðåäûäóùèé òðåê', 6);
-    addKeybord(Query, 178, 'Ñòîï', 6);
-    addKeybord(Query, 179, 'Èãðàòü/Ïàóçà', 6);
+    addKeybordGroup(Query, 5, 'Ð’ÑÐ¿Ð¾Ð¼Ð¾Ð³Ð°Ñ‚ÐµÐ»ÑŒÐ½Ñ‹Ðµ ÐºÐ»Ð°Ð²Ð¸ÑˆÐ¸');
+    addKeybord(Query, VK_SCROLL, 'ScrollLock', 5);
+    addKeybord(Query, VK_SNAPSHOT, 'PrintScreen', 5);
+    addKeybord(Query, VK_PAUSE, 'PauseBreak', 5);
 
-    // addKeybordGroup(Query, 9, 'Çàïóñê ïðèëîæåíèé');
+    addKeybordGroup(Query, 6, 'ÐœÑƒÐ»ÑŒÑ‚Ð¸Ð¼ÐµÐ´Ð¸Ð°');
+    addKeybord(Query, VK_VOLUME_MUTE, 'Ð—Ð²ÑƒÐº - Ð±ÐµÐ·Ð²ÑƒÑ‡Ð½Ð¾', 6);
+    addKeybord(Query, VK_VOLUME_DOWN, 'Ð—Ð²ÑƒÐº - ÑƒÐ¼ÐµÐ½ÑŒÑˆÐ¸Ñ‚ÑŒ', 6);
+    addKeybord(Query, VK_VOLUME_UP, 'Ð—Ð²ÑƒÐº - ÑƒÐ²ÐµÐ»Ð¸Ñ‡Ð¸Ñ‚ÑŒ', 6);
+    addKeybord(Query, VK_MEDIA_NEXT_TRACK, 'Ð¡Ð»ÑƒÐ´ÑƒÑŽÑ‰Ð¸Ð¹ Ñ‚Ñ€ÐµÐº', 6);
+    addKeybord(Query, VK_MEDIA_PREV_TRACK, 'ÐŸÑ€ÐµÐ´Ñ‹Ð´ÑƒÑ‰Ð¸Ð¹ Ñ‚Ñ€ÐµÐº', 6);
+    addKeybord(Query, VK_MEDIA_STOP, 'Ð¡Ñ‚Ð¾Ð¿', 6);
+    addKeybord(Query, VK_MEDIA_PLAY_PAUSE, 'Ð˜Ð³Ñ€Ð°Ñ‚ÑŒ/ÐŸÐ°ÑƒÐ·Ð°', 6);
 
     Connection.Connected := false;
     Query.Free;
@@ -442,7 +417,7 @@ begin
     begin
       SetLength(KeyboardGroups, Length(KeyboardGroups) + 1);
       KeyboardGroups[Query.RecNo - 1].Group := Query.FieldByName('group').AsInteger;
-      KeyboardGroups[Query.RecNo - 1].Descciption := Query.FieldByName('description').AsString;
+      KeyboardGroups[Query.RecNo - 1].Description := Query.FieldByName('description').AsString;
       Query.Next;
     end;
     Result := KeyboardGroups;
@@ -577,8 +552,8 @@ begin
     Query.Connection := FConnection;
     Query.Sql.Clear;
     Query.Sql.Text :=
-      'select command, description, repeatPrevious from RemoteCommand where command = "' +
-      Command + '"';
+      'select command, description, repeatPrevious, longPress from RemoteCommand where command = "'
+      + Command + '"';
     Query.ExecSQL;
     Query.Active := True;
     if Query.RecordCount > 0 then
@@ -589,6 +564,7 @@ begin
       RCommand.Command := Query.FieldByName('command').AsString;
       RCommand.Desc := Query.FieldByName('description').AsString;
       RCommand.RepeatPrevious := Query.FieldByName('repeatPrevious').AsBoolean;
+      RCommand.LongPress := Query.FieldByName('longPress').AsBoolean;
     end;
   finally
     Query.Active := false;
@@ -597,7 +573,7 @@ begin
 end;
 
 function TDataBase.CreateRemoteCommand(const Command, Description: string;
-  const RepeatPrevious: boolean = false): string;
+  const RepeatPrevious, LongPress: boolean): string;
 var
   Query: TADOQuery;
   RCommand: TRemoteCommand;
@@ -606,20 +582,22 @@ begin
   if not FConnection.Connected then
     exit;
 
-  // ïðîâåðêà ñóùåñòâîâàíèÿ êîìàíäû
+  // Ð¿Ñ€Ð¾Ð²ÐµÑ€ÐºÐ° ÑÑƒÑ‰ÐµÑÑ‚Ð²Ð¾Ð²Ð°Ð½Ð¸Ñ ÐºÐ¾Ð¼Ð°Ð½Ð´Ñ‹
   if RemoteCommandExists(Command, RCommand) then
   begin
     Result := RCommand.Command;
     exit;
   end;
 
-  // Ñîçäàíèå êîìàíäû
+  // Ð¡Ð¾Ð·Ð´Ð°Ð½Ð¸Ðµ ÐºÐ¾Ð¼Ð°Ð½Ð´Ñ‹
   Query := TADOQuery.Create(nil);
   try
     Query.Connection := FConnection;
     Query.Sql.Clear;
-    Query.Sql.Text := 'insert into RemoteCommand (command, description, repeatPrevious) values ("' +
-      Command + '", "' + Description + '", ' + BoolToStr(RepeatPrevious) + ')';
+    Query.Sql.Text :=
+      'insert into RemoteCommand (command, description, repeatPrevious, longPress) values ("' +
+      Command + '", "' + Description + '", ' + BoolToStr(RepeatPrevious) + ', ' +
+      BoolToStr(LongPress) + ')';
     Query.ExecSQL;
 
     Result := Command;
@@ -629,7 +607,7 @@ begin
 end;
 
 function TDataBase.CreateRemoteCommand(const Command, Description: string;
-  const RepeatPrevious: boolean; var Exists: boolean): string;
+  const RepeatPrevious, LongPress: boolean; var Exists: boolean): string;
 var
   RCommand: TRemoteCommand;
 begin
@@ -639,7 +617,7 @@ begin
   if not FConnection.Connected then
     exit;
 
-  // ïðîâåðêà ñóùåñòâîâàíèÿ êîìàíäû
+  // Ð¿Ñ€Ð¾Ð²ÐµÑ€ÐºÐ° ÑÑƒÑ‰ÐµÑÑ‚Ð²Ð¾Ð²Ð°Ð½Ð¸Ñ ÐºÐ¾Ð¼Ð°Ð½Ð´Ñ‹
   if RemoteCommandExists(Command, RCommand) then
   begin
     Result := RCommand.Command;
@@ -647,11 +625,11 @@ begin
     exit;
   end;
 
-  Result := CreateRemoteCommand(Command, Description, RepeatPrevious);
+  Result := CreateRemoteCommand(Command, Description, RepeatPrevious, LongPress);
 end;
 
 function TDataBase.UpdateRemoteCommand(const Command, Description: string;
-  const RepeatPrevious: boolean = false): string;
+  const RepeatPrevious, LongPress: boolean): string;
 var
   Query: TADOQuery;
   RCommand: TRemoteCommand;
@@ -660,19 +638,20 @@ begin
   if not FConnection.Connected then
     exit;
 
-  // ïðîâåðêà ñóùåñòâîâàíèÿ êîìàíäû
+  // Ð¿Ñ€Ð¾Ð²ÐµÑ€ÐºÐ° ÑÑƒÑ‰ÐµÑÑ‚Ð²Ð¾Ð²Ð°Ð½Ð¸Ñ ÐºÐ¾Ð¼Ð°Ð½Ð´Ñ‹
   if not RemoteCommandExists(Command, RCommand) then
   begin
     raise Exception.Create(Format(GetLanguageMsg('msgDBRemoteCommandNotFound', lngRus), [Command]));
   end;
 
-  // Èçìåíåíèå êîìàíäû
+  // Ð˜Ð·Ð¼ÐµÐ½ÐµÐ½Ð¸Ðµ ÐºÐ¾Ð¼Ð°Ð½Ð´Ñ‹
   Query := TADOQuery.Create(nil);
   try
     Query.Connection := FConnection;
     Query.Sql.Clear;
     Query.Sql.Text := 'update RemoteCommand set description = "' + Description + '",' +
-      'repeatPrevious = ' + BoolToStr(RepeatPrevious) + ' where command = "' + Command + '"';
+      'repeatPrevious = ' + BoolToStr(RepeatPrevious) + ', longPress = ' + BoolToStr(LongPress) +
+      ' where command = "' + Command + '"';
     Query.ExecSQL;
 
     Result := Command;
@@ -689,7 +668,7 @@ begin
   if not FConnection.Connected then
     exit;
 
-  // ïðîâåðêà ñóùåñòâîâàíèÿ êîìàíäû
+  // Ð¿Ñ€Ð¾Ð²ÐµÑ€ÐºÐ° ÑÑƒÑ‰ÐµÑÑ‚Ð²Ð¾Ð²Ð°Ð½Ð¸Ñ ÐºÐ¾Ð¼Ð°Ð½Ð´Ñ‹
   if not RemoteCommandExists(Command, RCommand) then
   begin
     raise Exception.Create(Format(GetLanguageMsg('msgDBRemoteCommandNotFound', lngRus), [Command]));
@@ -721,7 +700,7 @@ begin
   if not RemoteCommandExists(Command) then
     raise Exception.CreateFmt(GetLanguageMsg('msgDBRemoteCommandNotFound', lngRus), [Command]);
 
-  // Ñîçäàíèå çàïóñêà ïðèëîæåíèÿ
+  // Ð¡Ð¾Ð·Ð´Ð°Ð½Ð¸Ðµ Ð·Ð°Ð¿ÑƒÑÐºÐ° Ð¿Ñ€Ð¸Ð»Ð¾Ð¶ÐµÐ½Ð¸Ñ
   Query := TADOQuery.Create(nil);
   try
     Query.Connection := FConnection;
@@ -777,8 +756,7 @@ begin
   end;
 end;
 
-procedure TDataBase.CreatePressKeyboard(const Command: string; const Key1, Key2, Key3: integer;
-  LongPress: boolean);
+procedure TDataBase.CreatePressKeyboard(const Command: string; const Key1, Key2, Key3: integer);
 var
   Query: TADOQuery;
   sKey1, sKey2, sKey3: string;
@@ -798,13 +776,12 @@ begin
     sKey3 := IntToStr(Key3);
 
   try
-    // Ñîçäàíèå çàïóñêà ïðèëîæåíèÿ
+    // Ð¡Ð¾Ð·Ð´Ð°Ð½Ð¸Ðµ Ð·Ð°Ð¿ÑƒÑÐºÐ° Ð¿Ñ€Ð¸Ð»Ð¾Ð¶ÐµÐ½Ð¸Ñ
     Query := TADOQuery.Create(nil);
     Query.Connection := FConnection;
     Query.Sql.Clear;
-    Query.Sql.Text :=
-      'insert into OperationPressKeyboard (command, key1, key2, key3, longPress) values ("' +
-      Command + '", ' + sKey1 + ', ' + sKey2 + ', ' + sKey3 + ', ' + BoolToStr(LongPress) + ')';
+    Query.Sql.Text := 'insert into OperationPressKeyboard (command, key1, key2, key3) values ("' +
+      Command + '", ' + sKey1 + ', ' + sKey2 + ', ' + sKey3 + ')';
     Query.ExecSQL;
 
   finally
@@ -812,7 +789,7 @@ begin
   end;
 end;
 
-procedure TDataBase.UpdatePressKeyboard(const id, Key1, Key2, Key3: integer; LongPress: boolean);
+procedure TDataBase.UpdatePressKeyboard(const id, Key1, Key2, Key3: integer);
 var
   Query: TADOQuery;
   sKey1, sKey2, sKey3: string;
@@ -836,8 +813,7 @@ begin
     Query.Connection := FConnection;
     Query.Sql.Clear;
     Query.Sql.Text := 'update OperationPressKeyboard set key1 = ' + sKey1 + ',  key2 = ' + sKey2 +
-      ',  key3 = ' + sKey3 + ', longPress = ' + BoolToStr(LongPress) + ' where id = ' +
-      IntToStr(id);
+      ',  key3 = ' + sKey3 + ' where id = ' + IntToStr(id);
     Query.ExecSQL;
   finally
     Query.Free;
@@ -862,218 +838,7 @@ begin
   end;
 end;
 
-
-
-// procedure TDataBase.UpdatePressKeyKeyboard(const RCommand: TRemoteCommand; Key1, Key2: integer;
-// ARepeat: boolean);
-// var
-// Query: TADOQuery;
-// LCommand, sKey1, sKey2: string;
-// begin
-// if not FConnection.Connected then
-// exit;
-//
-// sKey1 := 'null';
-// sKey2 := 'null';
-//
-// if Key1 > 0 then
-// sKey1 := IntToStr(Key1);
-// if Key2 > 0 then
-// sKey2 := IntToStr(Key2);
-//
-// LCommand := UpdateRemoteCommand(RCommand.Command, RCommand.Desc);
-//
-// Query := TADOQuery.Create(nil);
-// try
-// Query.Connection := FConnection;
-// Query.Sql.Clear;
-// Query.Sql.Text := 'update PressKeyKeyboard set key1 = ' + sKey1 + ',  key2 = ' + sKey2 +
-// ', repeat = ' + BoolToStr(ARepeat) + ' where command = ' + QuotedStr(LCommand);
-// Query.ExecSQL;
-// finally
-// Query.Free;
-// end;
-// end;
-
-// function TDataBase.GetKeyboardKey(Key: integer): PKeyKeyboard;
-// var
-// Query: TADOQuery;
-// begin
-// Result := nil;
-// if not FConnection.Connected then
-// exit;
-//
-// Query := TADOQuery.Create(nil);
-// try
-// Query.Connection := FConnection;
-// Query.Sql.Clear;
-// Query.Sql.Text := 'SELECT Key, description, group from Keyboard where key = ' + IntToStr(Key);
-// Query.ExecSQL;
-// Query.Active := True;
-// if Query.RecordCount > 0 then
-// begin
-// Query.First;
-// new(Result);
-// Result.Key := Query.FieldByName('Key').AsInteger;
-// Result.Desc := Query.FieldByName('description').AsString;
-// Result.Group := Query.FieldByName('group').AsInteger;
-// end;
-// finally
-// Query.Active := false;
-// Query.Free;
-// end;
-// end;
-
-// function TDataBase.GetVCommands(const Command: string = ''): TVCommands;
-// var
-// Query: TADOQuery;
-// ResVCommands: TVCommands;
-// begin
-// Result := nil;
-//
-// if not FConnection.Connected then
-// exit;
-//
-// try
-// Query := TADOQuery.Create(nil);
-// Query.Connection := FConnection;
-// Query.Sql.Clear;
-// Query.Sql.Text :=
-// 'select rc.command,                                                           ' +
-// '       rc.description,                                                       ' +
-// '       em.id, em.operation, em.repeat, em.grp                                ' +
-// '  from remotecommand as rc                                                   ' +
-// '  left join(                                                                 ' +
-// '    select "' + tcKeyboard + '" & pk.id as id,                               ' +
-// '           pk.command as command,                                            ' +
-// '           k1.description                                                    ' +
-// '            & IIF(isNull(pk.key2), "", " + " &  k2.description) as operation,' +
-// '           pk.repeat as repeat,                                              ' +
-// '           k1.group as grp                                                   ' +
-// '      from (                                                                 ' +
-// '        PressKeyKeyboard as pk                                               ' +
-// '          inner join keyboard as k1 on k1.key = pk.key1                      ' +
-// '      )                                                                      ' +
-// '    left join keyboard as k2 on k2.key = pk.key2                             ' +
-// '    union all                                                                ' +
-// '    select "' + tcApplication + '" & ra.id as id,                            ' +
-// '           ra.command as command,                                            ' +
-// '           ra.application as operation,                                      ' +
-// '           null as repeat,                                                   ' +
-// '           9 as grp                                                          ' +
-// '      from runapplication AS ra                                              ' +
-// '  ) as em on rc.command = em.command';
-//
-// if Length(trim(Command)) > 0 then
-// begin
-// Query.Sql.Text := Query.Sql.Text + ' where rc.command = "' + Command + '"';
-// end;
-// Query.Sql.Text := Query.Sql.Text + ' order by rc.command';
-// Query.ExecSQL;
-// Query.Active := True;
-// Query.First;
-// while not Query.Eof do
-// begin
-// SetLength(ResVCommands, Length(ResVCommands) + 1);
-// ResVCommands[Query.RecNo - 1].Command := Query.FieldByName('command').AsString;
-// ResVCommands[Query.RecNo - 1].Desc := Query.FieldByName('description').AsString;
-// ResVCommands[Query.RecNo - 1].OId := Query.FieldByName('id').AsString;
-// ResVCommands[Query.RecNo - 1].Operation := Query.FieldByName('operation').AsString;
-// ResVCommands[Query.RecNo - 1].ORepeat := Query.FieldByName('repeat').AsBoolean;
-// ResVCommands[Query.RecNo - 1].OGroup := Query.FieldByName('grp').AsInteger;
-// Query.Next;
-// end;
-// Result := ResVCommands;
-// finally
-// Query.Active := false;
-// Query.Free;
-// end;
-// end;
-
-// function TDataBase.GetExecuteCommands(const Command: string): TECommands;
-// var
-// Query: TADOQuery;
-// ResECommands: TECommands;
-// begin
-// Result := nil;
-//
-// if not FConnection.Connected then
-// exit;
-//
-// try
-// Query := TADOQuery.Create(nil);
-// Query.Connection := FConnection;
-// Query.Sql.Clear;
-// Query.Sql.Text := 'select * from (                                              ' +
-// '    select rc.command,                                                       ' +
-// '           rc.description,                                                   ' +
-// '           rc.repeat as rcrepeat,                                            ' +
-// '           "' + tcKeyboard + '" as type,                                     ' +
-// '           null as application,                                              ' +
-// '           pk.key1 as key1,                                                  ' +
-// '           pk.key2 as key2,                                                  ' +
-// '           pk.repeat as repeat,                                              ' +
-// '           opk2.operation as operation                                       ' +
-// '      from (                                                                 ' +
-// '        remotecommand as rc                                                  ' +
-// '          inner join pressKeyKeyboard as pk on pk.command = rc.command       ' +
-// '      )                                                                      ' +
-// '      inner join (                                                           ' +
-// '                  select opk.command as command,                             ' +
-// '                         k1.description & IIF(isNull(opk.key2),              ' +
-// '                                               "",                           ' +
-// '                                               " + " &  k2.description       ' +
-// '                                             ) as operation                  ' +
-// '                    from (                                                   ' +
-// '                      PressKeyKeyboard as opk                                ' +
-// '                        inner join keyboard as k1 on k1.key = opk.key1       ' +
-// '                    )                                                        ' +
-// '                    left join keyboard as k2 on k2.key = opk.key2            ' +
-// '                 ) as opk2 on opk2.command = rc.command                      ' +
-// '    union all                                                                ' +
-// '    select rc.command,                                                       ' +
-// '           rc.description,                                                   ' +
-// '           rc.repeat as rcrepeat,                                            ' +
-// '           "' + tcApplication + '" as type,                                  ' +
-// '           ra.application,                                                   ' +
-// '           null as key1,                                                     ' +
-// '           null as key2,                                                     ' +
-// '           null as repeat,                                                   ' +
-// '           ra.application as operation                                       ' +
-// '      from remotecommand as rc                                               ' +
-// '      inner join runapplication as ra on ra.command = rc.command             ' +
-// ')                                                                            ' +
-// 'where command = "' + Command + '"';
-//
-// Query.ExecSQL;
-// Query.Active := True;
-// Query.First;
-// while not Query.Eof do
-// begin
-// SetLength(ResECommands, Length(ResECommands) + 1);
-// ResECommands[Query.RecNo - 1].Command.Command := Query.FieldByName('command').AsString;
-// ResECommands[Query.RecNo - 1].Command.Desc := Query.FieldByName('description').AsString;
-// ResECommands[Query.RecNo - 1].Command.RepeatPreview := Query.FieldByName('rcrepeat')
-// .AsBoolean;
-// if Query.FieldByName('type').AsString = tcApplication then
-// ResECommands[Query.RecNo - 1].ECType := ecApplication
-// else if Query.FieldByName('type').AsString = tcKeyboard then
-// ResECommands[Query.RecNo - 1].ECType := ecKyeboard;
-// ResECommands[Query.RecNo - 1].Application := Query.FieldByName('application').AsString;
-// ResECommands[Query.RecNo - 1].Key1 := Query.FieldByName('key1').AsInteger;
-// ResECommands[Query.RecNo - 1].Key2 := Query.FieldByName('key2').AsInteger;
-// ResECommands[Query.RecNo - 1].Rep := Query.FieldByName('repeat').AsBoolean;
-// ResECommands[Query.RecNo - 1].Operation := Query.FieldByName('operation').AsString;
-// Query.Next;
-// end;
-// Result := ResECommands;
-// finally
-// Query.Active := false;
-// Query.Free;
-// end;
-// end;
-
-function TDataBase.getOperation(const Command: string): TOperations;
+function TDataBase.GetOperation(const Command: string): TOperations;
 var
   Query: TADOQuery;
 begin
@@ -1084,50 +849,34 @@ begin
     Query := TADOQuery.Create(nil);
     Query.Connection := FConnection;
     Query.Sql.Clear;
-    Query.Sql.Text := 'select * from (                                              ' +
-      '    select rc.command,                                                       ' +
-      '           rc.description,                                                   ' +
-      '           pk.id,                                                            ' +
-      '           "' + tcKeyboard + '" as type,                                     ' +
-      '           null as application,                                              ' +
-      '           pk.key1 as key1,                                                  ' +
-      '           pk.key2 as key2,                                                  ' +
-      '           pk.key3 as key3,                                                  ' +
-      '           pk.longPress as longPress,                                        ' +
-      '           opk2.operation as operation                                       ' +
-      '      from (                                                                 ' +
-      '        remotecommand as rc                                                  ' +
-      '          inner join OperationPressKeyboard as pk on pk.command = rc.command ' +
-      '      )                                                                      ' +
-      '      inner join (                                                           ' +
-      '                  select opk.command as command,                             ' +
-      '                         opk.id,                                             ' +
-      '                         k1.description & IIF(isNull(opk.key2),              ' +
-      '                                               "",                           ' +
-      '                                               " + " &  k2.description       ' +
-      '                                             ) as operation                  ' +
-      '                    from (                                                   ' +
-      '                      OperationPressKeyboard as opk                          ' +
-      '                        inner join keyboard as k1 on k1.key = opk.key1       ' +
-      '                    )                                                        ' +
-      '                    left join keyboard as k2 on k2.key = opk.key2            ' +
-      '                 ) as opk2 on opk2.command = rc.command and opk2.id = pk.id  ' +
-      '    union all                                                                ' +
-      '    select rc.command,                                                       ' +
-      '           rc.description,                                                   ' +
-      '           ra.id,                                                            ' +
-      '           "' + tcApplication + '" as type,                                  ' +
-      '           ra.application,                                                   ' +
-      '           null as key1,                                                     ' +
-      '           null as key2,                                                     ' +
-      '           null as key3,                                                     ' +
-      '           null as longPress,                                                ' +
-      '           ra.application as operation                                       ' +
-      '      from remotecommand as rc                                               ' +
-      '      inner join OperationRunApplication as ra on ra.command = rc.command    ' +
-      ')                                                                            ' +
-      'where command = "' + Command + '"                                            ' +
-      'order by type, operation';
+    Query.Sql.Text := 'SELECT * FROM (                                                ' +
+      '    SELECT opk.command,                                                        ' +
+      '        opk.id,                                                                ' +
+      '        "' + tcKeyboard + '" as type,                                          ' +
+      '        opk.key1,                                                              ' +
+      '        opk.key2,                                                              ' +
+      '        opk.key3,                                                              ' +
+      '        null as application,                                                   ' +
+      '        kk1.Description                                                        ' +
+      '          & IIF(isNull(opk.Key2), " ", " + " & kk2.Description)                ' +
+      '          & IIF(isNull(opk.Key3), " ", " + " & kk3.Description) as operation   ' +
+      '      FROM (( Keyboard AS kk1                                                  ' +
+      '        INNER JOIN OperationPressKeyboard AS opk ON kk1.Key = opk.Key1 )       ' +
+      '        LEFT JOIN Keyboard AS kk2 ON opk.Key2 = kk2.Key )                      ' +
+      '        LEFT JOIN Keyboard AS kk3 ON opk.Key3 = kk3.Key                        ' +
+      '    UNION ALL                                                                  ' +
+      '    SELECT ora.command,                                                        ' +
+      '        ora.id,                                                                ' +
+      '        "' + tcApplication + '" as type,                                       ' +
+      '        null as key1,                                                          ' +
+      '        null as key2,                                                          ' +
+      '        null as key3,                                                          ' +
+      '        ora.application,                                                       ' +
+      '        ora.Application as operation                                           ' +
+      '      FROM OperationRunApplication as ora                                      ' +
+      '  )                                                                            ' +
+      '  WHERE command = "' + Command + '"                                            ' +
+      '  ORDER BY type, operation                                                     ';
 
     Query.ExecSQL;
     Query.Active := True;
@@ -1154,12 +903,10 @@ begin
         Result[Query.RecNo - 1].PressKeyboard.Key1 := Query.FieldByName('key1').AsInteger;
         Result[Query.RecNo - 1].PressKeyboard.Key2 := Query.FieldByName('key2').AsInteger;
         Result[Query.RecNo - 1].PressKeyboard.Key3 := Query.FieldByName('key3').AsInteger;
-        Result[Query.RecNo - 1].PressKeyboard.LongPress := Query.FieldByName('LongPress').AsBoolean;
       end;
 
       Query.Next;
     end;
-    // Result := ResECommands;
   finally
     Query.Active := false;
     Query.Free;

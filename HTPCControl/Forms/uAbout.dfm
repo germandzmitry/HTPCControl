@@ -143,6 +143,10 @@ object About: TAbout
     object TabHistory: TTabSheet
       Caption = 'TabHistory'
       ImageIndex = 1
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
       object memoHistory: TMemo
         AlignWithMargins = True
         Left = 3

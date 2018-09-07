@@ -2,8 +2,8 @@ object Main: TMain
   Left = 0
   Top = 0
   Caption = 'Main'
-  ClientHeight = 579
-  ClientWidth = 820
+  ClientHeight = 575
+  ClientWidth = 780
   Color = clBtnFace
   DoubleBuffered = True
   Font.Charset = DEFAULT_CHARSET
@@ -23,7 +23,7 @@ object Main: TMain
     Left = 337
     Top = 29
     Width = 6
-    Height = 531
+    Height = 527
     Color = clBtnFace
     ParentColor = False
     ResizeStyle = rsUpdate
@@ -32,8 +32,8 @@ object Main: TMain
   end
   object StatusBar: TStatusBar
     Left = 0
-    Top = 560
-    Width = 820
+    Top = 556
+    Width = 780
     Height = 19
     Panels = <
       item
@@ -56,7 +56,7 @@ object Main: TMain
     Left = 0
     Top = 29
     Width = 337
-    Height = 531
+    Height = 527
     Align = alLeft
     BevelOuter = bvNone
     Caption = 'pComPort'
@@ -113,6 +113,7 @@ object Main: TMain
         ReadOnly = True
         RowSelect = True
         TabOrder = 0
+        TabStop = False
         ViewStyle = vsReport
         OnContextPopup = lvReadComPortContextPopup
         OnCustomDrawItem = lvReadComPortCustomDrawItem
@@ -122,7 +123,7 @@ object Main: TMain
   object pClient: TPanel
     Left = 349
     Top = 168
-    Width = 460
+    Width = 420
     Height = 376
     BevelOuter = bvNone
     Caption = 'pClient'
@@ -130,7 +131,7 @@ object Main: TMain
     object SplitterBottom: TSplitter
       Left = 0
       Top = 58
-      Width = 460
+      Width = 420
       Height = 6
       Cursor = crVSplit
       Align = alBottom
@@ -142,7 +143,7 @@ object Main: TMain
       AlignWithMargins = True
       Left = 0
       Top = 64
-      Width = 457
+      Width = 417
       Height = 309
       Margins.Left = 0
       Margins.Top = 0
@@ -159,12 +160,15 @@ object Main: TMain
         AlignWithMargins = True
         Left = 3
         Top = 226
-        Width = 449
+        Width = 409
         Height = 27
         Align = alTop
         Caption = 'pKodiPlayingFile'
         ParentBackground = False
         TabOrder = 0
+        DesignSize = (
+          409
+          27)
         object lKodiPlayingFile: TLabel
           Left = 17
           Top = 7
@@ -180,10 +184,11 @@ object Main: TMain
           ParentBiDiMode = False
         end
         object mKodiPlayingFileV: TMemo
-          Left = 296
+          Left = 256
           Top = 5
           Width = 147
           Height = 17
+          Anchors = [akTop, akRight]
           Lines.Strings = (
             'mKodiPlayingFileV')
           TabOrder = 0
@@ -193,7 +198,7 @@ object Main: TMain
         AlignWithMargins = True
         Left = 3
         Top = 158
-        Width = 449
+        Width = 409
         Height = 27
         Align = alTop
         Caption = 'pKodiHeader'
@@ -225,12 +230,15 @@ object Main: TMain
         AlignWithMargins = True
         Left = 3
         Top = 191
-        Width = 449
+        Width = 409
         Height = 29
         Align = alTop
         Caption = 'pKodiPlayingLabel'
         ParentBackground = False
         TabOrder = 2
+        DesignSize = (
+          409
+          29)
         object lKodiPlayingLabel: TLabel
           Left = 17
           Top = 8
@@ -244,10 +252,11 @@ object Main: TMain
           Caption = 'lKodiPlayingLabel'
         end
         object mKodiPlayingLabelV: TMemo
-          Left = 296
+          Left = 256
           Top = 6
           Width = 147
           Height = 17
+          Anchors = [akTop, akRight]
           Lines.Strings = (
             'mKodiPlayingLabelV')
           TabOrder = 0
@@ -257,7 +266,7 @@ object Main: TMain
         AlignWithMargins = True
         Left = 3
         Top = 65
-        Width = 449
+        Width = 409
         Height = 25
         Align = alTop
         Caption = 'pShellApplicationHeader'
@@ -277,12 +286,15 @@ object Main: TMain
         AlignWithMargins = True
         Left = 3
         Top = 96
-        Width = 449
+        Width = 409
         Height = 25
         Align = alTop
         Caption = 'pShellApplication_x86'
         ParentBackground = False
         TabOrder = 4
+        DesignSize = (
+          409
+          25)
         object lShellApplication_x86: TLabel
           Left = 17
           Top = 6
@@ -291,10 +303,11 @@ object Main: TMain
           Caption = 'lShellApplication_x86'
         end
         object mShellApplication_x86V: TMemo
-          Left = 296
+          Left = 256
           Top = 4
           Width = 147
           Height = 17
+          Anchors = [akTop, akRight]
           Lines.Strings = (
             'mShellApplication_x86')
           TabOrder = 0
@@ -304,12 +317,15 @@ object Main: TMain
         AlignWithMargins = True
         Left = 3
         Top = 127
-        Width = 449
+        Width = 409
         Height = 25
         Align = alTop
         Caption = 'pShellApplicationFile'
         ParentBackground = False
         TabOrder = 5
+        DesignSize = (
+          409
+          25)
         object lShellApplicationFile: TLabel
           Left = 17
           Top = 6
@@ -318,10 +334,11 @@ object Main: TMain
           Caption = 'lShellApplicationFile'
         end
         object mShellApplicationFileV: TMemo
-          Left = 296
+          Left = 256
           Top = 4
           Width = 147
           Height = 17
+          Anchors = [akTop, akRight]
           Lines.Strings = (
             'mShellApplicationFile')
           TabOrder = 0
@@ -331,7 +348,7 @@ object Main: TMain
         AlignWithMargins = True
         Left = 3
         Top = 3
-        Width = 449
+        Width = 409
         Height = 25
         Align = alTop
         Caption = 'pRemoteControlHeader'
@@ -351,17 +368,21 @@ object Main: TMain
         AlignWithMargins = True
         Left = 3
         Top = 34
-        Width = 449
+        Width = 409
         Height = 25
         Align = alTop
         Caption = 'pRemoteControlLast'
         ParentBackground = False
         TabOrder = 7
+        DesignSize = (
+          409
+          25)
         object mRemoteControlLastV: TMemo
-          Left = 296
+          Left = 256
           Top = 4
           Width = 147
           Height = 17
+          Anchors = [akTop, akRight]
           Lines.Strings = (
             'mRemoteControlLastV')
           TabOrder = 0
@@ -381,7 +402,7 @@ object Main: TMain
   object ActionMainMenuBar: TActionMainMenuBar
     Left = 0
     Top = 0
-    Width = 820
+    Width = 780
     Height = 29
     UseSystemFont = False
     ActionManager = ActionManager
@@ -545,7 +566,7 @@ object Main: TMain
     Left = 376
     Top = 128
     Bitmap = {
-      494C01010F002001840110001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
+      494C01010F002001B00110001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000004000000001002000000000000040
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000

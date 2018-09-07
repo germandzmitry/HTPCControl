@@ -1,4 +1,4 @@
-unit uMain;
+п»їunit uMain;
 
 { https://sourceforge.net/projects/comport/?source=typ_redirect }
 
@@ -12,7 +12,7 @@ uses
   System.ImageList, Vcl.ImgList, Winapi.shellApi, System.IniFiles, uShellApplication,
   uSettings, uDataBase, uEventKodi, uComPort, Vcl.Menus, Vcl.ActnPopup, CommCtrl, uExecuteCommand,
   System.Notification, Vcl.AppEvnts, MMDevApi, Winapi.ActiveX, Vcl.ActnMenus,
-  uTypes;
+  uTypes, Vcl.Grids, Vcl.Themes, uCustomListBox;
 
 type
   TMain = class(TForm)
@@ -116,8 +116,6 @@ type
     procedure ActShellAppStopExecute(Sender: TObject);
     procedure AppEventsMessage(var Msg: tagMSG; var Handled: Boolean);
 
-    procedure lvRemoteControlCustomDrawSubItem(Sender: TCustomListView; Item: TListItem;
-      SubItem: Integer; State: TCustomDrawState; var DefaultDraw: Boolean);
     procedure lvShellApplicationCustomDrawSubItem(Sender: TCustomListView; Item: TListItem;
       SubItem: Integer; State: TCustomDrawState; var DefaultDraw: Boolean);
     procedure ActKodiStartExecute(Sender: TObject);
@@ -129,7 +127,7 @@ type
     plvShellApplication: TPanel;
     plvEventKodi: TPanel;
 
-    lvRemoteControl: TListView;
+    lbRemoteControl: TCustomListBox;
     lvShellApplication: TListView;
     lvEventKodi: TListView;
 
@@ -144,6 +142,11 @@ type
     FSureExit: Boolean;
     FProcessingEventHandler: Boolean;
 
+{$IFDEF DEBUG}
+    edTestReadData: TEdit;
+    btnTestReadData: TButton;
+    pTestReadData: TPanel;
+{$ENDIF}
     procedure LoadWindowSetting();
     procedure SaveWindowSetting();
 
@@ -173,8 +176,8 @@ type
     procedure onShellApplicationWindowsHook(Sender: TObject; const HSHELL: NativeInt;
       const ApplicationData: TEXEVersionData);
 
-    procedure onExecuteCommand(ECommand: TECommand; ECType: TopType; RepeatPreview: Boolean);
-    procedure onExecuteCommandSetPreviewCommand(RCommand: PRemoteCommand; Opearion: string);
+    procedure onExecuteCommand(RCommand: TRemoteCommand; Operations: TOperations;
+      RepeatPrevious: Boolean);
 
     procedure onKodiRunning(Running: Boolean);
     procedure onKodiPlayer(Player: string);
@@ -188,6 +191,10 @@ type
     function Processing: Boolean;
     procedure SetMemoHeight(AMemo: TMemo);
     procedure SetMemoValue(AMemo: TMemo; Value: string);
+
+{$IFDEF DEBUG}
+    procedure btnTestReadDataClick(Sender: TObject);
+{$ENDIF}
   public
     { Public declarations }
     property DataBase: TDataBase read FDataBase;
@@ -201,7 +208,7 @@ implementation
 
 {$R *.dfm}
 
-uses uAbout, uControlCommand, uLanguage, uRCommandsControl, USendComPort;
+uses uAbout, uLanguage, uRCommandsControl, USendComPort, uFastRCommand;
 
 procedure TMain.FormCreate(Sender: TObject);
 
@@ -229,14 +236,14 @@ begin
   FSetting := uSettings.getSetting();
   UpdateLanguage(self, lngRus);
 
-  // Обработка настроек запуска
+  // РћР±СЂР°Р±РѕС‚РєР° РЅР°СЃС‚СЂРѕРµРє Р·Р°РїСѓСЃРєР°
   if (ParamStr(1) = '-autorun') then
   begin
-    // Установка громкости
+    // РЈСЃС‚Р°РЅРѕРІРєР° РіСЂРѕРјРєРѕСЃС‚Рё
     if FSetting.Application.AutoRunSetVolume then
       SetVolume(FSetting.Application.Volume);
 
-    // Сворачивание в трей
+    // РЎРІРѕСЂР°С‡РёРІР°РЅРёРµ РІ С‚СЂРµР№
     if FSetting.Application.AutoRunTray then
     begin
       Application.ShowMainForm := False;
@@ -250,21 +257,21 @@ begin
   onKodiRunning(False);
 
   try
-    // Установка хука при запуске
+    // РЈСЃС‚Р°РЅРѕРІРєР° С…СѓРєР° РїСЂРё Р·Р°РїСѓСЃРєРµ
     if FSetting.EventApplication.Using then
       StartEventApplication;
 
-    // Открытие порта при запуске
+    // РћС‚РєСЂС‹С‚РёРµ РїРѕСЂС‚Р° РїСЂРё Р·Р°РїСѓСЃРєРµ
     if FSetting.ComPort.OpenRun then
     begin
       OpenComPort;
       if FSetting.Application.AutoRunNotificationCenter then
-        ShowNotification(Application.Title, 'Приложение успешно запущенно');
+        ShowNotification(Application.Title, 'РџСЂРёР»РѕР¶РµРЅРёРµ СѓСЃРїРµС€РЅРѕ Р·Р°РїСѓС‰РµРЅРЅРѕ');
     end;
   except
     on E: Exception do
     begin
-      // Если ошибка и запуски в трей, открываем из трея
+      // Р•СЃР»Рё РѕС€РёР±РєР° Рё Р·Р°РїСѓСЃРєРё РІ С‚СЂРµР№, РѕС‚РєСЂС‹РІР°РµРј РёР· С‚СЂРµСЏ
       if FSetting.Application.AutoRun and FSetting.Application.AutoRunTray then
         OpenTray;
 
@@ -327,11 +334,11 @@ begin
   for i := 0 to lvReadComPort.Items.Count - 1 do
     Dispose(lvReadComPort.Items[i].Data);
 
-  for i := 0 to lvRemoteControl.Items.Count - 1 do
-    Dispose(lvRemoteControl.Items[i].Data);
+  for i := 0 to lbRemoteControl.Items.Count - 1 do
+    (lbRemoteControl.Items.Objects[i] as TObjectRemoteCommand).Free;
 
-  if Assigned(lvRemoteControl) then
-    lvRemoteControl.Free;
+  if Assigned(lbRemoteControl) then
+    lbRemoteControl.Free;
   if Assigned(lvShellApplication) then
     lvShellApplication.Free;
   if Assigned(lvEventKodi) then
@@ -345,6 +352,12 @@ begin
     plvEventKodi.Free;
 
   FPageClient.Free;
+
+{$IFDEF DEBUG}
+  edTestReadData.Free;
+  btnTestReadData.Free;
+  pTestReadData.Free;
+{$ENDIF}
 end;
 
 procedure TMain.ActRCRCommandsControlExecute(Sender: TObject);
@@ -364,31 +377,44 @@ end;
 
 procedure TMain.ActRCAddExecute(Sender: TObject);
 var
-  LCC: TfrmControlCommand;
+  LFRC: TfrmFastRCommand;
 begin
-  LCC := TfrmControlCommand.Create(self);
+  LFRC := TfrmFastRCommand.Create(self);
   try
-    LCC.cType := ccAdd;
-    LCC.Caption := GetLanguageText(LCC.Name, 'CaptionAdd', lngRus);
-    LCC.edCCCommand.Text := TReadComPort(lvReadComPort.Selected.Data^).Command;
-    LCC.ShowModal;
+    LFRC.frcType := frcAdd;
+    LFRC.edCommand.Text := TReadComPort(lvReadComPort.Selected.Data^).Command;
+    LFRC.ShowModal;
   finally
-    LCC.Free;
+    LFRC.Free;
   end;
 end;
 
 procedure TMain.ActRCEditExecute(Sender: TObject);
 var
-  LCC: TfrmControlCommand;
+  LFRC: TfrmFastRCommand;
+  RCommand: TRemoteCommand;
+  Operations: TOperations;
 begin
-  LCC := TfrmControlCommand.Create(self);
+  RCommand := DataBase.GetRemoteCommand(TReadComPort(lvReadComPort.Selected.Data^).Command);
+  Operations := DataBase.getOperation(RCommand.Command);
+  if Length(Operations) <> 1 then
+  begin
+    MessageDlg(Format(GetLanguageMsg('msgRCCommandMoreOne', lngRus), [RCommand.Command]), mtWarning,
+      [mbOK], 0);
+    exit;
+  end;
+
+  LFRC := TfrmFastRCommand.Create(self);
   try
-    LCC.cType := ccEdit;
-    LCC.Caption := GetLanguageText(LCC.Name, 'CaptionEdit', lngRus);
-    LCC.edCCCommand.Text := TReadComPort(lvReadComPort.Selected.Data^).Command;
-    LCC.ShowModal;
+    LFRC.frcType := frcEdit;
+    LFRC.edCommand.Text := RCommand.Command;
+    LFRC.edDescription.Text := RCommand.Desc;
+    LFRC.cbLongPress.Checked := RCommand.LongPress;
+    LFRC.cbRepeatPrevious.Checked := RCommand.RepeatPrevious;
+    LFRC.Operation := Operations[0];
+    LFRC.ShowModal;
   finally
-    LCC.Free;
+    LFRC.Free;
   end;
 end;
 
@@ -399,11 +425,9 @@ begin
   LCommand := TReadComPort(lvReadComPort.Selected.Data^).Command;
 
   if MessageDlg(Format(GetLanguageMsg('msgDBDeleteRemoteCommand', lngRus), [LCommand]),
-    mtConfirmation, mbOKCancel, 1) = mrOk then
+    mtConfirmation, mbYesNo, 1) = mrYes then
     try
       FDataBase.DeleteRemoteCommand(LCommand);
-      MessageDlg(GetLanguageMsg('msgDBDeleteRemoteCommandSuccess', lngRus), mtInformation,
-        [mbOK], 0);
     except
       on E: Exception do
         MessageDlg(E.Message, mtError, [mbOK], 0);
@@ -603,6 +627,14 @@ begin
     TurnTray;
 end;
 
+{$IFDEF DEBUG}
+
+procedure TMain.btnTestReadDataClick(Sender: TObject);
+begin
+  onComPortReadData(FArduino, edTestReadData.Text);
+end;
+{$ENDIF}
+
 procedure TMain.AppEventsMessage(var Msg: tagMSG; var Handled: Boolean);
 var
   LComPortConnected: Boolean;
@@ -611,7 +643,7 @@ var
   LKodiStarting: Boolean;
 begin
   if Processing then
-    Exit;
+    exit;
 
   FProcessingEventHandler := True;
   try
@@ -624,7 +656,9 @@ begin
     ActComPortOpen.Enabled := not LComPortConnected;
     ActComPortSend.Enabled := LComPortConnected;
     ActComPortClose.Enabled := LComPortConnected;
-
+{$IFDEF DEBUG}
+    btnTestReadData.Enabled := LComPortConnected;
+{$ENDIF}
     { DataBase }
     ActRCRCommandsControl.Enabled := LDataBaseConnected;
 
@@ -642,22 +676,6 @@ begin
     { intentionally silent }
   end;
 end;
-
-// procedure TMain.SetLabelHeight(ALabel: TLabel);
-// var
-// Rect: TRect;
-// begin
-// // if ALabel.Canvas.TextWidth(Text) < ALabel.Width then
-// // begin
-// Rect.Left := 0;
-// Rect.Top := 0;
-// Rect.Right := ALabel.Width;
-// Rect.Bottom := ALabel.Height;
-//
-// ALabel.Height := DrawText(ALabel.Canvas.Handle, PChar(ALabel.Caption), -1, Rect,
-// DT_CALCRECT or DT_WORDBREAK);
-// // end;
-// end;
 
 procedure TMain.SetMemoHeight(AMemo: TMemo);
 var
@@ -692,14 +710,14 @@ var
 begin
   IniFile := TIniFile.Create(ExtractFileDir(Application.ExeName) + '\' + FileSetting);
   try
-    Main.Left := IniFile.ReadInteger('Window', 'Left', Main.Left);
+    Main.left := IniFile.ReadInteger('Window', 'Left', Main.left);
     Main.Top := IniFile.ReadInteger('Window', 'Top', Main.Top);
-    Main.Width := IniFile.ReadInteger('Window', 'Width', Main.Width);
+    Main.width := IniFile.ReadInteger('Window', 'Width', Main.width);
     Main.Height := IniFile.ReadInteger('Window', 'Height', Main.Height);
     if IniFile.ReadBool('Window', 'Maximized', True) then
       Main.WindowState := wsMaximized;
 
-    Main.pComPort.Width := IniFile.ReadInteger('Window', 'SplitterLeft', Main.pComPort.Width);
+    Main.pComPort.width := IniFile.ReadInteger('Window', 'SplitterLeft', Main.pComPort.width);
     Main.scrbFooter.Height := IniFile.ReadInteger('Window', 'SplitterBottom',
       Main.scrbFooter.Height);
   finally
@@ -718,12 +736,12 @@ begin
     else
     begin
       IniFile.WriteBool('Window', 'Maximized', False);
-      IniFile.WriteInteger('Window', 'Left', Main.Left);
+      IniFile.WriteInteger('Window', 'Left', Main.left);
       IniFile.WriteInteger('Window', 'Top', Main.Top);
-      IniFile.WriteInteger('Window', 'Width', Main.Width);
+      IniFile.WriteInteger('Window', 'Width', Main.width);
       IniFile.WriteInteger('Window', 'Height', Main.Height);
     end;
-    IniFile.WriteInteger('Window', 'SplitterLeft', Main.pComPort.Width);
+    IniFile.WriteInteger('Window', 'SplitterLeft', Main.pComPort.width);
     IniFile.WriteInteger('Window', 'SplitterBottom', Main.scrbFooter.Height);
   finally
     IniFile.Free;
@@ -741,59 +759,17 @@ begin
   SetMemoHeight(mKodiPlayingFileV);
 end;
 
-procedure TMain.lvRemoteControlCustomDrawSubItem(Sender: TCustomListView; Item: TListItem;
-  SubItem: Integer; State: TCustomDrawState; var DefaultDraw: Boolean);
-// var
-// aRect: TRect;
-// LIcon: TIcon;
-// LSubItemText: string;
-// LLeft: Integer;
-// LEPCommand: TEPCommand;
-begin
-  // if (SubItem = 1) then
-  // begin
-  // LEPCommand := TEPCommand(Item.Data^);
-  // ListView_GetSubItemRect(Sender.Handle, Item.Index, SubItem, LVIR_BOUNDS, @aRect);
-  // SetBkMode(Sender.Canvas.Handle, TRANSPARENT);
-  // LSubItemText := Item.SubItems[SubItem - 1];
-  // LLeft := 0;
-  //
-  // LIcon := TIcon.Create();
-  // try
-  // case LEPCommand.ECommand.ECType of
-  // ecKyeboard:
-  // if LEPCommand.RepeatPreview then
-  // ilSmall.GetIcon(13, LIcon)
-  // else
-  // ilSmall.GetIcon(12, LIcon);
-  // ecApplication:
-  // if FileExists(String(LEPCommand.ECommand.Application)) then
-  // SmallIconEXE(String(LEPCommand.ECommand.Application), LIcon)
-  // // SmallIconFromExecutableFile(LEPCommand.ECommand.Application, LIcon)
-  // end;
-  //
-  // Sender.Canvas.Draw(aRect.Left + 5, aRect.Top + 1, LIcon);
-  // LLeft := LIcon.Width + 5;
-  // finally
-  // LIcon.Free;
-  // end;
-  //
-  // Sender.Canvas.TextOut(aRect.Left + 5 + LLeft, aRect.Top + 1, LSubItemText);
-  // DefaultDraw := False;
-  // end;
-end;
-
 procedure TMain.lvShellApplicationCustomDrawSubItem(Sender: TCustomListView; Item: TListItem;
   SubItem: Integer; State: TCustomDrawState; var DefaultDraw: Boolean);
 var
-  aRect: TRect;
+  ARect: TRect;
   LIcon: TIcon;
   LSubItemText: string;
   LLeft: Integer;
 begin
   if (SubItem = 1) then
   begin
-    ListView_GetSubItemRect(Sender.Handle, Item.Index, SubItem, LVIR_BOUNDS, @aRect);
+    ListView_GetSubItemRect(Sender.Handle, Item.Index, SubItem, LVIR_BOUNDS, @ARect);
     SetBkMode(Sender.Canvas.Handle, TRANSPARENT);
     LSubItemText := Item.SubItems[SubItem - 1];
     LLeft := 0;
@@ -805,13 +781,13 @@ begin
         SmallIconEXE(LSubItemText, LIcon);
       // SmallIconFromExecutableFile(LSubItemText, LIcon);
 
-      Sender.Canvas.Draw(aRect.Left + 5, aRect.Top + 1, LIcon);
-      LLeft := LIcon.Width + 5;
+      Sender.Canvas.Draw(ARect.left + 5, ARect.Top + 1, LIcon);
+      LLeft := LIcon.width + 5;
     finally
       LIcon.Free;
     end;
 
-    Sender.Canvas.TextOut(aRect.Left + 5 + LLeft, aRect.Top + 1, LSubItemText);
+    Sender.Canvas.TextOut(ARect.left + 5 + LLeft, ARect.Top + 1, LSubItemText);
     DefaultDraw := False;
   end;
 end;
@@ -832,14 +808,14 @@ begin
     if not FDataBase.Connected then
     begin
       MessageDlg(GetLanguageMsg('msgDBNotConnected', lngRus), mtWarning, [mbOK], 0);
-      Exit;
+      exit;
     end;
 
     LCommand := TReadComPort(lvReadComPort.Selected.Data^).Command;
     CommandExists := FDataBase.RemoteCommandExists(LCommand, RCommand);
-    ActRCAdd.Enabled := not CommandExists;
-    ActRCEdit.Enabled := CommandExists;
-    ActRCDelete.Enabled := CommandExists;
+    ActRCAdd.Visible := not CommandExists;
+    ActRCEdit.Visible := CommandExists;
+    ActRCDelete.Visible := CommandExists;
 
     PopupActReadComPort.Popup(Pos.X, Pos.Y);
   end;
@@ -872,9 +848,10 @@ end;
 procedure TMain.TurnTray();
 begin
   Tray.Visible := True;
-  ShowWindow(Main.Handle, SW_HIDE); // Скрываем программу
-  ShowWindow(Application.Handle, SW_HIDE); // Скрываем кнопку с TaskBar'а
-  SetWindowLong(Application.Handle, GWL_EXSTYLE, GetWindowLong(Application.Handle, GWL_EXSTYLE) or
+  ShowWindow(Main.Handle, SW_HIDE);
+  // РЎРєСЂС‹РІР°РµРј РїСЂРѕРіСЂР°РјРјСѓ
+  ShowWindow(Application.Handle, SW_HIDE); // РЎРєСЂС‹РІР°РµРј РєРЅРѕРїРєСѓ СЃ TaskBar'Р°
+  SetWindowLong(Application.Handle, GWL_EXSTYLE, GetWindowlong(Application.Handle, GWL_EXSTYLE) or
     (not WS_EX_APPWINDOW));
 end;
 
@@ -890,7 +867,7 @@ function TMain.Processing: Boolean;
 begin
   Result := True;
   if FProcessingEventHandler then
-    Exit;
+    exit;
   Result := False;
 end;
 
@@ -1058,8 +1035,8 @@ begin
     LItem.ShowCaption := False;
   end;
 
-  pComPort.Width := pComPort.Width + 1;
-  pComPort.Width := pComPort.Width - 1;
+  pComPort.width := pComPort.width + 1;
+  pComPort.width := pComPort.width - 1;
 end;
 
 procedure TMain.CreateComponent();
@@ -1077,13 +1054,13 @@ var
   tabRemoteControl, tabShellApplication, tabEventKodi: TTabSheet;
   LColumn: TListColumn;
 begin
-  // Панель
+  // РџР°РЅРµР»СЊ
   FPageClient := TCustomPageControl.Create(self);
   with FPageClient do
   begin
-    Left := 10;
+    left := 10;
     Top := 10;
-    Width := 20;
+    width := 20;
     Height := 20;
     Parent := pClient;
     Name := 'pcClient';
@@ -1099,16 +1076,16 @@ begin
   end;
   SendMessage(FPageClient.Handle, WM_UPDATEUISTATE, MakeLong(UIS_SET, UISF_HIDEFOCUS), 0);
 
-  // Вкладка - RemoteControl
+  // Р’РєР»Р°РґРєР° - RemoteControl
   tabRemoteControl := CreateTab(FPageClient, 'TabRemoteControl',
     GetLanguageText(Main.Name, 'TabRemoteControl', lngRus));
 
   plvRemoteControl := TPanel.Create(tabRemoteControl);
   with plvRemoteControl do
   begin
-    Left := 10;
+    left := 10;
     Top := 10;
-    Width := 20;
+    width := 20;
     Height := 20;
     Parent := tabRemoteControl;
     Align := alClient;
@@ -1116,46 +1093,30 @@ begin
     BevelOuter := bvNone;
     BorderStyle := bsSingle;
     AlignWithMargins := True;
-    Margins.Left := 0;
+    Margins.left := 0;
     Margins.Bottom := 0;
   end;
 
-  lvRemoteControl := TListView.Create(plvRemoteControl);
-  with lvRemoteControl do
+  lbRemoteControl := TCustomListBox.Create(plvRemoteControl);
+  with lbRemoteControl do
   begin
-    Left := 10;
-    Top := 10;
-    Width := 20;
-    Height := 20;
     Parent := plvRemoteControl;
-    Align := alClient;
     BorderStyle := bsNone;
-    ViewStyle := vsReport;
-    ReadOnly := True;
-    RowSelect := True;
-    ColumnClick := False;
-    OnCustomDrawSubItem := lvRemoteControlCustomDrawSubItem;
-
-    LColumn := Columns.Add;
-    LColumn.Caption := GetLanguageText(Main.Name, 'lvRemoteControl:0', lngRus);
-    LColumn.Width := 100;
-
-    LColumn := Columns.Add;
-    LColumn.Caption := GetLanguageText(Main.Name, 'lvRemoteControl:1', lngRus);
-    LColumn.AutoSize := True;
+    Align := alClient;
+    TabStop := False;
+    DoubleBuffered := True;
   end;
-  SendMessage(lvRemoteControl.Handle, WM_UPDATEUISTATE, MakeLong(UIS_SET, UISF_HIDEFOCUS), 0);
 
-  // Вкладка - ShellApplication
+  // Р’РєР»Р°РґРєР° - ShellApplication
   tabShellApplication := CreateTab(FPageClient, 'TabShellApplication',
     GetLanguageText(Main.Name, 'TabShellApplication', lngRus));
 
   plvShellApplication := TPanel.Create(tabShellApplication);
   with plvShellApplication do
   begin
-    Left := 10;
+    left := 10;
     Top := 10;
-    Width := 20;
+    width := 20;
     Height := 20;
     Parent := tabShellApplication;
     Align := alClient;
@@ -1163,16 +1124,16 @@ begin
     BevelOuter := bvNone;
     BorderStyle := bsSingle;
     AlignWithMargins := True;
-    Margins.Left := 0;
+    Margins.left := 0;
     Margins.Bottom := 0;
   end;
 
   lvShellApplication := TListView.Create(plvShellApplication);
   with lvShellApplication do
   begin
-    Left := 10;
+    left := 10;
     Top := 10;
-    Width := 20;
+    width := 20;
     Height := 20;
     Parent := plvShellApplication;
     Align := alClient;
@@ -1185,7 +1146,7 @@ begin
 
     LColumn := Columns.Add;
     LColumn.Caption := GetLanguageText(Main.Name, 'lvShellApplication:0', lngRus);
-    LColumn.Width := 100;
+    LColumn.width := 100;
 
     LColumn := Columns.Add;
     LColumn.Caption := GetLanguageText(Main.Name, 'lvShellApplication:1', lngRus);
@@ -1193,16 +1154,16 @@ begin
   end;
   SendMessage(lvShellApplication.Handle, WM_UPDATEUISTATE, MakeLong(UIS_SET, UISF_HIDEFOCUS), 0);
 
-  // Вкладка - EventKodi
+  // Р’РєР»Р°РґРєР° - EventKodi
   tabEventKodi := CreateTab(FPageClient, 'TabEventKodi',
     GetLanguageText(Main.Name, 'TabEventKodi', lngRus));
 
   plvEventKodi := TPanel.Create(tabEventKodi);
   with plvEventKodi do
   begin
-    Left := 10;
+    left := 10;
     Top := 10;
-    Width := 20;
+    width := 20;
     Height := 20;
     Parent := tabEventKodi;
     Align := alClient;
@@ -1210,16 +1171,16 @@ begin
     BevelOuter := bvNone;
     BorderStyle := bsSingle;
     AlignWithMargins := True;
-    Margins.Left := 0;
+    Margins.left := 0;
     Margins.Bottom := 0;
   end;
 
   lvEventKodi := TListView.Create(plvEventKodi);
   with lvEventKodi do
   begin
-    Left := 10;
+    left := 10;
     Top := 10;
-    Width := 20;
+    width := 20;
     Height := 20;
     Parent := plvEventKodi;
     Align := alClient;
@@ -1231,13 +1192,50 @@ begin
 
     LColumn := Columns.Add;
     LColumn.Caption := GetLanguageText(Main.Name, 'lvEventKodi:0', lngRus);
-    LColumn.Width := 100;
+    LColumn.width := 100;
 
     LColumn := Columns.Add;
     LColumn.Caption := GetLanguageText(Main.Name, 'lvEventKodi:1', lngRus);
     LColumn.AutoSize := True;
   end;
   SendMessage(lvEventKodi.Handle, WM_UPDATEUISTATE, MakeLong(UIS_SET, UISF_HIDEFOCUS), 0);
+
+{$IFDEF DEBUG}
+  pTestReadData := TPanel.Create(pComPort);
+  with pTestReadData do
+  begin
+    Parent := pComPort;
+    BevelOuter := bvNone;
+    BorderStyle := bsSingle;
+    Ctl3D := False;
+    Color := clWhite;
+    ParentBackground := False;
+    Align := alBottom;
+    Height := 23;
+    AlignWithMargins := True;
+    Margins.right := 0;
+  end;
+
+  btnTestReadData := TButton.Create(pTestReadData);
+  with btnTestReadData do
+  begin
+    Parent := pTestReadData;
+    OnClick := btnTestReadDataClick;
+    Align := alRight;
+    width := 80;
+    Caption := 'РўРµСЃС‚';
+    Hint := 'РўРµСЃС‚ РїРѕР»СѓС‡РµРЅРёСЏ РґР°РЅРЅС‹С… РѕС‚ COM РїРѕСЂС‚Р°';
+  end;
+
+  edTestReadData := TEdit.Create(pTestReadData);
+  with edTestReadData do
+  begin
+    Parent := pTestReadData;
+    Align := alClient;
+    BorderStyle := bsNone;
+    AlignWithMargins := True;
+  end;
+{$ENDIF}
 end;
 
 procedure TMain.SettingComponent();
@@ -1254,8 +1252,8 @@ var
       AlignWithMargins := True;
       ParentBackground := True;
       Margins.Bottom := 0;
-      Margins.Left := 0;
-      Margins.Right := 0;
+      Margins.left := 0;
+      Margins.right := 0;
       Margins.Top := 6;
     end;
   end;
@@ -1265,8 +1263,8 @@ var
     with AMemo do
     begin
       Top := 0;
-      Left := LLeft;
-      Width := Parent.Width - LLeft;
+      left := LLeft;
+      width := Parent.width - LLeft;
       Height := 13;
       Font.Style := [fsBold];
       BorderStyle := bsNone;
@@ -1283,8 +1281,8 @@ var
       AlignWithMargins := True;
       ParentBackground := True;
       Margins.Bottom := 0;
-      Margins.Left := 0;
-      Margins.Right := 3;
+      Margins.left := 0;
+      Margins.right := 3;
       Margins.Top := 6;
     end;
   end;
@@ -1296,8 +1294,8 @@ var
       Alignment := taRightJustify;
       AutoSize := False;
       Top := 0;
-      Left := LLeft * 2;
-      Width := LWidth;
+      left := LLeft * 2;
+      width := LWidth;
       Height := 13;
       WordWrap := True;
 
@@ -1313,8 +1311,8 @@ var
     begin
       Alignment := taRightJustify;
       Top := 0;
-      Left := LLeft * 2;
-      Width := LWidth;
+      left := LLeft * 2;
+      width := LWidth;
       Height := 13;
       BorderStyle := bsNone;
       ReadOnly := True;
@@ -1347,8 +1345,8 @@ var
     with AMemo do
     begin
       Top := 0;
-      Left := (LLeft * 2) + LWidth + 4;
-      Width := scrbFooter.Width - AMemo.Left - 10;
+      left := (LLeft * 2) + LWidth + 4;
+      width := scrbFooter.width - AMemo.left - 10;
       Height := 13;
       Anchors := [akLeft, akTop, akRight];
       BorderStyle := bsNone;
@@ -1402,7 +1400,7 @@ begin
   Tray.Icon := Application.Icon;
   pClient.Align := alClient;
 
-  // чистим контролы
+  // С‡РёСЃС‚РёРј РєРѕРЅС‚СЂРѕР»С‹
   for i := 0 to self.ComponentCount - 1 do
   begin
     // Label
@@ -1463,7 +1461,7 @@ begin
     lvShellApplication.Items.EndUpdate;
   end;
 
-  if (GetWindowLong(lvShellApplication.Handle, GWL_STYLE) and WS_HSCROLL) > 0 then
+  if (GetWindowlong(lvShellApplication.Handle, GWL_STYLE) and WS_HSCROLL) > 0 then
     lvShellApplication.Perform(CM_RecreateWnd, 0, 0);
 
   SetMemoValue(mShellApplicationFileV, ApplicationData.FileName);
@@ -1504,20 +1502,23 @@ begin
   StatusBar.Panels[0].Text := Format(GetLanguageMsg('msgSatusBarComPortConnected', lngRus),
     [TComPort(Sender).Port]);
 
+  for i := 0 to lbRemoteControl.Items.Count - 1 do
+    (lbRemoteControl.Items.Objects[i] as TObjectRemoteCommand).Free;
+  lbRemoteControl.Items.Clear();
+
   try
-    // Соединение с БД
+    // РЎРѕРµРґРёРЅРµРЅРёРµ СЃ Р‘Р”
     if not Assigned(FDataBase) then
       FDataBase := TDataBase.Create(FSetting.DB.FileName);
 
     if not FDataBase.Connected then
       FDataBase.Connect;
 
-    // Выполнение команд
+    // Р’С‹РїРѕР»РЅРµРЅРёРµ РєРѕРјР°РЅРґ
     if not Assigned(FExecuteCommand) then
       FExecuteCommand := TExecuteCommand.Create(FDataBase);
 
     FExecuteCommand.onExecuteCommand := onExecuteCommand;
-    FExecuteCommand.onSetPreviewCommand := onExecuteCommandSetPreviewCommand;
   except
     on E: Exception do
       MessageDlg(E.Message, mtError, [mbOK], 0);
@@ -1531,6 +1532,7 @@ begin
   ActComPortOpenClose.Caption := GetLanguageText(Main.Name, 'ActComPortOpen', lngRus);
 
   StatusBar.Panels[0].Text := GetLanguageMsg('msgSatusBarComPortNotConnected', lngRus);
+  SetMemoValue(mRemoteControlLastV, '');
 
   try
     if Assigned(FDataBase) and FDataBase.Connected then
@@ -1584,7 +1586,7 @@ begin
       begin
         TReadComPort(LItem.Data^).Exists := True;
 
-        if length(Trim(String(RCommand.Desc))) > 0 then
+        if Length(Trim(String(RCommand.Desc))) > 0 then
           LItem.SubItems[0] := Data + ' (' + String(RCommand.Desc) + ')';
 
         FExecuteCommand.Execute(RCommand);
@@ -1598,48 +1600,33 @@ begin
     lvReadComPort.Items.EndUpdate;
   end;
 
-  if (GetWindowLong(lvReadComPort.Handle, GWL_STYLE) and WS_HSCROLL) > 0 then
+  if (GetWindowlong(lvReadComPort.Handle, GWL_STYLE) and WS_HSCROLL) > 0 then
     lvReadComPort.Perform(CM_RecreateWnd, 0, 0);
 end;
 
-procedure TMain.onExecuteCommand(ECommand: TECommand; ECType: TopType; RepeatPreview: Boolean);
-// var
-// LItem: TListItem;
-// LEPCommand: PEPCommand;
+procedure TMain.onExecuteCommand(RCommand: TRemoteCommand; Operations: TOperations;
+  RepeatPrevious: Boolean);
+var
+  i: Integer;
+  Line: string;
+  Rect, DrawRect: TRect;
+  ObjRCommand: TObjectRemoteCommand;
 begin
-  // lvRemoteControl.Items.BeginUpdate;
-  // try
-  // LItem := lvRemoteControl.Items.Add;
-  // LItem.Caption := String(ECommand.Command.Command);
-  //
-  // new(LEPCommand);
-  // LEPCommand^.ECommand := ECommand;
-  // LEPCommand^.RepeatPreview := RepeatPreview;
-  // LItem.Data := LEPCommand;
-  //
-  // case ECType of
-  // ecKyeboard:
-  // LItem.SubItems.Add(ECommand.Operation);
-  // ecApplication:
-  // LItem.SubItems.Add(ExtractFileName(ECommand.Operation));
-  // end;
-  //
-  // lvRemoteControl.Selected := LItem;
-  // lvRemoteControl.Items[lvRemoteControl.Items.Count - 1].MakeVisible(True);
-  // finally
-  // lvRemoteControl.Items.EndUpdate;
-  // end;
-  //
-  // if (GetWindowLong(lvRemoteControl.Handle, GWL_STYLE) and WS_HSCROLL) > 0 then
-  // lvRemoteControl.Perform(CM_RecreateWnd, 0, 0);
-end;
+  Line := Operations[0].Operation;
+  for i := 1 to Length(Operations) - 1 do
+    Line := Line + #13#10 + Operations[i].Operation;
 
-procedure TMain.onExecuteCommandSetPreviewCommand(RCommand: PRemoteCommand; Opearion: string);
-begin
-  if RCommand = nil then
-    SetMemoValue(mRemoteControlLastV, '')
+  ObjRCommand := TObjectRemoteCommand.Create(RCommand.Command);
+  if RepeatPrevious then
+    ilSmall.GetIcon(13, ObjRCommand.Icon);
+  lbRemoteControl.Items.AddObject(Line, ObjRCommand);
+
+  lbRemoteControl.ItemIndex := lbRemoteControl.Items.Count - 1;
+
+  if RCommand.LongPress then
+    SetMemoValue(mRemoteControlLastV, Line)
   else
-    SetMemoValue(mRemoteControlLastV, Opearion);
+    SetMemoValue(mRemoteControlLastV, '-');
 end;
 
 procedure TMain.onKodiPlayer(Player: string);
@@ -1657,7 +1644,7 @@ begin
     lvEventKodi.Items.EndUpdate;
   end;
 
-  if (GetWindowLong(lvEventKodi.Handle, GWL_STYLE) and WS_HSCROLL) > 0 then
+  if (GetWindowlong(lvEventKodi.Handle, GWL_STYLE) and WS_HSCROLL) > 0 then
     lvEventKodi.Perform(CM_RecreateWnd, 0, 0);
 end;
 
@@ -1677,7 +1664,7 @@ begin
     lvEventKodi.Items.EndUpdate;
   end;
 
-  if (GetWindowLong(lvEventKodi.Handle, GWL_STYLE) and WS_HSCROLL) > 0 then
+  if (GetWindowlong(lvEventKodi.Handle, GWL_STYLE) and WS_HSCROLL) > 0 then
     lvEventKodi.Perform(CM_RecreateWnd, 0, 0);
 end;
 

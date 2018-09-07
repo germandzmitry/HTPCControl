@@ -27,7 +27,6 @@ object frmSendComPort: TfrmSendComPort
     Anchors = [akLeft, akTop, akRight]
     TabOrder = 0
     Text = 'eSendText'
-    ExplicitWidth = 350
   end
   object btnSend: TButton
     Left = 373
@@ -39,7 +38,6 @@ object frmSendComPort: TfrmSendComPort
     Default = True
     TabOrder = 1
     OnClick = btnSendClick
-    ExplicitLeft = 364
   end
   object mSentText: TMemo
     Left = 8
@@ -52,7 +50,6 @@ object frmSendComPort: TfrmSendComPort
     ReadOnly = True
     ScrollBars = ssVertical
     TabOrder = 2
-    ExplicitHeight = 216
   end
   object cbSendTextEnd: TComboBox
     Left = 222
@@ -67,7 +64,6 @@ object frmSendComPort: TfrmSendComPort
       'NL ('#1053#1086#1074#1072#1103' '#1089#1090#1088#1086#1082#1072')'
       'CR ('#1042#1086#1079#1074#1088#1072#1090' '#1082#1072#1088#1077#1090#1082#1080')'
       'NL & CR')
-    ExplicitTop = 261
   end
   object btnClose: TButton
     Left = 373
@@ -78,7 +74,6 @@ object frmSendComPort: TfrmSendComPort
     Caption = 'btnClose'
     TabOrder = 4
     OnClick = btnCloseClick
-    ExplicitTop = 259
   end
   object cbClearSendText: TCheckBox
     Left = 8
@@ -88,6 +83,5 @@ object frmSendComPort: TfrmSendComPort
     Anchors = [akLeft, akBottom]
     Caption = 'cbClearSendText'
     TabOrder = 5
-    ExplicitTop = 263
   end
 end

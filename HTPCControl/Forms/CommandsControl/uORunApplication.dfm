@@ -28,10 +28,8 @@ object frmORunApplication: TfrmORunApplication
     Height = 25
     Anchors = [akRight, akBottom]
     Caption = 'btnCancel'
-    TabOrder = 0
+    TabOrder = 2
     OnClick = btnCancelClick
-    ExplicitLeft = 387
-    ExplicitTop = 71
   end
   object btnSave: TButton
     Left = 305
@@ -42,8 +40,6 @@ object frmORunApplication: TfrmORunApplication
     Caption = 'btnSave'
     TabOrder = 1
     OnClick = btnSaveClick
-    ExplicitLeft = 306
-    ExplicitTop = 71
   end
   object pTop: TPanel
     Left = 0
@@ -55,8 +51,7 @@ object frmORunApplication: TfrmORunApplication
     Caption = 'pTop'
     Color = clWhite
     ParentBackground = False
-    TabOrder = 2
-    ExplicitWidth = 470
+    TabOrder = 0
     DesignSize = (
       469
       60)
@@ -78,7 +73,7 @@ object frmORunApplication: TfrmORunApplication
       Caption = 'btnApplicationFileName'
       ParentShowHint = False
       ShowHint = True
-      TabOrder = 0
+      TabOrder = 2
       OnClick = btnApplicationFileNameClick
     end
     object edApplicationFileName: TEdit
@@ -101,7 +96,7 @@ object frmORunApplication: TfrmORunApplication
       Caption = 'pImageApplication'
       Ctl3D = False
       ParentCtl3D = False
-      TabOrder = 2
+      TabOrder = 0
       object ImageApplication: TImage
         AlignWithMargins = True
         Left = 2

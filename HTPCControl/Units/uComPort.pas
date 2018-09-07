@@ -1,4 +1,4 @@
-unit uComPort;
+п»їunit uComPort;
 
 interface
 
@@ -12,7 +12,7 @@ type
     evRx80Full);
   TComEvents = set of TComEvent;
 
-  // типы асинхронных вызовов
+  // С‚РёРїС‹ Р°СЃРёРЅС…СЂРѕРЅРЅС‹С… РІС‹Р·РѕРІРѕРІ
   TOperationKind = (okWrite, okRead);
 
   TAsync = record
@@ -26,7 +26,7 @@ type
 
   TComPort = class;
 
-  // поток мониторинга порта
+  // РїРѕС‚РѕРє РјРѕРЅРёС‚РѕСЂРёРЅРіР° РїРѕСЂС‚Р°
   TComThread = class(TThread)
   private
     FComPort: TComPort;
@@ -177,7 +177,7 @@ begin
   FComPort := AComPort;
   Priority := tpNormal;
   FReadData := '';
-  // Перевод порта в режим приема данных
+  // РџРµСЂРµРІРѕРґ РїРѕСЂС‚Р° РІ СЂРµР¶РёРј РїСЂРёРµРјР° РґР°РЅРЅС‹С…
   SetCommMask(FComPort.Handle, EventsToInt(FComPort.Events));
 end;
 
@@ -368,13 +368,13 @@ begin
     Flag := Flag or PURGE_TXCLEAR;
 
   if not PurgeComm(FHandle, Flag) then
-    raise Exception.Create('Ошибка очистки буфера: ' + SysErrorMessage(GetLastError));
+    raise Exception.Create('РћС€РёР±РєР° РѕС‡РёСЃС‚РєРё Р±СѓС„РµСЂР°: ' + SysErrorMessage(GetLastError));
 end;
 
 procedure TComPort.AbortAllAsync;
 begin
   if not PurgeComm(FHandle, PURGE_TXABORT or PURGE_RXABORT) then
-    raise Exception.Create('Ошибка отмены всех задач: ' + SysErrorMessage(GetLastError));
+    raise Exception.Create('РћС€РёР±РєР° РѕС‚РјРµРЅС‹ РІСЃРµС… Р·Р°РґР°С‡: ' + SysErrorMessage(GetLastError));
 end;
 
 procedure TComPort.CreateHandle;
@@ -383,7 +383,7 @@ begin
     FILE_FLAG_OVERLAPPED, 0);
 
   if FHandle = INVALID_HANDLE_VALUE then
-    raise Exception.Create('Ошибка открытия COM порта: ' + SysErrorMessage(GetLastError));
+    raise Exception.Create('РћС€РёР±РєР° РѕС‚РєСЂС‹С‚РёСЏ COM РїРѕСЂС‚Р°: ' + SysErrorMessage(GetLastError));
 end;
 
 procedure TComPort.DestroyHandle;
@@ -397,16 +397,16 @@ end;
 
 function TComPort.Open: boolean;
 begin
-  // Если соединеие уже установленно, ничего не делаем
+  // Р•СЃР»Рё СЃРѕРµРґРёРЅРµРёРµ СѓР¶Рµ СѓСЃС‚Р°РЅРѕРІР»РµРЅРЅРѕ, РЅРёС‡РµРіРѕ РЅРµ РґРµР»Р°РµРј
   if not FConnected then
   begin
-    // открытие порта
+    // РѕС‚РєСЂС‹С‚РёРµ РїРѕСЂС‚Р°
     CreateHandle;
     FConnected := True;
     try
-      // Параметры порта
+      // РџР°СЂР°РјРµС‚СЂС‹ РїРѕСЂС‚Р°
       SetupComPort;
-      // Очистка буфера порта
+      // РћС‡РёСЃС‚РєР° Р±СѓС„РµСЂР° РїРѕСЂС‚Р°
       ClearBuffer(True, True);
     except
       DestroyHandle;
@@ -426,16 +426,16 @@ begin
   if FConnected then
   begin
     AbortAllAsync;
-    // Остановка потока
+    // РћСЃС‚Р°РЅРѕРІРєР° РїРѕС‚РѕРєР°
     if FThreadCreated then
     begin
-      // Очистка буфера порта
+      // РћС‡РёСЃС‚РєР° Р±СѓС„РµСЂР° РїРѕСЂС‚Р°
       ClearBuffer(True, True);
       FEventThread.Free;
       // Sleep(2000);
       FThreadCreated := False;
     end;
-    // Закрытие порта
+    // Р—Р°РєСЂС‹С‚РёРµ РїРѕСЂС‚Р°
     DestroyHandle;
     FConnected := False;
 
@@ -447,7 +447,7 @@ procedure TComPort.ApplyBuffer;
 begin
   if FConnected then
     if not SetupComm(FHandle, FBufferInputSize, FBufferOutputSize) then
-      raise Exception.Create('Ошибка установки буфера: ' + SysErrorMessage(GetLastError));
+      raise Exception.Create('РћС€РёР±РєР° СѓСЃС‚Р°РЅРѕРІРєРё Р±СѓС„РµСЂР°: ' + SysErrorMessage(GetLastError));
 end;
 
 procedure TComPort.ApplyDCB;
@@ -458,7 +458,7 @@ begin
   begin
     FillChar(Dcb, SizeOf(Dcb), 0);
     if not GetCommState(FHandle, Dcb) then
-      raise Exception.Create('Ошибка чтения параметров COM порта: ' +
+      raise Exception.Create('РћС€РёР±РєР° С‡С‚РµРЅРёСЏ РїР°СЂР°РјРµС‚СЂРѕРІ COM РїРѕСЂС‚Р°: ' +
         SysErrorMessage(GetLastError));
 
     // Dcb.DCBlength := SizeOf(TDcb);
@@ -474,7 +474,7 @@ begin
     Dcb.EvtChar := chr(13);
 
     if not SetCommState(FHandle, Dcb) then
-      raise Exception.Create('Ошибка установки параметров: ' + SysErrorMessage(GetLastError));
+      raise Exception.Create('РћС€РёР±РєР° СѓСЃС‚Р°РЅРѕРІРєРё РїР°СЂР°РјРµС‚СЂРѕРІ: ' + SysErrorMessage(GetLastError));
   end;
 end;
 
@@ -507,7 +507,7 @@ begin
 
     // apply settings
     if not SetCommTimeouts(FHandle, Timeouts) then
-      raise Exception.Create('Ошибка установки таймаутов: ' + SysErrorMessage(GetLastError));
+      raise Exception.Create('РћС€РёР±РєР° СѓСЃС‚Р°РЅРѕРІРєРё С‚Р°Р№РјР°СѓС‚РѕРІ: ' + SysErrorMessage(GetLastError));
   end;
 end;
 
@@ -537,17 +537,17 @@ var
   BytesTrans: DWORD;
 begin
   if AsyncPtr = nil then
-    raise Exception.Create('Неправильные параметры Async: ' + SysErrorMessage(GetLastError));
+    raise Exception.Create('РќРµРїСЂР°РІРёР»СЊРЅС‹Рµ РїР°СЂР°РјРµС‚СЂС‹ Async: ' + SysErrorMessage(GetLastError));
 
   AsyncPtr^.Kind := okRead;
   if FHandle = INVALID_HANDLE_VALUE then
-    raise Exception.Create('Порт не открыт: ' + SysErrorMessage(GetLastError));
+    raise Exception.Create('РџРѕСЂС‚ РЅРµ РѕС‚РєСЂС‹С‚: ' + SysErrorMessage(GetLastError));
 
   Success := ReadFile(FHandle, Buffer, Count, BytesTrans, @AsyncPtr^.Overlapped) or
     (GetLastError = ERROR_IO_PENDING);
 
   if not Success then
-    raise Exception.Create('Ошибка чтения: ' + SysErrorMessage(GetLastError));
+    raise Exception.Create('РћС€РёР±РєР° С‡С‚РµРЅРёСЏ: ' + SysErrorMessage(GetLastError));
 
   Result := BytesTrans;
 end;
@@ -592,14 +592,14 @@ var
 begin
   if AsyncPtr = nil then
     // raise EComPort.CreateNoWinCode
-    raise Exception.Create('Неправильные параметры Async: ' + SysErrorMessage(GetLastError));
+    raise Exception.Create('РќРµРїСЂР°РІРёР»СЊРЅС‹Рµ РїР°СЂР°РјРµС‚СЂС‹ Async: ' + SysErrorMessage(GetLastError));
 
   Signaled := WaitForSingleObject(AsyncPtr^.Overlapped.hEvent, INFINITE);
   Success := (Signaled = WAIT_OBJECT_0) and
     (GetOverlappedResult(FHandle, AsyncPtr^.Overlapped, BytesTrans, False));
 
   if not Success then
-    raise Exception.Create('Ошибка Async: ' + SysErrorMessage(GetLastError));
+    raise Exception.Create('РћС€РёР±РєР° Async: ' + SysErrorMessage(GetLastError));
 
   Result := BytesTrans;
 end;
@@ -624,10 +624,10 @@ var
   BytesTrans: DWORD;
 begin
   if AsyncPtr = nil then
-    raise Exception.Create('Неправильные параметры Async: ' + SysErrorMessage(GetLastError));
+    raise Exception.Create('РќРµРїСЂР°РІРёР»СЊРЅС‹Рµ РїР°СЂР°РјРµС‚СЂС‹ Async: ' + SysErrorMessage(GetLastError));
 
   if FHandle = INVALID_HANDLE_VALUE then
-    raise Exception.Create('Порт не открыт: ' + SysErrorMessage(GetLastError));
+    raise Exception.Create('РџРѕСЂС‚ РЅРµ РѕС‚РєСЂС‹С‚: ' + SysErrorMessage(GetLastError));
 
   PrepareAsync(okWrite, Buffer, Count, AsyncPtr);
 
@@ -635,7 +635,7 @@ begin
     (GetLastError = ERROR_IO_PENDING);
 
   if not Success then
-    raise Exception.Create('Ошибка записи: ' + SysErrorMessage(GetLastError));
+    raise Exception.Create('РћС€РёР±РєР° Р·Р°РїРёСЃРё: ' + SysErrorMessage(GetLastError));
 
   Result := BytesTrans;
 end;
