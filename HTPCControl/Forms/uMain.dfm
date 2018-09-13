@@ -405,6 +405,7 @@ object Main: TMain
     Top = 0
     Width = 780
     Height = 29
+    UseSystemFont = False
     ActionManager = ActionManager
     Caption = 'ActionMainMenuBar'
     Color = clMenuBar
@@ -413,7 +414,7 @@ object Main: TMain
     ColorMap.BtnSelectedFont = clBlack
     ColorMap.UnusedColor = clWhite
     Font.Charset = DEFAULT_CHARSET
-    Font.Color = clWindowText
+    Font.Color = clBlack
     Font.Height = -12
     Font.Name = 'Segoe UI'
     Font.Style = []
@@ -566,7 +567,7 @@ object Main: TMain
     Left = 376
     Top = 128
     Bitmap = {
-      494C010113002001C40110001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
+      494C010113002001C80110001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000005000000001002000000000000050
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000

@@ -196,6 +196,7 @@ type
     procedure SetMemoValue(AMemo: TMemo; Value: string);
 
 {$IFDEF DEBUG}
+    procedure edTestReadDataKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
     procedure btnTestReadDataClick(Sender: TObject);
 {$ENDIF}
   public
@@ -638,6 +639,12 @@ begin
 end;
 
 {$IFDEF DEBUG}
+
+procedure TMain.edTestReadDataKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
+begin
+  if Key = VK_RETURN then
+    btnTestReadDataClick(btnTestReadData);
+end;
 
 procedure TMain.btnTestReadDataClick(Sender: TObject);
 begin
@@ -1266,6 +1273,7 @@ begin
     Align := alClient;
     BorderStyle := bsNone;
     AlignWithMargins := True;
+    OnKeyDown := edTestReadDataKeyDown;
   end;
 {$ENDIF}
 end;

@@ -2,7 +2,8 @@
 
 interface
 
-uses Winapi.Windows, System.SysUtils, uDataBase, uLanguage, uTypes, uShellApplication;
+uses Winapi.Windows, System.SysUtils, System.Classes, uDataBase, uLanguage,
+  uTypes, uShellApplication, SyncObjs;
 
 type
   TExecuteCommandEvent = procedure(RCommand: TRemoteCommand; Operations: TOperations;
@@ -15,14 +16,15 @@ type
     procedure Execute(RCommand: TRemoteCommand; RepeatPrevious: boolean = false);
   private
     FDB: TDataBase;
+    FCS: TCriticalSection;
     FPrevRCommand: TRemoteCommand;
 
     FOnRunApplication: TRunApplicationEvent;
     FOnPressKeyboard: TPressKeyboardEvent;
     FOnExecuteCommand: TExecuteCommandEvent;
 
-    procedure RunApplication(Operation: TORunApplication; OText: string); overload;
-    procedure PressKeyboard(Operation: TOPressKeyboard; OText: string); overload;
+    procedure RunApplication(Operation: TORunApplication; OText: string);
+    procedure PressKeyboard(Operation: TOPressKeyboard; OText: string);
 
     procedure DoExecuteCommand(RCommand: TRemoteCommand; Operations: TOperations;
       RepeatPrevious: boolean); dynamic;
@@ -38,6 +40,20 @@ type
     property OnExecuteCommand: TExecuteCommandEvent read FOnExecuteCommand write FOnExecuteCommand;
   end;
 
+  TThreadExecuteCommand = class(TThread)
+  private
+    FCS: TCriticalSection;
+    FOperations: TOperations;
+
+    procedure RunApplication(Operation: TORunApplication; OText: string);
+    procedure PressKeyboard(Operation: TOPressKeyboard; OText: string);
+  protected
+    procedure Execute; override;
+  public
+    constructor Create(CriticalSection: TCriticalSection; Operations: TOperations); overload;
+    destructor Destroy; override;
+  end;
+
 implementation
 
 { TExecuteCommand }
@@ -45,10 +61,12 @@ implementation
 constructor TExecuteCommand.Create(DB: TDataBase);
 begin
   FDB := DB;
+  FCS := TCriticalSection.Create;
 end;
 
 destructor TExecuteCommand.Destroy;
 begin
+  FCS.Free;
   inherited;
 end;
 
@@ -76,12 +94,13 @@ var
   i: integer;
   FileName: string;
   Operations: TOperations;
+  ThreadExecute: TThreadExecuteCommand;
 begin
 
   // Повтор предыдущей команды
   if RCommand.RepeatPrevious and FPrevRCommand.LongPress then
   begin
-    Execute(FPrevRCommand, true);
+    Execute(FPrevRCommand, True);
     exit;
   end;
 
@@ -92,20 +111,29 @@ begin
   if Length(Operations) > 0 then
   begin
 
+    ThreadExecute := TThreadExecuteCommand.Create(FCS, Operations);
+    ThreadExecute.FreeOnTerminate := True;
+    ThreadExecute.Priority := tpLower;
+    ThreadExecute.Resume;
+
     // FileName := uShellApplication.GetExePath(GetForegroundWindow);
 
-    for i := 0 to Length(Operations) - 1 do
-    begin
-      sleep(Operations[i].OWait);
-      case Operations[i].OType of
-        opApplication:
-          RunApplication(Operations[i].RunApplication, Operations[i].Operation);
-        opKyeboard:
-          PressKeyboard(Operations[i].PressKeyboard, Operations[i].Operation);
-      else
-        raise Exception.Create(GetLanguageMsg('msgExecuteCommandTypeNotFound', lngRus));
-      end;
-    end;
+    // for i := 0 to Length(Operations) - 1 do
+    // begin
+    //
+    // // задержка перед выполнением
+    // if Operations[i].OWait > 0 then
+    // sleep(Operations[i].OWait);
+    //
+    // case Operations[i].OType of
+    // opApplication:
+    // RunApplication(Operations[i].RunApplication, Operations[i].Operation);
+    // opKyeboard:
+    // PressKeyboard(Operations[i].PressKeyboard, Operations[i].Operation);
+    // else
+    // raise Exception.Create(GetLanguageMsg('msgExecuteCommandTypeNotFound', lngRus));
+    // end;
+    // end;
 
     DoExecuteCommand(RCommand, Operations, RepeatPrevious);
   end;
@@ -162,6 +190,100 @@ begin
     keybd_event(Operation.Key3, 0, KEYEVENTF_KEYUP, 0); // Отпускание кнопки.
     keybd_event(Operation.Key2, 0, KEYEVENTF_KEYUP, 0); // Отпускание кнопки.
     keybd_event(Operation.Key1, 0, KEYEVENTF_KEYUP, 0); // Отпускание кнопки.
+  end;
+end;
+
+{ TThreadExecuteCommand }
+
+constructor TThreadExecuteCommand.Create(CriticalSection: TCriticalSection;
+  Operations: TOperations);
+begin
+  Create(True);
+  FCS := CriticalSection;
+  FOperations := Operations;
+end;
+
+destructor TThreadExecuteCommand.Destroy;
+begin
+
+  inherited;
+end;
+
+procedure TThreadExecuteCommand.Execute;
+var
+  i: integer;
+begin
+  FCS.Enter;
+  try
+    for i := 0 to Length(FOperations) - 1 do
+    begin
+
+      // задержка перед выполнением
+      if FOperations[i].OWait > 0 then
+        sleep(FOperations[i].OWait);
+
+      case FOperations[i].OType of
+        opApplication:
+          RunApplication(FOperations[i].RunApplication, FOperations[i].Operation);
+        opKyeboard:
+          PressKeyboard(FOperations[i].PressKeyboard, FOperations[i].Operation);
+      end;
+    end;
+  finally
+    FCS.Leave;
+  end;
+end;
+
+procedure TThreadExecuteCommand.PressKeyboard(Operation: TOPressKeyboard; OText: string);
+begin
+  try
+    // Кнопка 1
+    if Operation.Key1 <> 0 then
+      keybd_event(Operation.Key1, 0, 0, 0); // Нажатие кнопки.
+    // Кнопка 2
+    if Operation.Key2 <> 0 then
+      keybd_event(Operation.Key2, 0, 0, 0); // Нажатие кнопки.
+    // Кнопка 3
+    if Operation.Key3 <> 0 then
+      keybd_event(Operation.Key3, 0, 0, 0); // Нажатие кнопки.
+
+    // DoPressKeyboard(Operation, OText);
+  finally
+    keybd_event(Operation.Key3, 0, KEYEVENTF_KEYUP, 0); // Отпускание кнопки.
+    keybd_event(Operation.Key2, 0, KEYEVENTF_KEYUP, 0); // Отпускание кнопки.
+    keybd_event(Operation.Key1, 0, KEYEVENTF_KEYUP, 0); // Отпускание кнопки.
+  end;
+end;
+
+procedure TThreadExecuteCommand.RunApplication(Operation: TORunApplication; OText: string);
+var
+  Rlst: LongBool;
+  Application: PWideChar;
+  StartUpInfo: TStartUpInfo;
+  ProcessInfo: TProcessInformation;
+  FileName: string;
+begin
+  FileName := Operation.Application;
+  if (Length(FileName) > 0) and FileExists(FileName) then
+  begin
+    Application := PWideChar(WideString(FileName));
+    FillChar(StartUpInfo, SizeOf(TStartUpInfo), 0);
+    StartUpInfo.cb := SizeOf(TStartUpInfo);
+    StartUpInfo.dwFlags := STARTF_USESHOWWINDOW or STARTF_FORCEONFEEDBACK;
+    StartUpInfo.wShowWindow := SW_SHOWNORMAL;
+    Rlst := CreateProcess(Application, nil, nil, nil, false, NORMAL_PRIORITY_CLASS, nil, nil,
+      StartUpInfo, ProcessInfo);
+    if Rlst then
+    begin
+      WaitForInputIdle(ProcessInfo.hProcess, INFINITE); // ждем завершения инициализации
+      CloseHandle(ProcessInfo.hThread); // закрываем дескриптор процесса
+      CloseHandle(ProcessInfo.hProcess); // закрываем дескриптор потока
+
+      // DoRunApplication(Operation, OText);
+    end
+    else
+      raise Exception.Create(Format(GetLanguageMsg('msgExecuteCommandRunApplication', lngRus),
+        [SysErrorMessage(GetLastError)]));
   end;
 end;
 
