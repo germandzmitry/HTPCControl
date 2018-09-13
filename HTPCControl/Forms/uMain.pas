@@ -5,14 +5,16 @@
 interface
 
 uses
-  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
-  Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.ComCtrls, Vcl.ExtCtrls, Vcl.StdCtrls,
-  Vcl.ToolWin, Vcl.ActnMan, Vcl.ActnCtrls, Vcl.ActnList, System.Win.Registry,
-  Vcl.PlatformDefaultStyleActnCtrls, System.Actions, UCustomPageControl, System.UITypes,
-  System.ImageList, Vcl.ImgList, Winapi.shellApi, System.IniFiles, uShellApplication,
-  uSettings, uDataBase, uEventKodi, uComPort, Vcl.Menus, Vcl.ActnPopup, CommCtrl, uExecuteCommand,
-  System.Notification, Vcl.AppEvnts, MMDevApi, Winapi.ActiveX, Vcl.ActnMenus,
-  uTypes, Vcl.Grids, Vcl.Themes, uCustomListBox;
+  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants,
+  System.Classes, Vcl.Graphics, Vcl.Controls, Vcl.Forms, Vcl.Dialogs,
+  Vcl.ComCtrls, Vcl.ExtCtrls, Vcl.StdCtrls, Vcl.ToolWin, Vcl.ActnMan,
+  Vcl.ActnCtrls, Vcl.ActnList, System.Win.Registry, System.Actions,
+  Vcl.PlatformDefaultStyleActnCtrls, UCustomPageControl, System.UITypes,
+  System.ImageList, Vcl.ImgList, Winapi.shellApi, System.IniFiles,
+  uShellApplication, uSettings, uDataBase, uEventKodi, uComPort, Vcl.Menus,
+  Vcl.ActnPopup, CommCtrl, uExecuteCommand, System.Notification, Vcl.AppEvnts,
+  MMDevApi, Winapi.ActiveX, Vcl.ActnMenus, uTypes, Vcl.Grids, Vcl.Themes,
+  uCustomListBox;
 
 type
   TMain = class(TForm)
@@ -121,6 +123,7 @@ type
     procedure ActKodiStartExecute(Sender: TObject);
     procedure ActKodiStopExecute(Sender: TObject);
     procedure scrbFooterResize(Sender: TObject);
+    procedure lvReadComPortDblClick(Sender: TObject);
   private
     { Private declarations }
     plvRemoteControl: TPanel;
@@ -397,10 +400,17 @@ var
 begin
   RCommand := DataBase.GetRemoteCommand(TReadComPort(lvReadComPort.Selected.Data^).Command);
   Operations := DataBase.getOperation(RCommand.Command);
+
   if Length(Operations) <> 1 then
   begin
-    MessageDlg(Format(GetLanguageMsg('msgRCCommandMoreOne', lngRus), [RCommand.Command]), mtWarning,
-      [mbOK], 0);
+    if Length(Operations) = 0 then
+      MessageDlg(Format(GetLanguageMsg('msgRCCommandZero', lngRus), [RCommand.Command]), mtWarning,
+        [mbOK], 0);
+
+    if Length(Operations) > 0 then
+      MessageDlg(Format(GetLanguageMsg('msgRCCommandMoreOne', lngRus), [RCommand.Command]),
+        mtWarning, [mbOK], 0);
+
     exit;
   end;
 
@@ -818,6 +828,28 @@ begin
     ActRCDelete.Visible := CommandExists;
 
     PopupActReadComPort.Popup(Pos.X, Pos.Y);
+  end;
+end;
+
+procedure TMain.lvReadComPortDblClick(Sender: TObject);
+var
+  RCommand: TRemoteCommand;
+  LCommand: string;
+begin
+  if lvReadComPort.Selected <> nil then
+  begin
+
+    if not FDataBase.Connected then
+    begin
+      MessageDlg(GetLanguageMsg('msgDBNotConnected', lngRus), mtWarning, [mbOK], 0);
+      exit;
+    end;
+
+    LCommand := TReadComPort(lvReadComPort.Selected.Data^).Command;
+    if FDataBase.RemoteCommandExists(LCommand, RCommand) then
+      ActRCEditExecute(ActRCEdit)
+    else
+      ActRCAddExecute(ActRCAdd);
   end;
 end;
 

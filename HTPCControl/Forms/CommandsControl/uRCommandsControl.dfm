@@ -12,10 +12,12 @@ object frmRCommandsControl: TfrmRCommandsControl
   Font.Height = -11
   Font.Name = 'Tahoma'
   Font.Style = []
+  KeyPreview = True
   OldCreateOrder = False
   Position = poMainFormCenter
   OnCreate = FormCreate
   OnDestroy = FormDestroy
+  OnKeyDown = FormKeyDown
   PixelsPerInch = 96
   TextHeight = 13
   object pClient: TPanel
@@ -49,8 +51,17 @@ object frmRCommandsControl: TfrmRCommandsControl
         BorderStyle = bsNone
         Columns = <
           item
+            Caption = 'PSort'
+            Width = 40
+          end
+          item
             AutoSize = True
             Caption = 'Operation'
+          end
+          item
+            Alignment = taRightJustify
+            Caption = 'Wait'
+            Width = 70
           end>
         ColumnClick = False
         ReadOnly = True
@@ -58,6 +69,7 @@ object frmRCommandsControl: TfrmRCommandsControl
         TabOrder = 0
         ViewStyle = vsReport
         OnCustomDrawSubItem = lvOperationCustomDrawSubItem
+        OnDblClick = lvOperationDblClick
       end
       object ActTBOperation: TActionToolBar
         Left = 0
@@ -161,7 +173,6 @@ object frmRCommandsControl: TfrmRCommandsControl
         Width = 159
         Height = 13
         Alignment = taRightJustify
-        Anchors = [akLeft, akTop, akRight]
         AutoSize = False
         Caption = 'lLongPress'
       end

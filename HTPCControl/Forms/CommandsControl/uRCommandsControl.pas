@@ -52,6 +52,8 @@ type
       State: TCustomDrawState; var DefaultDraw: Boolean);
     procedure lvOperationCustomDrawSubItem(Sender: TCustomListView; Item: TListItem;
       SubItem: Integer; State: TCustomDrawState; var DefaultDraw: Boolean);
+    procedure lvOperationDblClick(Sender: TObject);
+    procedure FormKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
   private
     { Private declarations }
 
@@ -108,6 +110,12 @@ begin
     Dispose(lvOperation.Items[i].Data);
 end;
 
+procedure TfrmRCommandsControl.FormKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
+begin
+  if Key = 27 then
+    close;
+end;
+
 procedure TfrmRCommandsControl.lvRCommandsCustomDrawItem(Sender: TCustomListView; Item: TListItem;
   State: TCustomDrawState; var DefaultDraw: Boolean);
 begin
@@ -136,6 +144,11 @@ begin
   // end;
 end;
 
+procedure TfrmRCommandsControl.lvOperationDblClick(Sender: TObject);
+begin
+  ActOEditExecute(ActOEdit);
+end;
+
 procedure TfrmRCommandsControl.lvRCommandsSelectItem(Sender: TObject; Item: TListItem;
   Selected: Boolean);
 begin
@@ -162,7 +175,8 @@ begin
   lvRCommands.Align := alClient;
 
   // FLineRCommands := TLine.Create(plvRCommands, clWhite, clHotLight);
-  FLineRCommands := TLine.Create(plvRCommands, clWhite, RGB(Random(256), Random(256), Random(256)));
+  // FLineRCommands := TLine.Create(plvRCommands, clWhite, RGB(Random(256), Random(256), Random(256)));
+  FLineRCommands := TLine.Create(plvRCommands, clBlack, clBlack);
   ActTBCommand.Top := 0;
 
   pClient.Align := alClient;
@@ -189,6 +203,9 @@ begin
     if self.Components[i] is TPanel then
       TPanel(self.Components[i]).Caption := '';
   end;
+
+  SendMessage(lvRCommands.Handle, WM_UPDATEUISTATE, MakeLong(UIS_SET, UISF_HIDEFOCUS), 0);
+  SendMessage(lvOperation.Handle, WM_UPDATEUISTATE, MakeLong(UIS_SET, UISF_HIDEFOCUS), 0);
 end;
 
 procedure TfrmRCommandsControl.ActRCAddExecute(Sender: TObject);
@@ -353,6 +370,9 @@ begin
           frmOPressKey.pkType := pkEdit;
           frmOPressKey.Id := Operation.PressKeyboard.Id;
           frmOPressKey.Command := Operation.Command;
+          frmOPressKey.udPSort.Position := Operation.PressKeyboard.pSort;
+          frmOPressKey.udWait.Position := Operation.PressKeyboard.Wait;
+          frmOPressKey.edForApplication.Text := Operation.PressKeyboard.ForApplication;
           if Operation.PressKeyboard.Key1 > 0 then
             frmOPressKey.DownKey.addObject(Main.DataBase.GetKeyboard(Operation.PressKeyboard.Key1)
               .Desc, TObject(Operation.PressKeyboard.Key1));
@@ -377,6 +397,8 @@ begin
 
           frmORunApp.Id := Operation.RunApplication.Id;
           frmORunApp.Command := Operation.Command;
+          frmORunApp.udPSort.Position := Operation.RunApplication.pSort;
+          frmORunApp.udWait.Position := Operation.RunApplication.Wait;
 
           frmORunApp.edApplicationFileName.Text := Operation.RunApplication.Application;
           if frmORunApp.ShowModal = mrOK then
@@ -431,6 +453,11 @@ begin
     cbRepeat.Checked := RCommand.RepeatPrevious;
     cbLongPress.Checked := RCommand.LongPress;
 
+    ActOPressKeyboard.Enabled := not RCommand.RepeatPrevious;
+    ActORunApplication.Enabled := not RCommand.RepeatPrevious;
+    ActOEdit.Enabled := not RCommand.RepeatPrevious;
+    ActODelete.Enabled := not RCommand.RepeatPrevious;
+
     ReadOperation(Command);
   except
     on E: Exception do
@@ -456,8 +483,9 @@ begin
     for i := 0 to Length(Operations) - 1 do
     begin
       LItem := lvOperation.Items.Add;
-      LItem.Caption := Operations[i].Operation;
-      // LItem.SubItems.Add(BoolToStr(Operations[i].PressKeyboard.LongPress));
+      LItem.Caption := IntToStr(Operations[i].OSort);
+      LItem.SubItems.Add(Operations[i].Operation);
+      LItem.SubItems.Add(floattostr(Operations[i].OWait / 1000) + ' с.');
 
       new(Op);
       Op^ := Operations[i];

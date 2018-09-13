@@ -26,7 +26,8 @@ uses
   uORunApplication in 'Forms\CommandsControl\uORunApplication.pas' {frmORunApplication},
   uOPressKeyboard in 'Forms\CommandsControl\uOPressKeyboard.pas' {frmOPressKeyboard},
   uCustomListBox in 'Customs\uCustomListBox.pas',
-  uFastRCommand in 'Forms\CommandsControl\uFastRCommand.pas' {frmFastRCommand};
+  uFastRCommand in 'Forms\CommandsControl\uFastRCommand.pas' {frmFastRCommand},
+  uIcon in 'Units\uIcon.pas';
 
 {$R *.res}
 

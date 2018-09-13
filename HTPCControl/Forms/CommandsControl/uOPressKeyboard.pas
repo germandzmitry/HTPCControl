@@ -6,7 +6,7 @@ uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
   Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.StdCtrls, uLine, Vcl.ExtCtrls,
   Vcl.ComCtrls, Vcl.Themes, System.ImageList, Vcl.ImgList, Vcl.Buttons, uDatabase,
-  System.UITypes;
+  System.UITypes, Vcl.Tabs, Vcl.DockTabSet, ShellApi, Vcl.GraphUtil;
 
 type
   TpkType = (pkAdd, pkEdit);
@@ -16,6 +16,21 @@ type
     btnSave: TButton;
     pKeyboard: TPanel;
     btnCancel: TButton;
+    pTop: TPanel;
+    edPSort: TEdit;
+    udPSort: TUpDown;
+    lPSort: TLabel;
+    dtsKeyboardType: TDockTabSet;
+    lForApplication: TLabel;
+    edForApplication: TEdit;
+    sbtnForApplication: TSpeedButton;
+    sbtnForApplicationClear: TSpeedButton;
+    lDownKey: TLabel;
+    edDownKey: TEdit;
+    edWait: TEdit;
+    udWait: TUpDown;
+    lWait: TLabel;
+    lWaitSecond: TLabel;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure btnSaveClick(Sender: TObject);
@@ -23,25 +38,43 @@ type
     procedure KeyboardClick(Sender: TObject);
     procedure FormKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
     procedure btnCancelClick(Sender: TObject);
+    procedure sbtnForApplicationClick(Sender: TObject);
+    procedure sbtnForApplicationClearClick(Sender: TObject);
+    procedure lvKeyboardDblClick(Sender: TObject);
+    procedure lvDownKeyDblClick(Sender: TObject);
+    procedure sbtnRightClick(Sender: TObject);
+    procedure sbtnLeftClick(Sender: TObject);
+    procedure sbtnLeftAllClick(Sender: TObject);
+    procedure dtsKeyboardTypeClick(Sender: TObject);
+    procedure udWaitChangingEx(Sender: TObject; var AllowChange: Boolean; NewValue: Integer;
+      Direction: TUpDownDirection);
   private
     { Private declarations }
-    FLine: TLine;
+    FLineTop: TLine;
+    FLineBottom: TLine;
     FpkType: TpkType;
-    FID: integer;
+    FID: Integer;
     FCommand: string;
     FDownKey: TStringList;
-    FPanelPressKeyboard: TPanel;
+    FlvKeyboard: TListView;
+    FlvDownKey: TListView;
+    FpKeyboardType: TPanel;
 
-    // FKeyboardGroups: TKeyboardGroups;
-    // FKeyboards: TKeyboards;
+    FKeyboardGroups: TKeyboardGroups;
+    FKeyboards: TKeyboards;
 
     procedure drawKeyboard;
-    procedure formatKeyboard;
+    procedure dropKeyboard;
+
+    procedure drawKeyboardList;
+    procedure dropKeyboardList;
+
+    procedure formatDownKey;
   public
     { Public declarations }
     property pkType: TpkType read FpkType write FpkType;
     property Command: string write FCommand;
-    property ID: integer write FID;
+    property ID: Integer write FID;
     property DownKey: TStringList read FDownKey write FDownKey;
   end;
 
@@ -52,57 +85,113 @@ implementation
 
 {$R *.dfm}
 
-uses uLanguage, uMain;
+uses uLanguage, uMain, uIcon;
 
 procedure TfrmOPressKeyboard.FormCreate(Sender: TObject);
+var
+  i: Integer;
+  Icon: TIcon;
 begin
-  FDownKey := TStringList.Create;
+
+  // чистим контролы
+  for i := 0 to self.ComponentCount - 1 do
+  begin
+    // Label
+    if self.Components[i] is TLabel then
+      TLabel(self.Components[i]).Caption := '';
+    // Edit
+    if self.Components[i] is TEdit then
+    begin
+      TEdit(self.Components[i]).Text := '';
+      TEdit(self.Components[i]).TabStop := False;
+      TEdit(self.Components[i]).ReadOnly := True;
+    end;
+    // Button
+    if self.Components[i] is TButton then
+      TButton(self.Components[i]).Caption := '';
+    // Panel
+    if self.Components[i] is TPanel then
+      TPanel(self.Components[i]).Caption := '';
+  end;
 
   UpdateLanguage(self, lngRus);
 
-  // FKeyboardGroups := main.DataBase.getKeyboardGroups;
-  // FKeyboards := main.DataBase.getKeyboards;
+  FDownKey := TStringList.Create;
+  FKeyboardGroups := main.DataBase.getKeyboardGroups;
+  FKeyboards := main.DataBase.getKeyboards;
+
+  Icon := TIcon.Create;
+  try
+    StockIcon(SIID_FOLDER, Icon);
+    sbtnForApplication.Glyph.Width := Icon.Width;
+    sbtnForApplication.Glyph.Height := Icon.Height;
+    sbtnForApplication.Glyph.Canvas.Draw(0, 0, Icon);
+    sbtnForApplication.Flat := True;
+  finally
+    Icon.Free;
+  end;
+
+  Icon := TIcon.Create;
+  try
+    StockIcon(SIID_DELETE, Icon);
+    sbtnForApplicationClear.Glyph.Width := Icon.Width;
+    sbtnForApplicationClear.Glyph.Height := Icon.Height;
+    sbtnForApplicationClear.Glyph.Canvas.Draw(0, 0, Icon);
+    sbtnForApplicationClear.Flat := True;
+  finally
+    Icon.Free;
+  end;
+
 end;
 
 procedure TfrmOPressKeyboard.FormShow(Sender: TObject);
-var
-  i, j: integer;
 begin
   drawKeyboard;
-  // FLine := TLine.Create(pKeyboard, alBottom, clWhite, clLime);
-  FLine := TLine.Create(pKeyboard, alBottom, clWhite, RGB(Random(256), Random(256), Random(256)));
+  FLineTop := TLine.Create(pTop, alBottom, clBlack, clBlack);
+  // FLineBottom := TLine.Create(pKeyboard, alBottom, clWhite,
+  // RGB(Random(256), Random(256), Random(256)));
+  dtsKeyboardType.Top := 0;
+
+  // GetHighlightColor(rgb(217, 217, 220)) = clBtnFace
+  dtsKeyboardType.BackgroundColor := rgb(217, 217, 220);
+
+  FpKeyboardType := TPanel.Create(pKeyboard);
+  with FpKeyboardType do
+  begin
+    parent := pKeyboard;
+    left := 0;
+    Top := dtsKeyboardType.Top;
+    Width := dtsKeyboardType.Width;
+    Height := 2;
+    ParentBackground := False;
+    Color := clWhite;
+    BevelOuter := bvNone;
+    Caption := '';
+    BringToFront;
+  end;
 
   if FpkType = pkEdit then
-  begin
-    for i := 0 to DownKey.Count - 1 do
-      for j := 0 to pKeyboard.ComponentCount - 1 do
-        if (pKeyboard.Components[j] is TSpeedButton) and
-          (TSpeedButton(pKeyboard.Components[j]).Tag = integer(DownKey.Objects[i])) then
-        begin
-          TSpeedButton(pKeyboard.Components[j]).Down := true;
-          Break
-        end;
-    formatKeyboard;
-  end;
+    formatDownKey;
 end;
 
 procedure TfrmOPressKeyboard.FormDestroy(Sender: TObject);
 begin
   FDownKey.Free;
-  FLine.Free;
+  if Assigned(FpKeyboardType) then
+    FpKeyboardType.Free;
+  if Assigned(FLineTop) then
+    FLineTop.Free;
+  if Assigned(FLineBottom) then
+    FLineBottom.Free;
 end;
 
 procedure TfrmOPressKeyboard.FormKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
 var
-  i, j: integer;
+  i, j: Integer;
   keyboard: TKeyboard;
 begin
 
   FDownKey.Clear;
-
-  for i := 0 to pKeyboard.ComponentCount - 1 do
-    if (pKeyboard.Components[i] is TSpeedButton) then
-      TSpeedButton(pKeyboard.Components[i]).Down := false;
 
   if (ssShift in Shift) then
   begin
@@ -131,14 +220,7 @@ begin
   if not((Key = VK_SHIFT) or (Key = VK_CONTROL) or (Key = VK_MENU)) then
     FDownKey.AddObject(main.DataBase.GetKeyboard(Key).Desc, TObject(Key));
 
-  for i := 0 to pKeyboard.ComponentCount - 1 do
-    if (pKeyboard.Components[i] is TSpeedButton) then
-      for j := 0 to FDownKey.Count - 1 do
-        if (TSpeedButton(pKeyboard.Components[i]).Tag = integer(FDownKey.Objects[j])) then
-          TSpeedButton(pKeyboard.Components[i]).Down := true;
-
-  // FPanelPressKeyboard.Caption := IntToHex(Key, 1);
-  formatKeyboard;
+  formatDownKey;
 
   Key := 0;
 end;
@@ -150,7 +232,7 @@ end;
 
 procedure TfrmOPressKeyboard.btnSaveClick(Sender: TObject);
 var
-  Key1, Key2, Key3: integer;
+  Key1, Key2, Key3: Integer;
 begin
   Key1 := 0;
   Key2 := 0;
@@ -160,18 +242,20 @@ begin
     exit;
 
   if FDownKey.Count >= 1 then
-    Key1 := integer(FDownKey.Objects[0]);
+    Key1 := Integer(FDownKey.Objects[0]);
   if FDownKey.Count >= 2 then
-    Key2 := integer(FDownKey.Objects[1]);
+    Key2 := Integer(FDownKey.Objects[1]);
   if FDownKey.Count >= 3 then
-    Key3 := integer(FDownKey.Objects[2]);
+    Key3 := Integer(FDownKey.Objects[2]);
 
   try
     case FpkType of
       pkAdd:
-        main.DataBase.CreatePressKeyboard(FCommand, Key1, Key2, Key3);
+        main.DataBase.CreatePressKeyboard(FCommand, udPSort.Position, udWait.Position, Key1, Key2,
+          Key3, edForApplication.Text);
       pkEdit:
-        main.DataBase.UpdatePressKeyboard(FID, Key1, Key2, Key3);
+        main.DataBase.UpdatePressKeyboard(FID, udPSort.Position, udWait.Position, Key1, Key2, Key3,
+          edForApplication.Text);
     end;
 
     self.ModalResult := mrOk;
@@ -181,11 +265,28 @@ begin
   end;
 end;
 
+procedure TfrmOPressKeyboard.dtsKeyboardTypeClick(Sender: TObject);
+begin
+  case dtsKeyboardType.TabIndex of
+    0:
+      begin
+        dropKeyboardList;
+        drawKeyboard;
+      end;
+    1:
+      begin
+        dropKeyboard;
+        drawKeyboardList;
+      end;
+  end;
+  formatDownKey;
+end;
+
 procedure TfrmOPressKeyboard.KeyboardClick(Sender: TObject);
 var
-  i: integer;
+  i: Integer;
   kk: TKeyboard;
-  Key: integer;
+  Key: Integer;
 begin
 
   Key := TSpeedButton(Sender).Tag;
@@ -197,44 +298,129 @@ begin
   end
   else
     for i := 0 to FDownKey.Count - 1 do
-      if integer(FDownKey.Objects[i]) = Key then
+      if Integer(FDownKey.Objects[i]) = Key then
       begin
         FDownKey.Delete(i);
         Break;
       end;
 
-  formatKeyboard;
+  formatDownKey;
+end;
 
+procedure TfrmOPressKeyboard.lvKeyboardDblClick(Sender: TObject);
+begin
+  sbtnRightClick(Sender);
+end;
+
+procedure TfrmOPressKeyboard.lvDownKeyDblClick(Sender: TObject);
+begin
+  sbtnLeftClick(Sender);
+end;
+
+procedure TfrmOPressKeyboard.sbtnRightClick(Sender: TObject);
+var
+  Key: TKeyboard;
+begin
+  if FlvKeyboard.SelCount = 0 then
+    exit;
+
+  Key := main.DataBase.GetKeyboard(Integer(FlvKeyboard.Selected.Data));
+  FDownKey.AddObject(Key.Desc, TObject(Key.Key));
+  FlvKeyboard.ItemIndex := -1;
+
+  formatDownKey;
+end;
+
+procedure TfrmOPressKeyboard.sbtnLeftClick(Sender: TObject);
+var
+  i: Integer;
+  Key: Integer;
+begin
+  if FlvDownKey.SelCount = 0 then
+    exit;
+
+  Key := Integer(FlvDownKey.Selected.Data);
+
+  for i := 0 to FDownKey.Count - 1 do
+    if Integer(FDownKey.Objects[i]) = Key then
+    begin
+      FDownKey.Delete(i);
+      Break;
+    end;
+
+  formatDownKey;
+end;
+
+procedure TfrmOPressKeyboard.sbtnLeftAllClick(Sender: TObject);
+begin
+  FDownKey.Clear;
+  formatDownKey;
+end;
+
+procedure TfrmOPressKeyboard.sbtnForApplicationClearClick(Sender: TObject);
+begin
+  edForApplication.Text := '';
+end;
+
+procedure TfrmOPressKeyboard.sbtnForApplicationClick(Sender: TObject);
+var
+  OpenDialog: TOpenDialog;
+begin
+  OpenDialog := TOpenDialog.Create(self);
+  try
+    OpenDialog.Filter := 'Приложении|*.exe';
+    if FileExists(edForApplication.Text) then
+      OpenDialog.InitialDir := ExtractFileDir(edForApplication.Text)
+    else
+      OpenDialog.InitialDir := ExtractFileDir(Application.ExeName);
+
+    if (OpenDialog.Execute) and (FileExists(OpenDialog.FileName)) then
+      edForApplication.Text := OpenDialog.FileName;
+  finally
+    OpenDialog.Free;
+  end;
+end;
+
+procedure TfrmOPressKeyboard.udWaitChangingEx(Sender: TObject; var AllowChange: Boolean;
+  NewValue: Integer; Direction: TUpDownDirection);
+begin
+  if (NewValue < TUpDown(Sender).Min) or (NewValue > TUpDown(Sender).Max) then
+    exit;
+
+  lWaitSecond.Caption := Format(GetLanguageText(self.Name, 'lWaitSecond', lngRus),
+    [FloatToStr(NewValue / 1000)]);
 end;
 
 procedure TfrmOPressKeyboard.drawKeyboard;
 var
-  ALeft, ATop, DefWidth, DefHeight, DefSpace, AllWidth, DefLeft: integer;
+  ALeft, ATop, DefLeft, DefWidth, DefHeight, DefSpaceWidth, DefSpaceHeight, AllWidth: Integer;
 
-  procedure drawButton(btnKey: integer; btnCaption: string; var btnLeft: integer; btnWidth: integer;
-    btnHeight: integer); overload;
+  procedure drawButton(btnKey: Integer; btnCaption: string; var btnLeft: Integer; btnWidth: Integer;
+    btnHeight: Integer); overload;
   begin
     with TSpeedButton.Create(pKeyboard) do
     begin
       parent := pKeyboard;
-      Left := btnLeft;
-      top := ATop;
+      left := btnLeft;
+      Top := ATop;
       Width := btnWidth;
-      height := btnHeight;
-      Caption := btnCaption;
+      Height := btnHeight;
+      // Caption := btnCaption;
+      Hint := btnCaption;
+      ShowHint := True;
       GroupIndex := btnKey;
-      AllowAllUp := true;
+      AllowAllUp := True;
       Tag := btnKey;
-      flat := false;
+      // flat := true;
 
       OnClick := KeyboardClick;
     end;
 
-    btnLeft := btnLeft + btnWidth + DefSpace;
+    btnLeft := btnLeft + btnWidth + DefSpaceWidth;
   end;
 
-  procedure drawButton(btnKey: integer; btnCaption: string; var btnLeft: integer;
-    btnWidth: integer); overload;
+  procedure drawButton(btnKey: Integer; btnCaption: string; var btnLeft: Integer;
+    btnWidth: Integer); overload;
   begin
     drawButton(btnKey, btnCaption, btnLeft, btnWidth, DefHeight);
   end;
@@ -243,15 +429,16 @@ begin
   pKeyboard.Caption := '';
 
   DefLeft := 8;
-  DefWidth := 36;
-  DefHeight := 36;
-  DefSpace := 2;
-  AllWidth := (DefWidth * 15) + (DefSpace * 14);
+  DefWidth := 18;
+  DefHeight := 18;
+  DefSpaceWidth := 0;
+  DefSpaceHeight := 2;
+  AllWidth := (DefWidth * 15) + (DefSpaceWidth * 14);
 
   ATop := 8;
   ALeft := DefLeft;
-  drawButton(VK_ESCAPE, 'Esc', ALeft, DefWidth + round((DefWidth + DefSpace) / 2));
-  ALeft := AllWidth - (12 * DefWidth) - (11 * DefSpace) - round(DefWidth / 2);
+  drawButton(VK_ESCAPE, 'Esc', ALeft, DefWidth + round((DefWidth + DefSpaceWidth) / 2));
+  ALeft := AllWidth - (12 * DefWidth) - (11 * DefSpaceWidth) - round(DefWidth / 2) + 1;
   drawButton(VK_F1, 'F1', ALeft, DefWidth);
   drawButton(VK_F2, 'F2', ALeft, DefWidth);
   drawButton(VK_F3, 'F3', ALeft, DefWidth);
@@ -266,26 +453,15 @@ begin
   drawButton(VK_F10, 'F10', ALeft, DefWidth);
   drawButton(VK_F11, 'F11', ALeft, DefWidth);
   drawButton(VK_F12, 'F12', ALeft, DefWidth);
+  ALeft := ALeft + (DefSpaceHeight * 4);
+  drawButton(VK_SNAPSHOT, 'Prtint' + #13#10 + 'Screen', ALeft, DefWidth);
+  drawButton(VK_SCROLL, 'Scroll' + #13#10 + 'Lock', ALeft, DefWidth);
+  drawButton(-1, 'Pause' + #13#10 + 'Break', ALeft, DefWidth);
 
-  FPanelPressKeyboard := TPanel.Create(pKeyboard);
-  with FPanelPressKeyboard do
-  begin
-    parent := pKeyboard;
-    BevelOuter := bvNone;
-    BorderStyle := bsSingle;
-    Ctl3D := false;
-    Left := ALeft + (DefSpace * 4) + 1;
-    top := ATop + 1;
-    Width := (DefWidth * 7) + (DefSpace * 5) + (DefSpace * 4) + 6;
-    height := DefHeight - 2;
-    font.Size := 11;
-    font.Style := [fsBold];
-  end;
-
-  ATop := ATop + DefHeight + (DefSpace * 4);
+  ATop := ATop + DefHeight + (DefSpaceHeight * 4);
   ALeft := DefLeft;
   drawButton(VK_OEM_3, '`', ALeft, DefWidth);
-  drawButton(VK1, '!' + #13#10 + '1', ALeft, DefWidth);
+  drawButton(VK1, '1', ALeft, DefWidth);
   drawButton(VK2, '2', ALeft, DefWidth);
   drawButton(VK3, '3', ALeft, DefWidth);
   drawButton(VK4, '4', ALeft, DefWidth);
@@ -298,21 +474,19 @@ begin
   drawButton(VK_OEM_MINUS, '-', ALeft, DefWidth);
   drawButton(VK_OEM_PLUS, '=', ALeft, DefWidth);
   drawButton(VK_BACK, 'Backspace', ALeft, AllWidth - ALeft);
-  ALeft := ALeft + (DefSpace * 4);
-  DefWidth := 38;
-  drawButton(VK_SNAPSHOT, 'Prtint' + #13#10 + 'Screen', ALeft, DefWidth);
-  drawButton(VK_SCROLL, 'Scroll' + #13#10 + 'Lock', ALeft, DefWidth);
-  drawButton(-1, 'Pause' + #13#10 + 'Break', ALeft, DefWidth);
-  DefWidth := 36;
-  ALeft := ALeft + (DefSpace * 4);
+  ALeft := ALeft + (DefSpaceHeight * 4);
+  drawButton(VK_INSERT, 'Insert', ALeft, DefWidth);
+  drawButton(VK_HOME, 'Home', ALeft, DefWidth);
+  drawButton(VK_PRIOR, 'Page' + #13#10 + 'Up', ALeft, DefWidth);
+  ALeft := ALeft + (DefSpaceHeight * 4);
   drawButton(VK_NUMLOCK, 'Num' + #13#10 + 'Lock', ALeft, DefWidth);
   drawButton(VK_DIVIDE, '/', ALeft, DefWidth);
   drawButton(VK_MULTIPLY, '*', ALeft, DefWidth);
   drawButton(VK_SUBTRACT, '-', ALeft, DefWidth);
 
-  ATop := ATop + DefHeight + DefSpace;
+  ATop := ATop + DefHeight + DefSpaceHeight;
   ALeft := DefLeft;
-  drawButton(VK_TAB, 'Tab', ALeft, DefWidth + round((DefWidth + DefSpace) / 2));
+  drawButton(VK_TAB, 'Tab', ALeft, DefWidth + round((DefWidth + DefSpaceWidth) / 2));
   drawButton(vkQ, 'Q', ALeft, DefWidth);
   drawButton(vkW, 'W', ALeft, DefWidth);
   drawButton(vkE, 'E', ALeft, DefWidth);
@@ -326,21 +500,19 @@ begin
   drawButton(VK_OEM_4, '[', ALeft, DefWidth);
   drawButton(VK_OEM_6, ']', ALeft, DefWidth);
   drawButton(VK_OEM_5, '\', ALeft, AllWidth - ALeft);
-  ALeft := ALeft + (DefSpace * 4);
-  DefWidth := 38;
-  drawButton(VK_INSERT, 'Insert', ALeft, DefWidth);
-  drawButton(VK_HOME, 'Home', ALeft, DefWidth);
-  drawButton(VK_PRIOR, 'Page' + #13#10 + 'Up', ALeft, DefWidth);
-  DefWidth := 36;
-  ALeft := ALeft + (DefSpace * 4);
+  ALeft := ALeft + (DefSpaceHeight * 4);
+  drawButton(VK_DELETE, 'Delete', ALeft, DefWidth);
+  drawButton(VK_END, 'End', ALeft, DefWidth);
+  drawButton(VK_NEXT, 'Page' + #13#10 + 'Down', ALeft, DefWidth);
+  ALeft := ALeft + (DefSpaceHeight * 4);
   drawButton(VK_NUMPAD7, '7', ALeft, DefWidth);
   drawButton(VK_NUMPAD8, '8', ALeft, DefWidth);
   drawButton(VK_NUMPAD9, '9', ALeft, DefWidth);
-  drawButton(VK_ADD, '+', ALeft, DefWidth, DefHeight + DefSpace + DefHeight);
+  drawButton(VK_ADD, '+', ALeft, DefWidth, DefHeight + DefSpaceHeight + DefHeight);
 
-  ATop := ATop + DefHeight + DefSpace;
+  ATop := ATop + DefHeight + DefSpaceHeight;
   ALeft := DefLeft;
-  drawButton(VK_CAPITAL, 'Caps Lock', ALeft, (DefWidth * 2) + DefSpace);
+  drawButton(VK_CAPITAL, 'Caps Lock', ALeft, (DefWidth * 2) + DefSpaceWidth);
   drawButton(vkA, 'A', ALeft, DefWidth);
   drawButton(vkS, 'S', ALeft, DefWidth);
   drawButton(vkD, 'D', ALeft, DefWidth);
@@ -353,21 +525,19 @@ begin
   drawButton(VK_OEM_1, ';', ALeft, DefWidth);
   drawButton(VK_OEM_7, '''', ALeft, DefWidth);
   drawButton(VK_RETURN, 'Enter', ALeft, AllWidth - ALeft);
-  ALeft := ALeft + (DefSpace * 4);
-  DefWidth := 38;
-  drawButton(VK_DELETE, 'Delete', ALeft, DefWidth);
-  drawButton(VK_END, 'End', ALeft, DefWidth);
-  drawButton(VK_NEXT, 'Page' + #13#10 + 'Down', ALeft, DefWidth);
-  DefWidth := 36;
-  ALeft := ALeft + (DefSpace * 4);
+  ALeft := ALeft + (DefSpaceHeight * 4);
+  // DefWidth := 38;
+  ALeft := ALeft + (DefWidth * 3);
+  // DefWidth := 36;
+  ALeft := ALeft + (DefSpaceHeight * 4);
   drawButton(VK_NUMPAD4, '4', ALeft, DefWidth);
   drawButton(VK_NUMPAD5, '5', ALeft, DefWidth);
   drawButton(VK_NUMPAD6, '6', ALeft, DefWidth);
 
-  ATop := ATop + DefHeight + DefSpace;
+  ATop := ATop + DefHeight + DefSpaceHeight;
   ALeft := DefLeft;
-  drawButton(VK_LSHIFT, 'Shift', ALeft, (DefWidth * 2) + DefSpace +
-    round((DefWidth + DefSpace) / 2));
+  drawButton(VK_LSHIFT, 'Shift', ALeft, (DefWidth * 2) + DefSpaceWidth +
+    round((DefWidth + DefSpaceWidth) / 2));
   drawButton(vkZ, 'Z', ALeft, DefWidth);
   drawButton(vkX, 'X', ALeft, DefWidth);
   drawButton(vkC, 'C', ALeft, DefWidth);
@@ -379,71 +549,225 @@ begin
   drawButton(VK_OEM_PERIOD, '.', ALeft, DefWidth);
   drawButton(VK_OEM_2, '/', ALeft, DefWidth);
   drawButton(VK_RSHIFT, 'Shift', ALeft, AllWidth - ALeft);
-  ALeft := ALeft + (DefSpace * 4) + DefWidth + DefSpace;
-  DefWidth := 38;
-  ALeft := ALeft + 2;
+  ALeft := ALeft + (DefSpaceHeight * 4) + DefWidth + DefSpaceWidth;
+  ALeft := ALeft + DefSpaceWidth;
   drawButton(VK_UP, '↑', ALeft, DefWidth);
-  ALeft := ALeft + 2;
-  DefWidth := 36;
-  ALeft := ALeft + (DefSpace * 4) + DefWidth + DefSpace;
+  ALeft := ALeft + DefSpaceWidth;
+  ALeft := ALeft + (DefSpaceHeight * 4) + DefWidth + DefSpaceWidth;
   drawButton(VK_NUMPAD1, '1', ALeft, DefWidth);
   drawButton(VK_NUMPAD2, '2', ALeft, DefWidth);
   drawButton(VK_NUMPAD3, '3', ALeft, DefWidth);
-  drawButton(VK_RETURN, 'Enter', ALeft, DefWidth, DefHeight + DefSpace + DefHeight);
+  drawButton(VK_RETURN, 'Enter', ALeft, DefWidth, DefHeight + DefSpaceHeight + DefHeight);
 
-  ATop := ATop + DefHeight + DefSpace;
+  ATop := ATop + DefHeight + DefSpaceHeight;
   ALeft := DefLeft;
-  drawButton(VK_LCONTROL, 'Ctrl', ALeft, DefWidth + round(DefWidth / 2) - DefSpace);
-  drawButton(VK_LWIN, 'Win', ALeft, DefWidth + round(DefWidth / 2) - DefSpace);
-  drawButton(VK_LMENU, 'Alt', ALeft, DefWidth + round(DefWidth / 2) - DefSpace);
+  drawButton(VK_LCONTROL, 'Ctrl', ALeft, DefWidth + round(DefWidth / 2) - DefSpaceWidth);
+  drawButton(VK_LWIN, 'Win', ALeft, DefWidth + round(DefWidth / 2) - DefSpaceWidth);
+  drawButton(VK_LMENU, 'Alt', ALeft, DefWidth + round(DefWidth / 2) - DefSpaceWidth);
   drawButton(VK_SPACE, 'Пробел', ALeft, AllWidth - ((DefWidth + round(DefWidth / 2)) * 7) -
-    DefSpace);
-  drawButton(VK_RMENU, 'Alt', ALeft, DefWidth + round(DefWidth / 2) - DefSpace);
-  drawButton(VK_RWIN, 'Win', ALeft, DefWidth + round(DefWidth / 2) - DefSpace);
-  drawButton(VK_APPS, '_', ALeft, DefWidth + round(DefWidth / 2) - DefSpace);
+    DefSpaceWidth);
+  drawButton(VK_RMENU, 'Alt', ALeft, DefWidth + round(DefWidth / 2) - DefSpaceWidth);
+  drawButton(VK_RWIN, 'Win', ALeft, DefWidth + round(DefWidth / 2) - DefSpaceWidth);
+  drawButton(VK_APPS, '_', ALeft, DefWidth + round(DefWidth / 2) - DefSpaceWidth);
   drawButton(VK_RCONTROL, 'Ctrl', ALeft, AllWidth - ALeft);
-  ALeft := ALeft + (DefSpace * 4);
-  DefWidth := 38;
+  ALeft := ALeft + (DefSpaceHeight * 4);
   drawButton(VK_LEFT, '←', ALeft, DefWidth);
   drawButton(VK_DOWN, '↓', ALeft, DefWidth);
   drawButton(VK_RIGHT, '→', ALeft, DefWidth);
-  DefWidth := 36;
-  ALeft := ALeft + (DefSpace * 4);
-  drawButton(VK_NUMPAD0, '0', ALeft, DefWidth + DefSpace + DefWidth);
+  ALeft := ALeft + (DefSpaceHeight * 4);
+  drawButton(VK_NUMPAD0, '0', ALeft, DefWidth + DefSpaceWidth + DefWidth);
   drawButton(VK_DECIMAL, '.', ALeft, DefWidth);
 
-  pKeyboard.Width := ALeft + DefWidth + 8;
-  pKeyboard.height := ATop + DefHeight + 8;
-  self.ClientWidth := pKeyboard.Width;
-  self.ClientHeight := pKeyboard.height + btnCancel.height + 8 + 8;
+  // pKeyboard.Width := ALeft + DefWidth + 8;
+  pKeyboard.Height := ATop + DefHeight + 8 + dtsKeyboardType.Height;
+  self.ClientWidth := ALeft + DefWidth + 8;
+  self.ClientHeight := pKeyboard.Top + pKeyboard.Height + btnCancel.Height + 8 + 8 - 22;
+  btnSave.BringToFront;
 end;
 
-procedure TfrmOPressKeyboard.formatKeyboard;
+procedure TfrmOPressKeyboard.dropKeyboard;
 var
-  i: integer;
+  i: Integer;
+begin
+  for i := pKeyboard.ComponentCount - 1 downto 0 do
+    if (pKeyboard.Components[i] is TSpeedButton) then
+      TSpeedButton(pKeyboard.Components[i]).Free;
+end;
+
+procedure TfrmOPressKeyboard.drawKeyboardList;
+var
+  i, LClientHieght, sm: Integer;
+  LColumn: TListColumn;
+begin
+
+  sm := 20;
+  LClientHieght := pKeyboard.Height - 8 - 8 - dtsKeyboardType.Height;
+
+  FlvKeyboard := TListView.Create(pKeyboard);
+  with FlvKeyboard do
+  begin
+    left := 8;
+    Top := 8;
+    Width := round(pKeyboard.Width / 2) - 18 - 8 + sm;
+    Height := LClientHieght;
+    parent := pKeyboard;
+
+    // BorderStyle := bsNone;
+    ViewStyle := vsReport;
+    ReadOnly := True;
+    RowSelect := True;
+    ColumnClick := False;
+    ShowColumnHeaders := False;
+    GroupView := True;
+    TabStop := False;
+    OnDblClick := lvKeyboardDblClick;
+
+    LColumn := Columns.Add;
+    LColumn.Width := Width - 21;
+
+    for i := 0 to length(FKeyboardGroups) - 1 do
+      with Groups.Add do
+      begin
+        Header := FKeyboardGroups[i].Description;
+        GroupID := FKeyboardGroups[i].Group;
+      end;
+
+    Items.BeginUpdate;
+    for i := 0 to length(FKeyboards) - 1 do
+      with Items.Add do
+      begin
+        Caption := FKeyboards[i].Desc;
+        GroupID := FKeyboards[i].Group;
+        Data := Pointer(FKeyboards[i].Key);
+      end;
+    Items.EndUpdate;
+
+  end;
+
+  FlvDownKey := TListView.Create(pKeyboard);
+  with FlvDownKey do
+  begin
+    left := round(pKeyboard.Width / 2) + 18 + sm;
+    Top := 8;
+    Width := round(pKeyboard.Width / 2) - 18 - 8 - sm;
+    Height := LClientHieght;
+    parent := pKeyboard;
+
+    ViewStyle := vsReport;
+    ReadOnly := True;
+    RowSelect := True;
+    ColumnClick := False;
+    ShowColumnHeaders := False;
+    GroupView := False;
+    TabStop := False;
+    OnDblClick := lvDownKeyDblClick;
+
+    LColumn := Columns.Add;
+    LColumn.Width := Width - 4;
+  end;
+
+  with TSpeedButton.Create(pKeyboard) do
+  begin
+    parent := pKeyboard;
+    left := round(pKeyboard.Width / 2) - 18 + 6 + sm;
+    Top := round(LClientHieght / 2) - 35 + 8;
+    Width := 24;
+    Height := 22;
+    Caption := '→';
+    OnClick := sbtnRightClick;
+  end;
+
+  with TSpeedButton.Create(pKeyboard) do
+  begin
+    parent := pKeyboard;
+    left := round(pKeyboard.Width / 2) - 18 + 6 + sm;
+    Top := round(LClientHieght / 2) - 11 + 8;
+    Width := 24;
+    Height := 22;
+    Caption := '←';
+    OnClick := sbtnLeftClick;
+  end;
+
+  with TSpeedButton.Create(pKeyboard) do
+  begin
+    parent := pKeyboard;
+    left := round(pKeyboard.Width / 2) - 18 + 6 + sm;
+    Top := round(LClientHieght / 2) + 13 + 8;
+    Width := 24;
+    Height := 22;
+    Caption := '←'#13#10'←';
+    OnClick := sbtnLeftAllClick;
+  end;
+
+end;
+
+procedure TfrmOPressKeyboard.dropKeyboardList;
+var
+  i: Integer;
+begin
+  for i := pKeyboard.ComponentCount - 1 downto 0 do
+    if (pKeyboard.Components[i] is TSpeedButton) or (pKeyboard.Components[i] is TListView) then
+      pKeyboard.Components[i].Free;
+end;
+
+procedure TfrmOPressKeyboard.formatDownKey;
+var
+  i, j: Integer;
 begin
   if FDownKey.Count = 0 then
-    FPanelPressKeyboard.Caption := 'Нажмите кнопку'
+    edDownKey.Text := 'Нажмите кнопку'
   else
-    FPanelPressKeyboard.Caption := '';
+    for i := 0 to FDownKey.Count - 1 do
+      if i = 0 then
+        edDownKey.Text := FDownKey[i]
+      else
+        edDownKey.Text := edDownKey.Text + ' + ' + FDownKey[i];
 
-  for i := 0 to FDownKey.Count - 1 do
-    if i = 0 then
-      FPanelPressKeyboard.Caption := FDownKey[i]
-    else
-      FPanelPressKeyboard.Caption := FPanelPressKeyboard.Caption + ' + ' + FDownKey[i];
+  case dtsKeyboardType.TabIndex of
+    0: // Клавиатура
+      begin
 
-  if FDownKey.Count >= 3 then
-  begin
-    for i := 0 to pKeyboard.ComponentCount - 1 do
-      if (pKeyboard.Components[i] is TSpeedButton) and not TSpeedButton(pKeyboard.Components[i]).Down
-      then
-        TSpeedButton(pKeyboard.Components[i]).Enabled := false;
-  end
-  else
-    for i := 0 to pKeyboard.ComponentCount - 1 do
-      if (pKeyboard.Components[i] is TSpeedButton) then
-        TSpeedButton(pKeyboard.Components[i]).Enabled := true;
+        for i := 0 to pKeyboard.ComponentCount - 1 do
+          if (pKeyboard.Components[i] is TSpeedButton) then
+            TSpeedButton(pKeyboard.Components[i]).Down := False;
+
+        // нажимаю кнопки
+        for i := 0 to pKeyboard.ComponentCount - 1 do
+          if (pKeyboard.Components[i] is TSpeedButton) then
+            for j := 0 to FDownKey.Count - 1 do
+              if (TSpeedButton(pKeyboard.Components[i]).Tag = Integer(FDownKey.Objects[j])) then
+              begin
+                TSpeedButton(pKeyboard.Components[i]).Down := True;
+                TSpeedButton(pKeyboard.Components[i]).Enabled := True;
+                Break;
+              end;
+
+        for i := 0 to pKeyboard.ComponentCount - 1 do
+          if (pKeyboard.Components[i] is TSpeedButton) and
+            not(TSpeedButton(pKeyboard.Components[i]).Down) then
+            TSpeedButton(pKeyboard.Components[i]).Enabled := not(FDownKey.Count >= 3);
+      end;
+    1: // Ручной режим
+      begin
+        FlvDownKey.Items.BeginUpdate;
+        FlvDownKey.Items.Clear;
+        for i := 0 to FDownKey.Count - 1 do
+          with FlvDownKey.Items.Add do
+          begin
+            Caption := FDownKey[i];
+            Data := Pointer(Integer(FDownKey.Objects[i]));
+          end;
+        FlvDownKey.Items.EndUpdate;
+
+        FlvKeyboard.Enabled := not(FDownKey.Count >= 3);
+        if FDownKey.Count >= 3 then
+          FlvKeyboard.Color := clBtnFace
+        else
+          FlvKeyboard.Color := clWhite;
+
+      end;
+  end;
+
 end;
 
 end.

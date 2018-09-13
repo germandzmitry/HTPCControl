@@ -4,7 +4,7 @@ interface
 
 uses
   System.SysUtils, Vcl.Forms, Vcl.ActnList, Vcl.StdCtrls, Vcl.ExtCtrls,
-  Vcl.Buttons, Vcl.ComCtrls, IniFiles;
+  Vcl.Buttons, Vcl.ComCtrls, Vcl.Tabs, Vcl.DockTabSet, IniFiles;
 
 const
   lngRus: string = 'Russian';
@@ -161,6 +161,28 @@ begin
             Format('%s:%d', [TListView(AForm.Components[i]).Name, j]), '');
           if s <> '' then
             TListView(AForm.Components[i]).Columns[j].Caption := s;
+        end;
+      end
+      { TabSet }
+      else if AForm.Components[i] is TTabSet then
+      begin
+        for j := 0 to TTabSet(AForm.Components[i]).Tabs.Count - 1 do
+        begin
+          s := lng.ReadString(AForm.Name,
+            Format('%s:%d', [TTabSet(AForm.Components[i]).Name, j]), '');
+          if s <> '' then
+            TTabSet(AForm.Components[i]).Tabs[j] := s;
+        end;
+      end
+      { DockTabSet }
+      else if AForm.Components[i] is TDockTabSet then
+      begin
+        for j := 0 to TDockTabSet(AForm.Components[i]).Tabs.Count - 1 do
+        begin
+          s := lng.ReadString(AForm.Name,
+            Format('%s:%d', [TDockTabSet(AForm.Components[i]).Name, j]), '');
+          if s <> '' then
+            TDockTabSet(AForm.Components[i]).Tabs[j] := s;
         end;
       end
       { Action }

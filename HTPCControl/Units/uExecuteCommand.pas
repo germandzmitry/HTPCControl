@@ -95,6 +95,8 @@ begin
     // FileName := uShellApplication.GetExePath(GetForegroundWindow);
 
     for i := 0 to Length(Operations) - 1 do
+    begin
+      sleep(Operations[i].OWait);
       case Operations[i].OType of
         opApplication:
           RunApplication(Operations[i].RunApplication, Operations[i].Operation);
@@ -103,6 +105,7 @@ begin
       else
         raise Exception.Create(GetLanguageMsg('msgExecuteCommandTypeNotFound', lngRus));
       end;
+    end;
 
     DoExecuteCommand(RCommand, Operations, RepeatPrevious);
   end;

@@ -25,6 +25,7 @@ type
     procedure btnSaveClick(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure FormShow(Sender: TObject);
+    procedure FormKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
   private
     { Private declarations }
     FLine: TLine;
@@ -60,6 +61,12 @@ end;
 procedure TfrmRCommand.FormDestroy(Sender: TObject);
 begin
   FLine.Free;
+end;
+
+procedure TfrmRCommand.FormKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
+begin
+  if Key = 27 then
+    close;
 end;
 
 procedure TfrmRCommand.FormShow(Sender: TObject);
@@ -114,7 +121,7 @@ end;
 
 procedure TfrmRCommand.btnCancelClick(Sender: TObject);
 begin
-  self.Close;
+  self.close;
 end;
 
 end.

@@ -44,6 +44,8 @@ type
   TORunApplication = record
     id: integer;
     Command: string[100];
+    pSort: integer;
+    Wait: integer;
     Application: string[255];
   end;
 
@@ -51,6 +53,8 @@ type
   TOPressKeyboard = record
     id: integer;
     Command: string[100];
+    pSort: integer;
+    Wait: integer;
     Key1: integer;
     Key2: integer;
     Key3: integer;
@@ -60,6 +64,8 @@ type
   // Все операции для команды
   TOperation = Record
     Command: string[100];
+    OSort: integer;
+    OWait: integer;
     OType: TopType;
     Operation: string;
     PressKeyboard: TOPressKeyboard;
@@ -84,6 +90,7 @@ type
     function RemoteCommandExists(const Command: string): boolean; overload;
     function RemoteCommandExists(const Command: string; var RCommand: TRemoteCommand)
       : boolean; overload;
+
     function CreateRemoteCommand(const Command, Description: string;
       const RepeatPrevious, LongPress: boolean): string; overload;
     function CreateRemoteCommand(const Command, Description: string;
@@ -92,12 +99,15 @@ type
       const RepeatPrevious, LongPress: boolean): string;
     procedure DeleteRemoteCommand(const Command: string);
 
-    procedure CreateRunApplication(const Command, AppFileName: string);
-    procedure UpdateRunApplication(const id: integer; const AppFileName: string);
+    procedure CreateRunApplication(const Command: string; const pSort, Wait: integer;
+      const AppFileName: string);
+    procedure UpdateRunApplication(const id, pSort, Wait: integer; const AppFileName: string);
     procedure DeleteRunApplication(const id: integer);
 
-    procedure CreatePressKeyboard(const Command: string; const Key1, Key2, Key3: integer);
-    procedure UpdatePressKeyboard(const id, Key1, Key2, Key3: integer);
+    procedure CreatePressKeyboard(const Command: string;
+      const pSort, Wait, Key1, Key2, Key3: integer; const ForApplication: string);
+    procedure UpdatePressKeyboard(const id, pSort, Wait, Key1, Key2, Key3: integer;
+      const ForApplication: string);
     procedure DeletePressKeyboard(const id: integer);
 
     function GetOperation(const Command: string): TOperations;
@@ -195,6 +205,8 @@ begin
       'CREATE TABLE OperationRunApplication(                                         ' +
       '  [id] counter primary key,                                                   ' +
       '  [command] string(100) references RemoteCommand([command]) on delete cascade,' +
+      '  [pSort] integer,                                                            ' +
+      '  [wait] integer default 0,                                                   ' +
       '  [application] string(255),                                                  ' +
       '  [description] string(255))';
     Query.ExecSQL;
@@ -204,10 +216,11 @@ begin
       'CREATE TABLE OperationPressKeyboard(                                          ' +
       '  [id] counter primary key,                                                   ' +
       '  [command] string(100) references RemoteCommand([command]) on delete cascade,' +
+      '  [pSort] integer,                                                            ' +
+      '  [wait] integer default 0,                                                   ' +
       '  [key1] integer default null references Keyboard([key]),                     ' +
       '  [key2] integer default null references Keyboard([key]),                     ' +
       '  [key3] integer default null references Keyboard([key]),                     ' +
-    // '  [longPress] bit,                                                            ' +
       '  [forApplication] string(255),                                               ' +
       '  [description] string(255))';
     Query.ExecSQL;
@@ -226,7 +239,7 @@ begin
     addKeybord(Query, VK_F11, 'F11', 0);
     addKeybord(Query, VK_F12, 'F12', 0);
 
-    addKeybordGroup(Query, 1, 'Служебные кдавиши');
+    addKeybordGroup(Query, 1, 'Служебные клавиши');
     addKeybord(Query, VK_ESCAPE, 'Esc', 1);
     addKeybord(Query, VK_LCONTROL, 'Левый Ctrl', 1);
     addKeybord(Query, VK_RCONTROL, 'Правый Ctrl', 1);
@@ -685,7 +698,8 @@ begin
   end;
 end;
 
-procedure TDataBase.CreateRunApplication(const Command, AppFileName: string);
+procedure TDataBase.CreateRunApplication(const Command: string; const pSort, Wait: integer;
+  const AppFileName: string);
 var
   Query: TADOQuery;
   // LCommand: string;
@@ -705,8 +719,9 @@ begin
   try
     Query.Connection := FConnection;
     Query.Sql.Clear;
-    Query.Sql.Text := 'insert into OperationRunApplication (command, application) values ("' +
-      Command + '", "' + AppFileName + '")';
+    Query.Sql.Text :=
+      'insert into OperationRunApplication (command, pSort, wait, application) values ("' + Command
+      + '", ' + IntToStr(pSort) + ', ' + IntToStr(Wait) + ', "' + AppFileName + '")';
     Query.ExecSQL;
 
   finally
@@ -715,7 +730,7 @@ begin
 
 end;
 
-procedure TDataBase.UpdateRunApplication(const id: integer; const AppFileName: string);
+procedure TDataBase.UpdateRunApplication(const id, pSort, Wait: integer; const AppFileName: string);
 var
   Query: TADOQuery;
 begin
@@ -731,7 +746,8 @@ begin
     Query.Connection := FConnection;
     Query.Sql.Clear;
     Query.Sql.Text := 'update OperationRunApplication set application = "' + AppFileName +
-      '" where id = ' + IntToStr(id);
+      '", pSort = ' + IntToStr(pSort) + ', wait = ' + IntToStr(Wait) + ' where id = ' +
+      IntToStr(id);
     Query.ExecSQL;
   finally
     Query.Free;
@@ -756,7 +772,8 @@ begin
   end;
 end;
 
-procedure TDataBase.CreatePressKeyboard(const Command: string; const Key1, Key2, Key3: integer);
+procedure TDataBase.CreatePressKeyboard(const Command: string;
+  const pSort, Wait, Key1, Key2, Key3: integer; const ForApplication: string);
 var
   Query: TADOQuery;
   sKey1, sKey2, sKey3: string;
@@ -780,8 +797,10 @@ begin
     Query := TADOQuery.Create(nil);
     Query.Connection := FConnection;
     Query.Sql.Clear;
-    Query.Sql.Text := 'insert into OperationPressKeyboard (command, key1, key2, key3) values ("' +
-      Command + '", ' + sKey1 + ', ' + sKey2 + ', ' + sKey3 + ')';
+    Query.Sql.Text :=
+      'insert into OperationPressKeyboard (command, pSort, wait, key1, key2, key3, forApplication) values ("'
+      + Command + '", ' + IntToStr(pSort) + ', ' + IntToStr(Wait) + ', ' + sKey1 + ', ' + sKey2 +
+      ', ' + sKey3 + ', "' + ForApplication + '")';
     Query.ExecSQL;
 
   finally
@@ -789,7 +808,8 @@ begin
   end;
 end;
 
-procedure TDataBase.UpdatePressKeyboard(const id, Key1, Key2, Key3: integer);
+procedure TDataBase.UpdatePressKeyboard(const id, pSort, Wait, Key1, Key2, Key3: integer;
+  const ForApplication: string);
 var
   Query: TADOQuery;
   sKey1, sKey2, sKey3: string;
@@ -812,8 +832,9 @@ begin
   try
     Query.Connection := FConnection;
     Query.Sql.Clear;
-    Query.Sql.Text := 'update OperationPressKeyboard set key1 = ' + sKey1 + ',  key2 = ' + sKey2 +
-      ',  key3 = ' + sKey3 + ' where id = ' + IntToStr(id);
+    Query.Sql.Text := 'update OperationPressKeyboard set pSort = ' + IntToStr(pSort) + ', wait = ' +
+      IntToStr(Wait) + ', key1 = ' + sKey1 + ',  key2 = ' + sKey2 + ',  key3 = ' + sKey3 +
+      ', forApplication = "' + ForApplication + '" where id = ' + IntToStr(id);
     Query.ExecSQL;
   finally
     Query.Free;
@@ -850,33 +871,42 @@ begin
     Query.Connection := FConnection;
     Query.Sql.Clear;
     Query.Sql.Text := 'SELECT * FROM (                                                ' +
-      '    SELECT opk.command,                                                        ' +
-      '        opk.id,                                                                ' +
-      '        "' + tcKeyboard + '" as type,                                          ' +
-      '        opk.key1,                                                              ' +
-      '        opk.key2,                                                              ' +
-      '        opk.key3,                                                              ' +
-      '        null as application,                                                   ' +
+      '    SELECT opk.command          as command,                                    ' +
+      '        opk.psort               as psort,                                      ' +
+      '        opk.wait                as wait,                                       ' +
+      '        opk.id                  as id,                                         ' +
+      '        "' + tcKeyboard + '"    as type,                                       ' +
+      '        opk.key1                as key1,                                       ' +
+      '        opk.key2                as key2,                                       ' +
+      '        opk.key3                as key3,                                       ' +
+      '        opk.forApplication      as forApplication,                             ' +
+      '        null                    as application,                                ' +
       '        kk1.Description                                                        ' +
-      '          & IIF(isNull(opk.Key2), " ", " + " & kk2.Description)                ' +
-      '          & IIF(isNull(opk.Key3), " ", " + " & kk3.Description) as operation   ' +
+      '          & IIF(isNull(opk.Key2), "", " + " & kk2.Description)                 ' +
+      '          & IIF(isNull(opk.Key3), "", " + " & kk3.Description)                 ' +
+      '          & IIF(len(opk.forApplication) > 0,                                   ' +
+      '                  " (" & opk.forApplication & ")"                              ' +
+      '               )                as operation                                   ' +
       '      FROM (( Keyboard AS kk1                                                  ' +
       '        INNER JOIN OperationPressKeyboard AS opk ON kk1.Key = opk.Key1 )       ' +
       '        LEFT JOIN Keyboard AS kk2 ON opk.Key2 = kk2.Key )                      ' +
       '        LEFT JOIN Keyboard AS kk3 ON opk.Key3 = kk3.Key                        ' +
       '    UNION ALL                                                                  ' +
-      '    SELECT ora.command,                                                        ' +
-      '        ora.id,                                                                ' +
+      '    SELECT ora.command          as command,                                    ' +
+      '        ora.psort               as psort,                                      ' +
+      '        ora.wait                as wait,                                       ' +
+      '        ora.id                  as id,                                         ' +
       '        "' + tcApplication + '" as type,                                       ' +
-      '        null as key1,                                                          ' +
-      '        null as key2,                                                          ' +
-      '        null as key3,                                                          ' +
-      '        ora.application,                                                       ' +
-      '        ora.Application as operation                                           ' +
+      '        null                    as key1,                                       ' +
+      '        null                    as key2,                                       ' +
+      '        null                    as key3,                                       ' +
+      '        null                    as forApplication,                             ' +
+      '        ora.application         as application,                                ' +
+      '        ora.Application         as operation                                   ' +
       '      FROM OperationRunApplication as ora                                      ' +
       '  )                                                                            ' +
       '  WHERE command = "' + Command + '"                                            ' +
-      '  ORDER BY type, operation                                                     ';
+      '  ORDER BY psort, type, operation                                              ';
 
     Query.ExecSQL;
     Query.Active := True;
@@ -885,6 +915,8 @@ begin
     begin
       SetLength(Result, Length(Result) + 1);
       Result[Query.RecNo - 1].Command := Query.FieldByName('command').AsString;
+      Result[Query.RecNo - 1].OSort := Query.FieldByName('psort').AsInteger;
+      Result[Query.RecNo - 1].OWait := Query.FieldByName('wait').AsInteger;
       Result[Query.RecNo - 1].Operation := Query.FieldByName('operation').AsString;
 
       if Query.FieldByName('type').AsString = tcApplication then
@@ -892,6 +924,8 @@ begin
         Result[Query.RecNo - 1].OType := opApplication;
         Result[Query.RecNo - 1].RunApplication.id := Query.FieldByName('id').AsInteger;
         Result[Query.RecNo - 1].RunApplication.Command := Result[Query.RecNo - 1].Command;
+        Result[Query.RecNo - 1].RunApplication.pSort := Query.FieldByName('psort').AsInteger;
+        Result[Query.RecNo - 1].RunApplication.Wait := Query.FieldByName('wait').AsInteger;
         Result[Query.RecNo - 1].RunApplication.Application :=
           Query.FieldByName('application').AsString;
       end
@@ -900,9 +934,13 @@ begin
         Result[Query.RecNo - 1].OType := opKyeboard;
         Result[Query.RecNo - 1].PressKeyboard.id := Query.FieldByName('id').AsInteger;
         Result[Query.RecNo - 1].PressKeyboard.Command := Result[Query.RecNo - 1].Command;
+        Result[Query.RecNo - 1].PressKeyboard.pSort := Query.FieldByName('psort').AsInteger;
+        Result[Query.RecNo - 1].PressKeyboard.Wait := Query.FieldByName('wait').AsInteger;
         Result[Query.RecNo - 1].PressKeyboard.Key1 := Query.FieldByName('key1').AsInteger;
         Result[Query.RecNo - 1].PressKeyboard.Key2 := Query.FieldByName('key2').AsInteger;
         Result[Query.RecNo - 1].PressKeyboard.Key3 := Query.FieldByName('key3').AsInteger;
+        Result[Query.RecNo - 1].PressKeyboard.ForApplication :=
+          Query.FieldByName('forApplication').AsString;
       end;
 
       Query.Next;
