@@ -52,8 +52,7 @@ begin
   cbRepeatPrevious.Checked := false;
   pTop.Caption := '';
 
-  // FLine := TLine.Create(pTop, alBottom, clWhite, clHotLight);
-  FLine := TLine.Create(pTop, alBottom, clWhite, RGB(Random(256), Random(256), Random(256)));
+  FLine := TLine.Create(pTop, alBottom, clBlack, clBlack);
 
   UpdateLanguage(self, lngRus);
 end;

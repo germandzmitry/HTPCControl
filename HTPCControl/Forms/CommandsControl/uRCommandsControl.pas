@@ -173,8 +173,6 @@ begin
   plvRCommands.Width := 200;
   lvRCommands.Align := alClient;
 
-  // FLineRCommands := TLine.Create(plvRCommands, clWhite, clHotLight);
-  // FLineRCommands := TLine.Create(plvRCommands, clWhite, RGB(Random(256), Random(256), Random(256)));
   FLineRCommands := TLine.Create(plvRCommands, clBlack, clBlack);
   ActTBCommand.Top := 0;
 
@@ -182,8 +180,7 @@ begin
   plvOperation.Align := alClient;
   lvOperation.Align := alClient;
 
-  // FLineOpearion := TLine.Create(plvOperation, clWhite, clRed);
-  FLineOpearion := TLine.Create(plvOperation, clWhite, RGB(Random(256), Random(256), Random(256)));
+  FLineOpearion := TLine.Create(plvOperation, clBlack, clBlack);
   ActTBOperation.Top := 0;
 
   // чистим контролы
