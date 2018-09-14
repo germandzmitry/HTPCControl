@@ -53,9 +53,11 @@ var
   LDetails: TThemedElementDetails;
   ObjRCommand: TObjectRemoteCommand;
 begin
-  // inherited;
 
   ObjRCommand := (Self.Items.Objects[Index] as TObjectRemoteCommand);
+
+  if ObjRCommand = nil then
+    exit;
 
   if odSelected in State then
     Self.Canvas.Brush.Color := GetShadowColor(clHighlight, 115)
@@ -76,18 +78,15 @@ begin
   inc(DrawRect.Top, 4);
   DrawRect.Right := DrawRect.Left + 90;
   Dec(DrawRect.Bottom, 4);
-  Self.Canvas.Font.Style := Self.Canvas.Font.Style + [fsBold];
-  try
-    // access violation когда появляется ScrollBox
-    DrawText(Self.Canvas.Handle, PChar(ObjRCommand.Command), -1, DrawRect,
-      DT_VCENTER or DT_SINGLELINE or DT_RIGHT);
-  except
-  end;
 
+  Self.Canvas.Font.Style := Self.Canvas.Font.Style + [fsBold];
+  DrawText(Self.Canvas.Handle, PChar(ObjRCommand.Command), -1, DrawRect,
+    DT_VCENTER or DT_SINGLELINE or DT_RIGHT);
+  Self.Canvas.Font.Style := Self.Canvas.Font.Style - [fsBold];
+
+  // Иконка
   Self.Canvas.Draw(Rect.Left + 5, Rect.Top + round(Rect.Height / 2) -
     round(ObjRCommand.FIcon.Height / 2), ObjRCommand.FIcon);
-
-  Self.Canvas.Font.Style := Self.Canvas.Font.Style - [fsBold];
 
   // Разделитель
   DrawRect := Rect;
