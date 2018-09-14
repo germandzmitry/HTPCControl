@@ -42,7 +42,6 @@ type
     procedure ActODeleteExecute(Sender: TObject);
     procedure lvRCommandsSelectItem(Sender: TObject; Item: TListItem; Selected: Boolean);
     procedure ActOPressKeyboardExecute(Sender: TObject);
-    procedure ActOPressKeyboardForApplicationExecute(Sender: TObject);
     procedure ActRCAddExecute(Sender: TObject);
     procedure ActRCEditExecute(Sender: TObject);
     procedure ActRCDeleteExecute(Sender: TObject);
@@ -315,16 +314,12 @@ begin
   try
     frmOPressKey.pkType := pkAdd;
     frmOPressKey.Command := lvRCommands.Selected.Caption;
+    frmOPressKey.udPSort.Position := lvOperation.Items.Count + 1;
     if frmOPressKey.ShowModal = mrOK then
       ReadOperation(lvRCommands.Selected.Caption);
   finally
     frmOPressKey.Free;
   end;
-end;
-
-procedure TfrmRCommandsControl.ActOPressKeyboardForApplicationExecute(Sender: TObject);
-begin
-  //
 end;
 
 procedure TfrmRCommandsControl.ActORunApplicationExecute(Sender: TObject);
@@ -341,6 +336,7 @@ begin
   try
     frmORunApp.raType := raAdd;
     frmORunApp.Command := lvRCommands.Selected.Caption;
+    frmORunApp.udPSort.Position := lvOperation.Items.Count + 1;
     if frmORunApp.ShowModal = mrOK then
       ReadOperation(lvRCommands.Selected.Caption);
   finally
