@@ -235,24 +235,38 @@ begin
 end;
 
 procedure TThreadExecuteCommand.PressKeyboard(Operation: TOPressKeyboard; OText: string);
-begin
-  try
-    // Кнопка 1
-    if Operation.Key1 <> 0 then
-      keybd_event(Operation.Key1, 0, 0, 0); // Нажатие кнопки.
-    // Кнопка 2
-    if Operation.Key2 <> 0 then
-      keybd_event(Operation.Key2, 0, 0, 0); // Нажатие кнопки.
-    // Кнопка 3
-    if Operation.Key3 <> 0 then
-      keybd_event(Operation.Key3, 0, 0, 0); // Нажатие кнопки.
+var
+  i, len: integer;
+  KeyInputs: array of TInput;
 
-    // DoPressKeyboard(Operation, OText);
-  finally
-    keybd_event(Operation.Key3, 0, KEYEVENTF_KEYUP, 0); // Отпускание кнопки.
-    keybd_event(Operation.Key2, 0, KEYEVENTF_KEYUP, 0); // Отпускание кнопки.
-    keybd_event(Operation.Key1, 0, KEYEVENTF_KEYUP, 0); // Отпускание кнопки.
+  procedure keyDown(Key: integer);
+  begin
+    if Key <> 0 then
+    begin
+      SetLength(KeyInputs, Length(KeyInputs) + 1);
+      KeyInputs[Length(KeyInputs) - 1].Itype := INPUT_KEYBOARD;
+      KeyInputs[Length(KeyInputs) - 1].ki.wVk := Key;
+      KeyInputs[Length(KeyInputs) - 1].ki.dwFlags := KEYEVENTF_EXTENDEDKEY;
+    end;
   end;
+
+begin
+  // Нажимаю кнопки
+  keyDown(Operation.Key1);
+  keyDown(Operation.Key2);
+  keyDown(Operation.Key3);
+
+  // Отпускаю кнопки в обратной последовательности
+  len := Length(KeyInputs) - 1;
+  for i := len downto 0 do
+  begin
+    SetLength(KeyInputs, Length(KeyInputs) + 1);
+    KeyInputs[Length(KeyInputs) - 1] := KeyInputs[i];
+    KeyInputs[Length(KeyInputs) - 1].ki.dwFlags := KeyInputs[Length(KeyInputs) - 1].ki.dwFlags or
+      KEYEVENTF_KEYUP;
+  end;
+
+  SendInput(Length(KeyInputs), KeyInputs[0], SizeOf(TInput));
 end;
 
 procedure TThreadExecuteCommand.RunApplication(Operation: TORunApplication; OText: string);
