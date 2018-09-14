@@ -4,7 +4,7 @@ interface
 
 uses
   Winapi.Windows, Winapi.Messages, Vcl.StdCtrls, Vcl.Controls, Vcl.Graphics, Vcl.Themes,
-  Vcl.Dialogs, Vcl.GraphUtil, System.Classes, System.SysUtils;
+  Vcl.Dialogs, Vcl.GraphUtil, System.Classes, System.SysUtils, uExecuteCommand;
 
 type
   TCustomListBox = class(TListBox)
@@ -15,18 +15,6 @@ type
   public
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
-  end;
-
-type
-  TObjectRemoteCommand = class
-    FCommand: string;
-    FIcon: TIcon;
-  public
-    constructor Create(Command: string);
-    destructor Destroy;
-
-    property Command: string read FCommand write FCommand;
-    property Icon: TIcon read FIcon write FIcon;
   end;
 
 implementation
@@ -68,6 +56,9 @@ begin
     else
       Self.Canvas.Brush.Color := clBtnFace;
   end;
+
+  if ObjRCommand.State = ecBegin then
+    Self.Canvas.Brush.Color := GetShadowColor(clRed, 80);
 
   Self.Canvas.FillRect(Rect);
   Self.Canvas.Font.Color := clBlack;
@@ -155,19 +146,6 @@ begin
     end;
 
   TCustomListBox(Sender).Repaint;
-end;
-
-{ TRemoteCommand }
-
-constructor TObjectRemoteCommand.Create(Command: string);
-begin
-  Self.FCommand := Command;
-  Self.FIcon := TIcon.Create();
-end;
-
-destructor TObjectRemoteCommand.Destroy;
-begin
-  Self.FIcon.Free;
 end;
 
 end.

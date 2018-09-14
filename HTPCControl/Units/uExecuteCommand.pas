@@ -2,47 +2,58 @@
 
 interface
 
-uses Winapi.Windows, System.SysUtils, System.Classes, uDataBase, uLanguage,
-  uTypes, uShellApplication, SyncObjs;
+uses Winapi.Windows, System.SysUtils, System.Classes, Vcl.Graphics,
+  uDataBase, uLanguage, uTypes, uShellApplication, SyncObjs;
 
 type
-  TExecuteCommandEvent = procedure(RCommand: TRemoteCommand; Operations: TOperations;
-    RepeatPrevious: boolean) of object;
-  TRunApplicationEvent = procedure(Operation: TORunApplication; OText: string) of object;
-  TPressKeyboardEvent = procedure(Operation: TOPressKeyboard; OText: string) of object;
+  TExecuteCommandState = (ecBegin, ecEnd);
+
+type
+  TExecuteCommandBeginEvent = procedure(EIndex: integer; RCommand: TRemoteCommand;
+    Operations: String; RepeatPrevious: boolean) of object;
+  TExecuteCommandEndEvent = procedure(EIndex: integer) of object;
+  TPreviousCommandEvent = procedure(Operations: string) of object;
 
 type
   TExecuteCommand = class
     procedure Execute(RCommand: TRemoteCommand; RepeatPrevious: boolean = false);
+    procedure ClearPrevious();
   private
     FDB: TDataBase;
     FCS: TCriticalSection;
-    FPrevRCommand: TRemoteCommand;
+    FEIndex: integer;
+    FPrevRCommand: PRemoteCommand;
 
-    FOnRunApplication: TRunApplicationEvent;
-    FOnPressKeyboard: TPressKeyboardEvent;
-    FOnExecuteCommand: TExecuteCommandEvent;
+    FOnExecuteCommandBegin: TExecuteCommandBeginEvent;
+    FOnExecuteCommandEnd: TExecuteCommandEndEvent;
+    FOnPreviousCommand: TPreviousCommandEvent;
 
-    procedure RunApplication(Operation: TORunApplication; OText: string);
-    procedure PressKeyboard(Operation: TOPressKeyboard; OText: string);
+    procedure onThreadTerminate(Sender: TObject);
 
-    procedure DoExecuteCommand(RCommand: TRemoteCommand; Operations: TOperations;
-      RepeatPrevious: boolean); dynamic;
-    procedure DoRunApplication(Operation: TORunApplication; OText: string); dynamic;
-    procedure DoPressKeyboard(Operation: TOPressKeyboard; OText: string); dynamic;
+    procedure DoExecuteCommandBegin(EIndex: integer; RCommand: TRemoteCommand;
+      Operations: TOperations; RepeatPrevious: boolean); dynamic;
+    procedure DoExecuteCommandEnd(EIndex: integer); dynamic;
+    procedure DoPreviousCommand(Operations: string); dynamic;
+
+    procedure SetPrevious(RCommand: TRemoteCommand; Operations: string);
+    function LineOperations(Operations: TOperations): string;
 
   public
     constructor Create(DB: TDataBase); overload;
     destructor Destroy; override;
 
-    property OnRunApplication: TRunApplicationEvent read FOnRunApplication write FOnRunApplication;
-    property OnPressKeyboard: TPressKeyboardEvent read FOnPressKeyboard write FOnPressKeyboard;
-    property OnExecuteCommand: TExecuteCommandEvent read FOnExecuteCommand write FOnExecuteCommand;
+    property OnExecuteCommandBegin: TExecuteCommandBeginEvent read FOnExecuteCommandBegin
+      write FOnExecuteCommandBegin;
+    property OnExecuteCommandEnd: TExecuteCommandEndEvent read FOnExecuteCommandEnd
+      write FOnExecuteCommandEnd;
+    property OnPreviousCommand: TPreviousCommandEvent read FOnPreviousCommand
+      write FOnPreviousCommand;
   end;
 
   TThreadExecuteCommand = class(TThread)
   private
     FCS: TCriticalSection;
+    FEIndex: integer;
     FOperations: TOperations;
 
     procedure RunApplication(Operation: TORunApplication; OText: string);
@@ -50,8 +61,24 @@ type
   protected
     procedure Execute; override;
   public
-    constructor Create(CriticalSection: TCriticalSection; Operations: TOperations); overload;
+    constructor Create(CriticalSection: TCriticalSection; EIndex: integer;
+      Operations: TOperations); overload;
     destructor Destroy; override;
+  end;
+
+  TObjectRemoteCommand = class
+    FEIndex: integer;
+    FCommand: string;
+    FState: TExecuteCommandState;
+    FIcon: TIcon;
+  public
+    constructor Create(EIndex: integer; Command: string);
+    destructor Destroy;
+
+    property EIndex: integer read FEIndex;
+    property Command: string read FCommand write FCommand;
+    property State: TExecuteCommandState read FState write FState;
+    property Icon: TIcon read FIcon write FIcon;
   end;
 
 implementation
@@ -62,6 +89,7 @@ constructor TExecuteCommand.Create(DB: TDataBase);
 begin
   FDB := DB;
   FCS := TCriticalSection.Create;
+  FEIndex := 0;
 end;
 
 destructor TExecuteCommand.Destroy;
@@ -70,136 +98,115 @@ begin
   inherited;
 end;
 
-procedure TExecuteCommand.DoExecuteCommand(RCommand: TRemoteCommand; Operations: TOperations;
-  RepeatPrevious: boolean);
+procedure TExecuteCommand.DoExecuteCommandBegin(EIndex: integer; RCommand: TRemoteCommand;
+  Operations: TOperations; RepeatPrevious: boolean);
 begin
-  if Assigned(FOnExecuteCommand) then
-    FOnExecuteCommand(RCommand, Operations, RepeatPrevious);
+  if Assigned(FOnExecuteCommandBegin) then
+    FOnExecuteCommandBegin(EIndex, RCommand, LineOperations(Operations), RepeatPrevious);
 end;
 
-procedure TExecuteCommand.DoPressKeyboard(Operation: TOPressKeyboard; OText: string);
+procedure TExecuteCommand.DoExecuteCommandEnd(EIndex: integer);
 begin
-  if Assigned(FOnPressKeyboard) then
-    FOnPressKeyboard(Operation, OText);
+  if Assigned(FOnExecuteCommandEnd) then
+    FOnExecuteCommandEnd(EIndex);
 end;
 
-procedure TExecuteCommand.DoRunApplication(Operation: TORunApplication; OText: string);
+procedure TExecuteCommand.DoPreviousCommand(Operations: string);
 begin
-  if Assigned(FOnRunApplication) then
-    FOnRunApplication(Operation, OText);
+  if Assigned(FOnPreviousCommand) then
+    FOnPreviousCommand(Operations);
 end;
 
 procedure TExecuteCommand.Execute(RCommand: TRemoteCommand; RepeatPrevious: boolean = false);
 var
-  i: integer;
-  FileName: string;
+  EIndex: integer;
   Operations: TOperations;
   ThreadExecute: TThreadExecuteCommand;
 begin
 
   // Повтор предыдущей команды
-  if RCommand.RepeatPrevious and FPrevRCommand.LongPress then
+  if RCommand.RepeatPrevious and (FPrevRCommand <> nil) then
   begin
-    Execute(FPrevRCommand, True);
-    exit;
+    Execute(TRemoteCommand(FPrevRCommand^), True);
+    Exit;
   end;
-
-  FPrevRCommand := RCommand;
 
   Operations := FDB.getOperation(RCommand.Command);
 
+  SetPrevious(RCommand, LineOperations(Operations));
+
+  // FPrevRCommand := RCommand;
+
   if Length(Operations) > 0 then
   begin
-
-    ThreadExecute := TThreadExecuteCommand.Create(FCS, Operations);
+    inc(FEIndex);
+    ThreadExecute := TThreadExecuteCommand.Create(FCS, FEIndex, Operations);
+    ThreadExecute.OnTerminate := onThreadTerminate;
     ThreadExecute.FreeOnTerminate := True;
     ThreadExecute.Priority := tpLower;
     ThreadExecute.Resume;
 
-    // FileName := uShellApplication.GetExePath(GetForegroundWindow);
-
-    // for i := 0 to Length(Operations) - 1 do
-    // begin
-    //
-    // // задержка перед выполнением
-    // if Operations[i].OWait > 0 then
-    // sleep(Operations[i].OWait);
-    //
-    // case Operations[i].OType of
-    // opApplication:
-    // RunApplication(Operations[i].RunApplication, Operations[i].Operation);
-    // opKyeboard:
-    // PressKeyboard(Operations[i].PressKeyboard, Operations[i].Operation);
-    // else
-    // raise Exception.Create(GetLanguageMsg('msgExecuteCommandTypeNotFound', lngRus));
-    // end;
-    // end;
-
-    DoExecuteCommand(RCommand, Operations, RepeatPrevious);
+    DoExecuteCommandBegin(FEIndex, RCommand, Operations, RepeatPrevious);
   end;
 
 end;
 
-procedure TExecuteCommand.RunApplication(Operation: TORunApplication; OText: string);
-var
-  Rlst: LongBool;
-  Application: PWideChar;
-  StartUpInfo: TStartUpInfo;
-  ProcessInfo: TProcessInformation;
-  FileName: string;
+procedure TExecuteCommand.onThreadTerminate(Sender: TObject);
 begin
-  FileName := Operation.Application;
-  if (Length(FileName) > 0) and FileExists(FileName) then
+  DoExecuteCommandEnd(TThreadExecuteCommand(Sender).FEIndex);
+end;
+
+procedure TExecuteCommand.SetPrevious(RCommand: TRemoteCommand; Operations: string);
+begin
+  if RCommand.LongPress then
   begin
-    Application := PWideChar(WideString(FileName));
-    FillChar(StartUpInfo, SizeOf(TStartUpInfo), 0);
-    StartUpInfo.cb := SizeOf(TStartUpInfo);
-    StartUpInfo.dwFlags := STARTF_USESHOWWINDOW or STARTF_FORCEONFEEDBACK;
-    StartUpInfo.wShowWindow := SW_SHOWNORMAL;
-    Rlst := CreateProcess(Application, nil, nil, nil, false, NORMAL_PRIORITY_CLASS, nil, nil,
-      StartUpInfo, ProcessInfo);
-    if Rlst then
-    begin
-      WaitForInputIdle(ProcessInfo.hProcess, INFINITE); // ждем завершения инициализации
-      CloseHandle(ProcessInfo.hThread); // закрываем дескриптор процесса
-      CloseHandle(ProcessInfo.hProcess); // закрываем дескриптор потока
+    if FPrevRCommand = nil then
+      New(FPrevRCommand);
+    FPrevRCommand^ := RCommand;
+    DoPreviousCommand(Operations);
+  end
+  else
+    ClearPrevious;
+end;
 
-      DoRunApplication(Operation, OText);
-    end
-    else
-      raise Exception.Create(Format(GetLanguageMsg('msgExecuteCommandRunApplication', lngRus),
-        [SysErrorMessage(GetLastError)]));
+function TExecuteCommand.LineOperations(Operations: TOperations): string;
+var
+  i: integer;
+
+  function OperationLine(O: TOperation): string;
+  begin
+    Result := inttostr(O.OSort) + ': ' + O.Operation;
+    if O.OWait > 0 then
+      Result := Result + ' (' + floattostr(O.OWait / 1000) + ' c.)'
+  end;
+
+begin
+  if Length(Operations) > 0 then
+  begin
+    Result := OperationLine(Operations[0]);
+    for i := 1 to Length(Operations) - 1 do
+      Result := Result + #13#10 + OperationLine(Operations[i]);
   end;
 end;
 
-procedure TExecuteCommand.PressKeyboard(Operation: TOPressKeyboard; OText: string);
+procedure TExecuteCommand.ClearPrevious;
 begin
-  try
-    // Кнопка 1
-    if Operation.Key1 <> 0 then
-      keybd_event(Operation.Key1, 0, 0, 0); // Нажатие кнопки.
-    // Кнопка 2
-    if Operation.Key2 <> 0 then
-      keybd_event(Operation.Key2, 0, 0, 0); // Нажатие кнопки.
-    // Кнопка 3
-    if Operation.Key3 <> 0 then
-      keybd_event(Operation.Key3, 0, 0, 0); // Нажатие кнопки.
-
-    DoPressKeyboard(Operation, OText);
-  finally
-    keybd_event(Operation.Key3, 0, KEYEVENTF_KEYUP, 0); // Отпускание кнопки.
-    keybd_event(Operation.Key2, 0, KEYEVENTF_KEYUP, 0); // Отпускание кнопки.
-    keybd_event(Operation.Key1, 0, KEYEVENTF_KEYUP, 0); // Отпускание кнопки.
+  if FPrevRCommand <> nil then
+  begin
+    Dispose(FPrevRCommand);
+    FPrevRCommand := nil;
   end;
+  DoPreviousCommand('');
 end;
 
 { TThreadExecuteCommand }
 
-constructor TThreadExecuteCommand.Create(CriticalSection: TCriticalSection;
+constructor TThreadExecuteCommand.Create(CriticalSection: TCriticalSection; EIndex: integer;
   Operations: TOperations);
 begin
   Create(True);
   FCS := CriticalSection;
+  FEIndex := EIndex;
   FOperations := Operations;
 end;
 
@@ -230,7 +237,8 @@ begin
       end;
     end;
   finally
-    FCS.Leave;
+    if Assigned(FCS) then
+      FCS.Leave;
   end;
 end;
 
@@ -238,6 +246,7 @@ procedure TThreadExecuteCommand.PressKeyboard(Operation: TOPressKeyboard; OText:
 var
   i, len: integer;
   KeyInputs: array of TInput;
+  FileName: string;
 
   procedure keyDown(Key: integer);
   begin
@@ -251,6 +260,19 @@ var
   end;
 
 begin
+
+  if (Length(Operation.ForApplication) > 0) and FileExists(Operation.ForApplication) then
+  begin
+    // текущее актуальное приложение
+    try
+      FileName := uShellApplication.GetExePath(GetForegroundWindow);
+      if FileName <> Operation.ForApplication then
+        Exit;
+    except
+      on E: Exception do
+    end;
+  end;
+
   // Нажимаю кнопки
   keyDown(Operation.Key1);
   keyDown(Operation.Key2);
@@ -299,6 +321,21 @@ begin
       raise Exception.Create(Format(GetLanguageMsg('msgExecuteCommandRunApplication', lngRus),
         [SysErrorMessage(GetLastError)]));
   end;
+end;
+
+{ TObjectRemoteCommand }
+
+constructor TObjectRemoteCommand.Create(EIndex: integer; Command: string);
+begin
+  Self.FEIndex := EIndex;
+  Self.FCommand := Command;
+  Self.FState := ecBegin;
+  Self.FIcon := TIcon.Create();
+end;
+
+destructor TObjectRemoteCommand.Destroy;
+begin
+  Self.FIcon.Free;
 end;
 
 end.

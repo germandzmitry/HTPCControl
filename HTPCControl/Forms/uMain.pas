@@ -179,8 +179,10 @@ type
     procedure onShellApplicationWindowsHook(Sender: TObject; const HSHELL: NativeInt;
       const ApplicationData: TEXEVersionData);
 
-    procedure onExecuteCommand(RCommand: TRemoteCommand; Operations: TOperations;
+    procedure onExecuteCommandBegin(EIndex: Integer; RCommand: TRemoteCommand; Operations: string;
       RepeatPrevious: Boolean);
+    procedure onExecuteCommandEnd(EIndex: Integer);
+    procedure onExecuteCommandPrevious(Operations: string);
 
     procedure onKodiRunning(Running: Boolean);
     procedure onKodiPlayer(Player: string);
@@ -1558,7 +1560,9 @@ begin
     if not Assigned(FExecuteCommand) then
       FExecuteCommand := TExecuteCommand.Create(FDataBase);
 
-    FExecuteCommand.onExecuteCommand := onExecuteCommand;
+    FExecuteCommand.onExecuteCommandBegin := onExecuteCommandBegin;
+    FExecuteCommand.onExecuteCommandEnd := onExecuteCommandEnd;
+    FExecuteCommand.OnPreviousCommand := onExecuteCommandPrevious;
   except
     on E: Exception do
       MessageDlg(E.Message, mtError, [mbOK], 0);
@@ -1622,14 +1626,21 @@ begin
     lvReadComPort.Items[lvReadComPort.Items.Count - 1].MakeVisible(True);
 
     try
-      if FDataBase.Connected and FDataBase.RemoteCommandExists(Data, RCommand) then
+      if Assigned(FDataBase) and FDataBase.Connected then
       begin
-        TReadComPort(LItem.Data^).Exists := True;
 
-        if Length(Trim(String(RCommand.Desc))) > 0 then
-          LItem.SubItems[0] := Data + ' (' + String(RCommand.Desc) + ')';
+        if FDataBase.RemoteCommandExists(Data, RCommand) then
+        begin
+          TReadComPort(LItem.Data^).Exists := True;
 
-        FExecuteCommand.Execute(RCommand);
+          if Length(Trim(String(RCommand.Desc))) > 0 then
+            LItem.SubItems[0] := Data + ' (' + String(RCommand.Desc) + ')';
+
+          FExecuteCommand.Execute(RCommand);
+        end
+        else
+          FExecuteCommand.ClearPrevious();
+
       end;
     except
       on E: Exception do
@@ -1644,29 +1655,45 @@ begin
     lvReadComPort.Perform(CM_RecreateWnd, 0, 0);
 end;
 
-procedure TMain.onExecuteCommand(RCommand: TRemoteCommand; Operations: TOperations;
+procedure TMain.onExecuteCommandBegin(EIndex: Integer; RCommand: TRemoteCommand; Operations: string;
   RepeatPrevious: Boolean);
 var
-  i: Integer;
-  Line: string;
   Rect, DrawRect: TRect;
   ObjRCommand: TObjectRemoteCommand;
 begin
-  Line := Operations[0].Operation;
-  for i := 1 to Length(Operations) - 1 do
-    Line := Line + #13#10 + Operations[i].Operation;
-
-  ObjRCommand := TObjectRemoteCommand.Create(RCommand.Command);
+  ObjRCommand := TObjectRemoteCommand.Create(EIndex, RCommand.Command);
   if RepeatPrevious then
     ilSmall.GetIcon(13, ObjRCommand.Icon);
-  lbRemoteControl.Items.AddObject(Line, ObjRCommand);
+  lbRemoteControl.Items.AddObject(Operations, ObjRCommand);
 
   lbRemoteControl.ItemIndex := lbRemoteControl.Items.Count - 1;
+end;
 
-  if RCommand.LongPress then
-    SetMemoValue(mRemoteControlLastV, Line)
-  else
-    SetMemoValue(mRemoteControlLastV, '-');
+procedure TMain.onExecuteCommandEnd(EIndex: Integer);
+var
+  i: Integer;
+  ObjRCommand: TObjectRemoteCommand;
+begin
+
+  for i := 0 to lbRemoteControl.Items.Count - 1 do
+    if TObjectRemoteCommand(lbRemoteControl.Items.Objects[i]).EIndex = EIndex then
+    begin
+      ObjRCommand := (lbRemoteControl.Items.Objects[i] as TObjectRemoteCommand);
+      break;
+    end;
+
+  if ObjRCommand = nil then
+    exit;
+
+  ObjRCommand.State := ecEnd;
+
+  lbRemoteControl.Repaint;
+
+end;
+
+procedure TMain.onExecuteCommandPrevious(Operations: string);
+begin
+  SetMemoValue(mRemoteControlLastV, Operations);
 end;
 
 procedure TMain.onKodiPlayer(Player: string);
