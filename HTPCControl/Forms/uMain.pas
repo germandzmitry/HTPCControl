@@ -454,9 +454,9 @@ end;
 
 procedure TMain.ActRCOpenAccessExecute(Sender: TObject);
 begin
-  if FileExists(FSetting.DB.FileName) then
-    ShellExecute(Main.Handle, 'open', PWideChar(WideString(FSetting.DB.FileName)), nil, nil,
-      SW_SHOWNORMAL);
+  if FileExists(FSetting.RemoteControl.DB.FileName) then
+    ShellExecute(Main.Handle, 'open', PWideChar(WideString(FSetting.RemoteControl.DB.FileName)),
+      nil, nil, SW_SHOWNORMAL);
 end;
 
 procedure TMain.ActShellAppExecute(Sender: TObject);
@@ -1551,7 +1551,7 @@ begin
   try
     // Соединение с БД
     if not Assigned(FDataBase) then
-      FDataBase := TDataBase.Create(FSetting.DB.FileName);
+      FDataBase := TDataBase.Create(FSetting.RemoteControl.DB.FileName);
 
     if not FDataBase.Connected then
       FDataBase.Connect;
@@ -1600,7 +1600,7 @@ begin
   lvReadComPort.Items.BeginUpdate;
   try
 
-    if lvReadComPort.Items.Count >= FSetting.ComPort.ShowLast - 1 then
+    if lvReadComPort.Items.Count >= FSetting.ComPort.ShowLast then
     begin
       Dispose(lvReadComPort.Items[0].Data);
       lvReadComPort.Items.Delete(0);
@@ -1661,10 +1661,22 @@ var
   Rect, DrawRect: TRect;
   ObjRCommand: TObjectRemoteCommand;
 begin
-  ObjRCommand := TObjectRemoteCommand.Create(EIndex, RCommand.Command);
-  if RepeatPrevious then
-    ilSmall.GetIcon(13, ObjRCommand.Icon);
-  lbRemoteControl.Items.AddObject(Operations, ObjRCommand);
+
+  lbRemoteControl.Items.BeginUpdate;
+  try
+    if lbRemoteControl.Items.Count >= FSetting.RemoteControl.ShowLast then
+    begin
+      (lbRemoteControl.Items.Objects[0] as TObjectRemoteCommand).Free;
+      lbRemoteControl.Items.Delete(0);
+    end;
+
+    ObjRCommand := TObjectRemoteCommand.Create(EIndex, RCommand.Command);
+    if RepeatPrevious then
+      ilSmall.GetIcon(13, ObjRCommand.Icon);
+    lbRemoteControl.Items.AddObject(Operations, ObjRCommand);
+  finally
+    lbRemoteControl.Items.EndUpdate;
+  end;
 
   lbRemoteControl.ItemIndex := lbRemoteControl.Items.Count - 1;
 end;

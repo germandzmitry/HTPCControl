@@ -50,6 +50,12 @@ type
     procedure Default;
   End;
 
+  TRemoteControl = Record
+    ShowLast: integer;
+    DB: TDB;
+    procedure Default;
+  End;
+
   TKodi = Record
     FileName: string;
     Using: boolean;
@@ -65,7 +71,7 @@ type
     Application: TApplication;
     ComPort: TComPort;
     EventApplication: TEventApplication;
-    DB: TDB;
+    RemoteControl: TRemoteControl;
     Kodi: TKodi;
     procedure Default;
   End;
@@ -133,6 +139,13 @@ type
     edComPortShowLast: TEdit;
     udComPortShowLast: TUpDown;
     cbApplicationAutoRunNotificationCenter: TCheckBox;
+    tvSettings: TTreeView;
+    pClient: TPanel;
+    TabRemoteControl: TTabSheet;
+    gbRemoteControl: TGroupBox;
+    lRemoteControlShowLast: TLabel;
+    edRemoteControlShowLast: TEdit;
+    udRemoteControlShowLast: TUpDown;
     procedure btnCloseClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure FormShow(Sender: TObject);
@@ -149,7 +162,10 @@ type
     procedure cbApplicationAutoRunClick(Sender: TObject);
     procedure cbApplicationAutoRunSetVolumeClick(Sender: TObject);
     procedure edComPortShowLastChange(Sender: TObject);
+    procedure tvSettingsChange(Sender: TObject; Node: TTreeNode);
+    procedure tvSettingsChanging(Sender: TObject; Node: TTreeNode; var AllowChange: boolean);
   private
+    procedure SettingComponent();
     procedure saveSetting();
     procedure setAutorun(AutoRun: boolean);
   public
@@ -202,8 +218,13 @@ begin
     Result.EventApplication.Using := IniFile.ReadBool('EventApplication', 'Using',
       Result.EventApplication.Using);
 
+    // Удаленное управление
+    Result.RemoteControl.ShowLast := IniFile.ReadInteger('RemoteControl', 'ShowLast',
+      Result.RemoteControl.ShowLast);
+
     // База данных
-    Result.DB.FileName := IniFile.ReadString('DB', 'FileName', Result.DB.FileName);
+    Result.RemoteControl.DB.FileName := IniFile.ReadString('DB', 'FileName',
+      Result.RemoteControl.DB.FileName);
 
     // Kodi
     Result.Kodi.FileName := IniFile.ReadString('Kodi', 'FileName', Result.Kodi.FileName);
@@ -293,6 +314,14 @@ begin
   self.WINDOWREPLACED := false;
 end;
 
+{ TRemoteControl }
+
+procedure TRemoteControl.Default;
+begin
+  self.ShowLast := 50;
+  self.DB.Default;
+end;
+
 { TDB }
 
 procedure TDB.Default;
@@ -320,7 +349,7 @@ begin
   self.Application.Default;
   self.ComPort.Default;
   self.EventApplication.Default;
-  self.DB.Default;
+  self.RemoteControl.DB.Default;
   self.Kodi.Default;
 end;
 
@@ -329,52 +358,8 @@ end;
 procedure TSettings.FormCreate(Sender: TObject);
 var
   LSetting: TSetting;
-  i: integer;
 begin
-
-  // чистим контролы
-  for i := 0 to self.ComponentCount - 1 do
-  begin
-    // Label
-    if self.Components[i] is TLabel then
-      TLabel(self.Components[i]).Caption := '';
-    // Edit
-    if self.Components[i] is TEdit then
-      TEdit(self.Components[i]).Text := '';
-    // Button
-    if self.Components[i] is TButton then
-      TButton(self.Components[i]).Caption := '';
-  end;
-
-  cbComPortPort.Style := csDropDownList;
-  cbComPortSpeed.Style := csDropDownList;
-
-  EnumComPorts(cbComPortPort.Items);
-  EnumComPortsSpeed(cbComPortSpeed.Items);
-
-  UpdateLanguage(self, lngRus);
-
-  pcSettings.ActivePageIndex := 0;
-
-  with clbEventApplication do
-  begin
-    Items.Add('WINDOWCREATED');
-    Items.Add('WINDOWDESTROYED');
-    Items.Add('ACTIVATESHELLWINDOW');
-    Items.Add('WINDOWACTIVATED');
-    Items.Add('GETMINRECT');
-    Items.Add('REDRAW');
-    Items.Add('TASKMAN');
-    Items.Add('LANGUAGE');
-    Items.Add('ACCESSIBILITYSTATE');
-    Items.Add('APPCOMMAND');
-    Items.Add('WINDOWREPLACED');
-
-    AllowGrayed := false;
-    MultiSelect := true;
-    Style := lbOwnerDrawFixed;
-    ItemHeight := 17;
-  end;
+  SettingComponent;
 
   LSetting := getSetting();
 
@@ -419,8 +404,11 @@ begin
   if LSetting.EventApplication.WINDOWREPLACED then
     clbEventApplication.State[clbEventApplication.Items.IndexOf('WINDOWREPLACED')] := cbChecked;
 
+  // Удаленное управление
+  udRemoteControlShowLast.Position := LSetting.RemoteControl.ShowLast;
+
   // База данных
-  edDBFileName.Text := LSetting.DB.FileName;
+  edDBFileName.Text := LSetting.RemoteControl.DB.FileName;
 
   // Kodi
   edKodiFileName.Text := LSetting.Kodi.FileName;
@@ -473,6 +461,9 @@ begin
 
     // События приложений
     IniFile.WriteBool('EventApplication', 'Using', cbEventAppicationUsing.Checked);
+
+    // Удаленное управление
+    IniFile.WriteInteger('RemoteControl', 'ShowLast', udRemoteControlShowLast.Position);
 
     // База данных
     IniFile.WriteString('DB', 'FileName', edDBFileName.Text);
@@ -544,6 +535,93 @@ begin
     Reg.DeleteValue(Application.Title);
     Reg.Free;
   end;
+end;
+
+procedure TSettings.SettingComponent;
+var
+  i: integer;
+  LTreeNode: TTreeNode;
+begin
+  // чистим контролы
+  for i := 0 to self.ComponentCount - 1 do
+  begin
+    // Label
+    if self.Components[i] is TLabel then
+      TLabel(self.Components[i]).Caption := '';
+    // Edit
+    if self.Components[i] is TEdit then
+      TEdit(self.Components[i]).Text := '';
+    // Button
+    if self.Components[i] is TButton then
+      TButton(self.Components[i]).Caption := '';
+  end;
+
+  cbComPortPort.Style := csDropDownList;
+  cbComPortSpeed.Style := csDropDownList;
+  EnumComPorts(cbComPortPort.Items);
+  EnumComPortsSpeed(cbComPortSpeed.Items);
+
+  with clbEventApplication do
+  begin
+    Items.Add('WINDOWCREATED');
+    Items.Add('WINDOWDESTROYED');
+    Items.Add('ACTIVATESHELLWINDOW');
+    Items.Add('WINDOWACTIVATED');
+    Items.Add('GETMINRECT');
+    Items.Add('REDRAW');
+    Items.Add('TASKMAN');
+    Items.Add('LANGUAGE');
+    Items.Add('ACCESSIBILITYSTATE');
+    Items.Add('APPCOMMAND');
+    Items.Add('WINDOWREPLACED');
+
+    AllowGrayed := false;
+    MultiSelect := true;
+    Style := lbOwnerDrawFixed;
+    ItemHeight := 17;
+  end;
+
+  tvSettings.Items.BeginUpdate;
+  tvSettings.Items.Clear;
+  tvSettings.Items.AddObject(nil, GetLanguageText(self.Name, TabApplication.Name, lngRus),
+    TObject(TabApplication.TabIndex));
+  tvSettings.Items.AddObject(nil, GetLanguageText(self.Name, TabComPort.Name, lngRus),
+    TObject(TabComPort.TabIndex));
+  tvSettings.Items.AddObject(nil, GetLanguageText(self.Name, TabEventApplication.Name, lngRus),
+    TObject(TabEventApplication.TabIndex));
+  LTreeNode := tvSettings.Items.AddObject(nil, GetLanguageText(self.Name, TabRemoteControl.Name,
+    lngRus), TObject(TabRemoteControl.TabIndex));
+  LTreeNode.Expand(true);
+  tvSettings.Items.AddChildObject(LTreeNode, GetLanguageText(self.Name, TabDB.Name, lngRus),
+    TObject(TabDB.TabIndex));
+  LTreeNode.Expand(true);
+  tvSettings.Items.AddObject(nil, GetLanguageText(self.Name, TabKodi.Name, lngRus),
+    TObject(TabKodi.TabIndex));
+  tvSettings.Items.EndUpdate;
+
+  pcSettings.Align := alClient;
+  for i := 0 to pcSettings.PageCount - 1 do
+    pcSettings.Pages[i].TabVisible := false;
+
+  tvSettings.Select(tvSettings.Items[0]);
+
+
+
+  // pcSettings.ActivePageIndex := 0;
+
+  UpdateLanguage(self, lngRus);
+end;
+
+procedure TSettings.tvSettingsChange(Sender: TObject; Node: TTreeNode);
+begin
+  //
+  // ShowMessage(IntToStr(integer(Node.Data)));
+  pcSettings.ActivePageIndex := integer(Node.Data);
+end;
+
+procedure TSettings.tvSettingsChanging(Sender: TObject; Node: TTreeNode; var AllowChange: boolean);
+begin
+  //
 end;
 
 procedure TSettings.cbApplicationAutoRunClick(Sender: TObject);
