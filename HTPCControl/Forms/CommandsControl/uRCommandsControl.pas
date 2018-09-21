@@ -7,7 +7,7 @@ uses
   Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.StdCtrls, Vcl.ComCtrls, Vcl.Themes,
   System.Actions, Vcl.ActnList, Vcl.PlatformDefaultStyleActnCtrls, Vcl.ActnMan,
   Vcl.ToolWin, Vcl.ActnCtrls, uDataBase, Vcl.ExtCtrls, Vcl.ActnColorMaps, uLine,
-  CommCtrl;
+  CommCtrl, System.UITypes, Vcl.GraphUtil;
 
 type
   TfrmRCommandsControl = class(TForm)
@@ -16,7 +16,7 @@ type
     ActOEdit: TAction;
     ActODelete: TAction;
     ActTBOperation: TActionToolBar;
-    plvRCommands: TPanel;
+    plbRCommands: TPanel;
     pClient: TPanel;
     plvOperation: TPanel;
     pCommandHeader: TPanel;
@@ -24,7 +24,6 @@ type
     lDescription: TLabel;
     cbRepeat: TCheckBox;
     lRepeat: TLabel;
-    lvRCommands: TListView;
     lvOperation: TListView;
     ActRCAdd: TAction;
     ActRCEdit: TAction;
@@ -37,22 +36,24 @@ type
     ColorMap: TStandardColorMap;
     cbLongPress: TCheckBox;
     lLongPress: TLabel;
+    lbRCommands: TListBox;
+    plbRCommandsTitle: TPanel;
+    lCommandsTitle: TLabel;
     procedure FormCreate(Sender: TObject);
     procedure ActOEditExecute(Sender: TObject);
     procedure ActODeleteExecute(Sender: TObject);
-    procedure lvRCommandsSelectItem(Sender: TObject; Item: TListItem; Selected: Boolean);
     procedure ActOPressKeyboardExecute(Sender: TObject);
     procedure ActRCAddExecute(Sender: TObject);
     procedure ActRCEditExecute(Sender: TObject);
     procedure ActRCDeleteExecute(Sender: TObject);
     procedure ActORunApplicationExecute(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
-    procedure lvRCommandsCustomDrawItem(Sender: TCustomListView; Item: TListItem;
-      State: TCustomDrawState; var DefaultDraw: Boolean);
-    procedure lvOperationCustomDrawSubItem(Sender: TCustomListView; Item: TListItem;
-      SubItem: Integer; State: TCustomDrawState; var DefaultDraw: Boolean);
     procedure lvOperationDblClick(Sender: TObject);
     procedure FormKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
+    procedure lbRCommandsDrawItem(Control: TWinControl; Index: Integer; Rect: TRect;
+      State: TOwnerDrawState);
+    procedure lbRCommandsClick(Sender: TObject);
+    procedure lbRCommandsMeasureItem(Control: TWinControl; Index: Integer; var Height: Integer);
   private
     { Private declarations }
 
@@ -86,11 +87,12 @@ begin
 
   try
     RCommands := Main.DataBase.GetRemoteCommands;
-    lvRCommands.Items.BeginUpdate;
-    lvRCommands.Items.Clear;
+
+    lbRCommands.Items.BeginUpdate;
+    lbRCommands.Items.Clear;
     for i := 0 to Length(RCommands) - 1 do
-      lvRCommands.Items.Add.Caption := RCommands[i].Command;
-    lvRCommands.Items.EndUpdate;
+      lbRCommands.Items.AddPair(RCommands[i].Command, RCommands[i].Desc);
+    lbRCommands.Items.EndUpdate;
 
   except
     on E: Exception do
@@ -115,44 +117,68 @@ begin
     close;
 end;
 
-procedure TfrmRCommandsControl.lvRCommandsCustomDrawItem(Sender: TCustomListView; Item: TListItem;
-  State: TCustomDrawState; var DefaultDraw: Boolean);
+procedure TfrmRCommandsControl.lbRCommandsClick(Sender: TObject);
 begin
-  if (Item.Index mod 2) = 1 then
-    Sender.Canvas.Brush.Color := clBtnFace
-  else
-    Sender.Canvas.Brush.Color := clWhite;
+  if lbRCommands.ItemIndex > -1 then
+    ReadRemoteCommand(lbRCommands.Items.Names[lbRCommands.ItemIndex]);
 end;
 
-procedure TfrmRCommandsControl.lvOperationCustomDrawSubItem(Sender: TCustomListView;
-  Item: TListItem; SubItem: Integer; State: TCustomDrawState; var DefaultDraw: Boolean);
+procedure TfrmRCommandsControl.lbRCommandsDrawItem(Control: TWinControl; Index: Integer;
+  Rect: TRect; State: TOwnerDrawState);
 var
-  Rect: TRect;
-  Details: TThemedElementDetails;
+  DrawRect: TRect;
+  LB: TListBox;
 begin
-  // if SubItem = 1 then
-  // begin
-  // DefaultDraw := false;
-  // if strtoint(Item.SubItems[SubItem - 1]) <> 0 then
-  // begin
-  // ListView_GetSubItemRect(Sender.Handle, Item.Index, SubItem, LVIR_BOUNDS, @Rect);
-  // Details := StyleServices.GetElementDetails(tbCheckBoxCheckedNormal);
-  // StyleServices.DrawElement(Sender.Canvas.Handle, Details, Rect);
-  // end;
-  // SetBkMode(Sender.Canvas.Handle, TRANSPARENT); // <- will effect the next [sub]item
-  // end;
+  LB := (Control as TListBox);
+
+  if odSelected in State then
+    LB.Canvas.Brush.Color := GetShadowColor(clHighlight, 115)
+  else
+  begin
+    if (Index mod 2) = 0 then
+      LB.Canvas.Brush.Color := clWhite
+    else
+      LB.Canvas.Brush.Color := clBtnFace;
+  end;
+
+  LB.Canvas.FillRect(Rect);
+  LB.Canvas.Font.Color := clBlack;
+
+  // Команда
+  DrawRect := Rect;
+  inc(DrawRect.Left, 6);
+  inc(DrawRect.Top, 2);
+  dec(DrawRect.Right, 2);
+
+  // LB.Canvas.Font.Style := LB.Canvas.Font.Style + [fsBold];
+  DrawText(LB.Canvas.Handle, PChar(LB.Items.Names[Index]), -1, DrawRect, DT_SINGLELINE or DT_LEFT);
+  // LB.Canvas.Font.Style := self.Canvas.Font.Style - [fsBold];
+
+  // Текст к команде
+  inc(DrawRect.Top, 2);
+  inc(DrawRect.Top, LB.Canvas.TextHeight((Control as TListBox).Items[Index]));
+
+  LB.Canvas.Font.Style := LB.Canvas.Font.Style + [fsItalic];
+  DrawText(LB.Canvas.Handle, PChar(LB.Items.Values[LB.Items.Names[Index]]), -1, DrawRect,
+    DT_SINGLELINE or DT_LEFT or DT_WORD_ELLIPSIS);
+  LB.Canvas.Font.Style := self.Canvas.Font.Style - [fsItalic];
+
+  if odFocused in State then
+    LB.Canvas.DrawFocusRect(Rect);
+end;
+
+procedure TfrmRCommandsControl.lbRCommandsMeasureItem(Control: TWinControl; Index: Integer;
+  var Height: Integer);
+begin
+  if Length(trim((Control as TListBox).Items.ValueFromIndex[Index])) > 0 then
+    Height := 32
+  else
+    Height := 17;
 end;
 
 procedure TfrmRCommandsControl.lvOperationDblClick(Sender: TObject);
 begin
   ActOEditExecute(ActOEdit);
-end;
-
-procedure TfrmRCommandsControl.lvRCommandsSelectItem(Sender: TObject; Item: TListItem;
-  Selected: Boolean);
-begin
-  if Selected then
-    ReadRemoteCommand(Item.Caption);
 end;
 
 procedure TfrmRCommandsControl.SettingComponent;
@@ -168,13 +194,18 @@ begin
   ActTBCommand.ColorMap := ColorMap;
   ActTBOperation.ColorMap := ColorMap;
 
-  plvRCommands.Color := clWhite;
-  plvRCommands.Align := alLeft;
-  plvRCommands.Width := 200;
-  lvRCommands.Align := alClient;
+  plbRCommands.Color := clWhite;
+  plbRCommands.Align := alLeft;
+  plbRCommands.Width := 200;
 
-  FLineRCommands := TLine.Create(plvRCommands, clBlack, clBlack);
+  FLineRCommands := TLine.Create(plbRCommands, clBlack, clBlack);
   ActTBCommand.Top := 0;
+
+  plbRCommandsTitle.Color := clWhite;
+  plbRCommandsTitle.Height := lCommandsTitle.Height + lCommandsTitle.Margins.Top +
+    lCommandsTitle.Margins.Bottom + 6;
+  lCommandsTitle.Align := alClient;
+  lbRCommands.Align := alClient;
 
   pClient.Align := alClient;
   plvOperation.Align := alClient;
@@ -200,27 +231,21 @@ begin
       TPanel(self.Components[i]).Caption := '';
   end;
 
-  SendMessage(lvRCommands.Handle, WM_UPDATEUISTATE, MakeLong(UIS_SET, UISF_HIDEFOCUS), 0);
   SendMessage(lvOperation.Handle, WM_UPDATEUISTATE, MakeLong(UIS_SET, UISF_HIDEFOCUS), 0);
 end;
 
 procedure TfrmRCommandsControl.ActRCAddExecute(Sender: TObject);
 var
   frmRCommand: TfrmRCommand;
-  LItem: TListItem;
 begin
   frmRCommand := TfrmRCommand.Create(self);
   try
     frmRCommand.rcType := rcAdd;
     if frmRCommand.ShowModal = mrOK then
     begin
-      lvRCommands.Items.BeginUpdate;
-      LItem := lvRCommands.Items.Add;
-      LItem.Caption := frmRCommand.edCommand.Text;
-      lvRCommands.Items.EndUpdate;
-
-      lvRCommands.Selected := LItem;
-      lvRCommands.Items[lvRCommands.Items.Count - 1].MakeVisible(True);
+      lbRCommands.Items.AddPair(frmRCommand.edCommand.Text, frmRCommand.edDescription.Text);
+      lbRCommands.Selected[lbRCommands.Items.IndexOfName(frmRCommand.edCommand.Text)] := true;
+      lbRCommandsClick(lbRCommands);
     end;
   finally
     frmRCommand.Free;
@@ -233,14 +258,14 @@ var
   RCommand: TRemoteCommand;
 begin
 
-  if lvRCommands.SelCount = 0 then
+  if lbRCommands.ItemIndex = -1 then
   begin
     MessageDlg(uLanguage.GetLanguageMsg('msgRCSelectCommand', lngRus), mtWarning, [mbOK], 0);
     Exit;
   end;
 
   try
-    RCommand := Main.DataBase.GetRemoteCommand(lvRCommands.Selected.Caption);
+    RCommand := Main.DataBase.GetRemoteCommand(lbRCommands.Items.Names[lbRCommands.ItemIndex]);
   except
     on E: Exception do
     begin
@@ -257,7 +282,11 @@ begin
     frmRCommand.cbRepeatPrevious.Checked := RCommand.RepeatPrevious;
     frmRCommand.cbLongPress.Checked := RCommand.LongPress;
     if frmRCommand.ShowModal = mrOK then
+    begin
       ReadRemoteCommand(RCommand.Command);
+      lbRCommands.Items[lbRCommands.Items.IndexOfName(RCommand.Command)] := RCommand.Command +
+        lbRCommands.Items.NameValueSeparator + frmRCommand.edDescription.Text;
+    end;
   finally
     frmRCommand.Free;
   end;
@@ -267,28 +296,26 @@ procedure TfrmRCommandsControl.ActRCDeleteExecute(Sender: TObject);
 var
   SelectedIndex: Integer;
 begin
-  if lvRCommands.SelCount = 0 then
+  if lbRCommands.ItemIndex = -1 then
   begin
     MessageDlg(uLanguage.GetLanguageMsg('msgRCSelectCommand', lngRus), mtWarning, [mbOK], 0);
     Exit;
   end;
 
   if MessageDlg(Format(GetLanguageMsg('msgDBDeleteRemoteCommand', lngRus),
-    [lvRCommands.Selected.Caption]), mtConfirmation, mbYesNo, 1) = mrYes then
+    [lbRCommands.Items.Names[lbRCommands.ItemIndex]]), mtConfirmation, mbYesNo, 1) = mrYes then
     try
-      Main.DataBase.DeleteRemoteCommand(lvRCommands.Selected.Caption);
-      // MessageDlg(GetLanguageMsg('msgDBDeleteRemoteCommandSuccess', lngRus), mtInformation,
-      // [mbOK], 0);
+      Main.DataBase.DeleteRemoteCommand(lbRCommands.Items.Names[lbRCommands.ItemIndex]);
 
-      SelectedIndex := lvRCommands.Selected.Index;
-      if (lvRCommands.Items.Count = SelectedIndex + 1) then
+      SelectedIndex := lbRCommands.ItemIndex;
+      if (lbRCommands.Items.Count = SelectedIndex + 1) then
         SelectedIndex := SelectedIndex - 1;
 
-      lvRCommands.Items.Delete(lvRCommands.Selected.Index);
-      if lvRCommands.Items.Count > 0 then
+      lbRCommands.Items.Delete(lbRCommands.ItemIndex);
+      if lbRCommands.Items.Count > 0 then
       begin
-        lvRCommands.Selected := lvRCommands.Items[SelectedIndex];
-        lvRCommands.Items[SelectedIndex].MakeVisible(True);
+        lbRCommands.Selected[SelectedIndex] := true;
+        lbRCommandsClick(lbRCommands);
       end;
 
     except
@@ -301,7 +328,7 @@ procedure TfrmRCommandsControl.ActOPressKeyboardExecute(Sender: TObject);
 var
   frmOPressKey: TfrmOPressKeyboard;
 begin
-  if lvRCommands.SelCount = 0 then
+  if lbRCommands.ItemIndex = -1 then
   begin
     MessageDlg(uLanguage.GetLanguageMsg('msgRCSelectCommand', lngRus), mtWarning, [mbOK], 0);
     Exit;
@@ -310,10 +337,10 @@ begin
   frmOPressKey := TfrmOPressKeyboard.Create(self);
   try
     frmOPressKey.pkType := pkAdd;
-    frmOPressKey.Command := lvRCommands.Selected.Caption;
+    frmOPressKey.Command := lbRCommands.Items.Names[lbRCommands.ItemIndex];
     frmOPressKey.udPSort.Position := lvOperation.Items.Count + 1;
     if frmOPressKey.ShowModal = mrOK then
-      ReadOperation(lvRCommands.Selected.Caption);
+      ReadOperation(lbRCommands.Items.Names[lbRCommands.ItemIndex]);
   finally
     frmOPressKey.Free;
   end;
@@ -323,7 +350,7 @@ procedure TfrmRCommandsControl.ActORunApplicationExecute(Sender: TObject);
 var
   frmORunApp: TfrmORunApplication;
 begin
-  if lvRCommands.SelCount = 0 then
+  if lbRCommands.ItemIndex = -1 then
   begin
     MessageDlg(uLanguage.GetLanguageMsg('msgRCSelectCommand', lngRus), mtWarning, [mbOK], 0);
     Exit;
@@ -332,10 +359,10 @@ begin
   frmORunApp := TfrmORunApplication.Create(self);
   try
     frmORunApp.raType := raAdd;
-    frmORunApp.Command := lvRCommands.Selected.Caption;
+    frmORunApp.Command := lbRCommands.Items.Names[lbRCommands.ItemIndex];
     frmORunApp.udPSort.Position := lvOperation.Items.Count + 1;
     if frmORunApp.ShowModal = mrOK then
-      ReadOperation(lvRCommands.Selected.Caption);
+      ReadOperation(lbRCommands.Items.Names[lbRCommands.ItemIndex]);
   finally
     frmORunApp.Free;
   end;
@@ -367,17 +394,17 @@ begin
           frmOPressKey.udWait.Position := Operation.PressKeyboard.Wait;
           frmOPressKey.edForApplication.Text := Operation.PressKeyboard.ForApplication;
           if Operation.PressKeyboard.Key1 > 0 then
-            frmOPressKey.DownKey.addObject(Main.DataBase.GetKeyboard(Operation.PressKeyboard.Key1)
+            frmOPressKey.DownKey.AddObject(Main.DataBase.GetKeyboard(Operation.PressKeyboard.Key1)
               .Desc, TObject(Operation.PressKeyboard.Key1));
           if Operation.PressKeyboard.Key2 > 0 then
-            frmOPressKey.DownKey.addObject(Main.DataBase.GetKeyboard(Operation.PressKeyboard.Key2)
+            frmOPressKey.DownKey.AddObject(Main.DataBase.GetKeyboard(Operation.PressKeyboard.Key2)
               .Desc, TObject(Operation.PressKeyboard.Key2));
           if Operation.PressKeyboard.Key3 > 0 then
-            frmOPressKey.DownKey.addObject(Main.DataBase.GetKeyboard(Operation.PressKeyboard.Key3)
+            frmOPressKey.DownKey.AddObject(Main.DataBase.GetKeyboard(Operation.PressKeyboard.Key3)
               .Desc, TObject(Operation.PressKeyboard.Key3));
 
           if frmOPressKey.ShowModal = mrOK then
-            ReadOperation(lvRCommands.Selected.Caption);
+            ReadOperation(lbRCommands.Items.Names[lbRCommands.ItemIndex]);
         finally
           frmOPressKey.Free;
         end;
@@ -426,8 +453,6 @@ begin
           Main.DataBase.DeleteRunApplication(Operation.RunApplication.Id);
       end;
       ReadOperation(Operation.Command);
-      // Dispose(lvOperation.Selected.Data);
-      // lvOperation.Items.Delete(lvOperation.Selected.Index);
     except
       on E: Exception do
         MessageDlg(E.Message, mtError, [mbOK], 0);

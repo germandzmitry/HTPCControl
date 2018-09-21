@@ -24,7 +24,7 @@ object frmRCommandsControl: TfrmRCommandsControl
     Left = 191
     Top = 0
     Width = 530
-    Height = 385
+    Height = 361
     BevelOuter = bvNone
     Caption = 'pClient'
     Ctl3D = True
@@ -68,7 +68,6 @@ object frmRCommandsControl: TfrmRCommandsControl
         RowSelect = True
         TabOrder = 0
         ViewStyle = vsReport
-        OnCustomDrawSubItem = lvOperationCustomDrawSubItem
         OnDblClick = lvOperationDblClick
       end
       object ActTBOperation: TActionToolBar
@@ -197,47 +196,19 @@ object frmRCommandsControl: TfrmRCommandsControl
       end
     end
   end
-  object plvRCommands: TPanel
+  object plbRCommands: TPanel
     AlignWithMargins = True
     Left = 8
     Top = 12
     Width = 153
-    Height = 213
+    Height = 301
     BevelOuter = bvNone
     BorderStyle = bsSingle
-    Caption = 'plvRCommands'
+    Caption = 'plbRCommands'
     Ctl3D = False
     ParentBackground = False
     ParentCtl3D = False
     TabOrder = 1
-    object lvRCommands: TListView
-      AlignWithMargins = True
-      Left = 8
-      Top = 30
-      Width = 137
-      Height = 126
-      Margins.Left = 0
-      Margins.Top = 1
-      Margins.Right = 0
-      Margins.Bottom = 0
-      BorderStyle = bsNone
-      Columns = <
-        item
-          AutoSize = True
-          Caption = 'Commands'
-        end>
-      ColumnClick = False
-      Items.ItemData = {
-        05400000000200000000000000FFFFFFFFFFFFFFFF00000000FFFFFFFF000000
-        000331003200330000000000FFFFFFFFFFFFFFFF00000000FFFFFFFF00000000
-        03340035003600}
-      ReadOnly = True
-      RowSelect = True
-      TabOrder = 0
-      ViewStyle = vsReport
-      OnCustomDrawItem = lvRCommandsCustomDrawItem
-      OnSelectItem = lvRCommandsSelectItem
-    end
     object ActTBCommand: TActionToolBar
       Left = 0
       Top = 0
@@ -260,11 +231,57 @@ object frmRCommandsControl: TfrmRCommandsControl
       ShowHint = True
       Spacing = 0
     end
+    object lbRCommands: TListBox
+      Left = 16
+      Top = 107
+      Width = 119
+      Height = 159
+      Style = lbOwnerDrawVariable
+      BorderStyle = bsNone
+      ItemHeight = 32
+      Sorted = True
+      TabOrder = 1
+      OnClick = lbRCommandsClick
+      OnDrawItem = lbRCommandsDrawItem
+      OnMeasureItem = lbRCommandsMeasureItem
+    end
+    object plbRCommandsTitle: TPanel
+      Left = 0
+      Top = 26
+      Width = 151
+      Height = 27
+      Align = alTop
+      BevelOuter = bvNone
+      Caption = 'plbRCommandsTitle'
+      ParentBackground = False
+      TabOrder = 2
+      object lCommandsTitle: TLabel
+        AlignWithMargins = True
+        Left = 6
+        Top = 3
+        Width = 142
+        Height = 13
+        Margins.Left = 6
+        Align = alTop
+        AutoSize = False
+        Caption = 'lCommandsTitle'
+        Font.Charset = DEFAULT_CHARSET
+        Font.Color = clWindowText
+        Font.Height = -11
+        Font.Name = 'Tahoma'
+        Font.Style = []
+        ParentFont = False
+        Layout = tlCenter
+        ExplicitLeft = 0
+        ExplicitTop = 0
+        ExplicitWidth = 145
+      end
+    end
   end
   object alAllCommand: TActionList
     Images = Main.ilSmall
-    Left = 72
-    Top = 320
+    Left = 256
+    Top = 296
     object ActOPressKeyboard: TAction
       Category = 'Operation'
       Caption = 'ActOPressKeyboard'
@@ -369,8 +386,8 @@ object frmRCommandsControl: TfrmRCommandsControl
         Caption = 'alAllCommand'
       end>
     Images = Main.ilSmall
-    Left = 72
-    Top = 248
+    Left = 336
+    Top = 296
     StyleName = 'Platform Default'
   end
   object ColorMap: TStandardColorMap
@@ -378,7 +395,7 @@ object frmRCommandsControl: TfrmRCommandsControl
     UnusedColor = 16514043
     Color = clMenuBar
     MenuColor = clMenu
-    Left = 143
+    Left = 415
     Top = 296
   end
 end
