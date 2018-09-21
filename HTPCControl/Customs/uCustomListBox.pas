@@ -48,18 +48,20 @@ begin
   if ObjRCommand = nil then
     exit;
 
-  if odSelected in State then
-    Self.Canvas.Brush.Color := GetShadowColor(clHighlight, 115)
+  // зебра
+  if (Index mod 2) = 0 then
+    Self.Canvas.Brush.Color := clWhite
   else
-  begin
-    if (Index mod 2) = 0 then
-      Self.Canvas.Brush.Color := clWhite
-    else
-      Self.Canvas.Brush.Color := clBtnFace;
-  end;
+    Self.Canvas.Brush.Color := clBtnFace;
+
+  if odSelected in State then
+    Self.Canvas.Brush.Color := GetShadowColor(clHighlight, 115);
 
   if ObjRCommand.State = ecBegin then
-    Self.Canvas.Brush.Color := GetShadowColor(clRed, 80);
+    if odSelected in State then
+      Self.Canvas.Brush.Color := $E6CBD5
+    else
+      Self.Canvas.Brush.Color := GetShadowColor(clRed, 80);
 
   Self.Canvas.FillRect(Rect);
   Self.Canvas.Font.Color := clBlack;
