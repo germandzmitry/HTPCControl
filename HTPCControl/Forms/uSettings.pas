@@ -7,7 +7,8 @@ uses
   Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.ComCtrls, Vcl.ExtCtrls, Vcl.StdCtrls,
   Vcl.CheckLst, System.Win.Registry, System.IniFiles, Data.DB, Data.Win.ADODB,
   IdBaseComponent, IdComponent, IdTCPConnection, IdTCPClient, IdHTTP, IdStack, uSuperObject,
-  Vcl.Buttons, System.ImageList, Vcl.ImgList, ShellAPI;
+  Vcl.Buttons, System.ImageList, Vcl.ImgList, ShellAPI, Winapi.CommCtrl, Vcl.GraphUtil,
+  System.UITypes;
 
 type
   TApplication = Record
@@ -114,8 +115,6 @@ type
     edDBFileName: TEdit;
     lDBFilleName: TLabel;
     ilButton: TImageList;
-    btnDBSelectFile: TButton;
-    btnDBCreate: TButton;
     btnDBTestConnection: TButton;
     lDBTestConnection: TLabel;
     gbDBHelp: TGroupBox;
@@ -125,7 +124,6 @@ type
     gbKodi: TGroupBox;
     lKodiFileName: TLabel;
     edKodiFileName: TEdit;
-    btnKodiSelectFile: TButton;
     lKodiUpdateInterval: TLabel;
     edKodiUpdateInterval: TEdit;
     udKodiUpdateInterval: TUpDown;
@@ -146,6 +144,11 @@ type
     lRemoteControlShowLast: TLabel;
     edRemoteControlShowLast: TEdit;
     udRemoteControlShowLast: TUpDown;
+    sbtnDBSelectFile: TSpeedButton;
+    sbtnDBCreate: TSpeedButton;
+    sbtnKodiSelectFile: TSpeedButton;
+    gbComPortData: TGroupBox;
+    pLeft: TPanel;
     procedure btnCloseClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure FormShow(Sender: TObject);
@@ -153,17 +156,20 @@ type
     procedure btnSaveClick(Sender: TObject);
     procedure btnKodiTestConnectClick(Sender: TObject);
     procedure btnApplyClick(Sender: TObject);
-    procedure btnDBSelectFileClick(Sender: TObject);
     procedure btnDBTestConnectionClick(Sender: TObject);
     procedure llDBDriverClick(Sender: TObject);
-    procedure btnDBCreateClick(Sender: TObject);
     procedure cbKodiUsingClick(Sender: TObject);
-    procedure btnKodiSelectFileClick(Sender: TObject);
     procedure cbApplicationAutoRunClick(Sender: TObject);
     procedure cbApplicationAutoRunSetVolumeClick(Sender: TObject);
     procedure edComPortShowLastChange(Sender: TObject);
     procedure tvSettingsChange(Sender: TObject; Node: TTreeNode);
-    procedure tvSettingsChanging(Sender: TObject; Node: TTreeNode; var AllowChange: boolean);
+    procedure sbtnDBSelectFileClick(Sender: TObject);
+    procedure sbtnDBCreateClick(Sender: TObject);
+    procedure sbtnKodiSelectFileClick(Sender: TObject);
+    procedure tvSettingsAdvancedCustomDrawItem(Sender: TCustomTreeView; Node: TTreeNode;
+      State: TCustomDrawState; Stage: TCustomDrawStage; var PaintImages, DefaultDraw: boolean);
+    procedure tvSettingsCustomDrawItem(Sender: TCustomTreeView; Node: TTreeNode;
+      State: TCustomDrawState; var DefaultDraw: boolean);
   private
     procedure SettingComponent();
     procedure saveSetting();
@@ -180,7 +186,7 @@ implementation
 
 {$R *.dfm}
 
-uses uLanguage, uTypes, uComPort, uDataBase;
+uses uLanguage, uTypes, uComPort, uDataBase, uIcon;
 
 function getSetting(): TSetting;
 var
@@ -514,10 +520,75 @@ begin
   end;
 end;
 
+procedure TSettings.sbtnDBCreateClick(Sender: TObject);
+var
+  DBSaveDialog: TSaveDialog;
+begin
+  DBSaveDialog := TSaveDialog.Create(self);
+  try
+    DBSaveDialog.Filter := 'Базы данных Microsoft Access 2007-2013|*.accdb';
+    DBSaveDialog.DefaultExt := '*.accdb';
+    DBSaveDialog.FileName := 'db';
+    DBSaveDialog.InitialDir := ExtractFilePath(Application.ExeName);
+
+    if DBSaveDialog.Execute then
+      try
+        uDataBase.CreateDB(DBSaveDialog.FileName);
+        edDBFileName.Text := DBSaveDialog.FileName;
+      except
+        on E: Exception do
+          MessageDlg(E.Message, mtError, [mbOK], 0);
+      end;
+
+  finally
+    DBSaveDialog.Free;
+  end;
+end;
+
+procedure TSettings.sbtnDBSelectFileClick(Sender: TObject);
+var
+  OpenDialog: TOpenDialog;
+begin
+  OpenDialog := TOpenDialog.Create(self);
+  try
+    if FileExists(edDBFileName.Text) then
+      OpenDialog.InitialDir := ExtractFileDir(edDBFileName.Text)
+    else
+      OpenDialog.InitialDir := ExtractFileDir(Application.ExeName);
+
+    OpenDialog.Filter :=
+      'Базы данных Microsoft Access 2007-2013|*.accdb|Базы данных Microsoft Access 2003|*.mdb';
+
+    if (OpenDialog.Execute) and (FileExists(OpenDialog.FileName)) then
+      edDBFileName.Text := OpenDialog.FileName;
+  finally
+    OpenDialog.Free;
+  end;
+end;
+
+procedure TSettings.sbtnKodiSelectFileClick(Sender: TObject);
+var
+  OpenDialog: TOpenDialog;
+begin
+  OpenDialog := TOpenDialog.Create(self);
+  try
+    if FileExists(edKodiFileName.Text) then
+      OpenDialog.InitialDir := ExtractFileDir(edKodiFileName.Text)
+    else
+      OpenDialog.InitialDir := ExtractFileDir(Application.ExeName);
+
+    OpenDialog.Filter := 'Kodi|*.exe';
+
+    if (OpenDialog.Execute) and (FileExists(OpenDialog.FileName)) then
+      edKodiFileName.Text := OpenDialog.FileName;
+  finally
+    OpenDialog.Free;
+  end;
+end;
+
 procedure TSettings.setAutorun(AutoRun: boolean);
 var
   Reg: TRegistry;
-  AddPath: string;
 begin
   if AutoRun then
   begin
@@ -541,6 +612,7 @@ procedure TSettings.SettingComponent;
 var
   i: integer;
   LTreeNode: TTreeNode;
+  Icon: TIcon;
 begin
   // чистим контролы
   for i := 0 to self.ComponentCount - 1 do
@@ -581,6 +653,40 @@ begin
     ItemHeight := 17;
   end;
 
+  Icon := TIcon.Create;
+  try
+    StockIcon(SIID_FOLDER, Icon);
+    sbtnDBSelectFile.Glyph.Width := Icon.Width;
+    sbtnDBSelectFile.Glyph.Height := Icon.Height;
+    sbtnDBSelectFile.Glyph.Canvas.Draw(0, 0, Icon);
+    // sbtnDBSelectFile.Flat := true;
+  finally
+    Icon.Free;
+  end;
+
+  Icon := TIcon.Create;
+  try
+    ilButton.GetIcon(0, Icon);
+    sbtnDBCreate.Glyph.Width := Icon.Width;
+    sbtnDBCreate.Glyph.Height := Icon.Height;
+    sbtnDBCreate.Glyph.Canvas.Draw(0, 0, Icon);
+  finally
+    Icon.Free;
+  end;
+
+  Icon := TIcon.Create;
+  try
+    StockIcon(SIID_FOLDER, Icon);
+    sbtnKodiSelectFile.Glyph.Width := Icon.Width;
+    sbtnKodiSelectFile.Glyph.Height := Icon.Height;
+    sbtnKodiSelectFile.Glyph.Canvas.Draw(0, 0, Icon);
+    // sbtnDBSelectFile.Flat := true;
+  finally
+    Icon.Free;
+  end;
+
+  tvSettings.BorderStyle := bsNone;
+  tvSettings.Align := alClient;
   tvSettings.Items.BeginUpdate;
   tvSettings.Items.Clear;
   tvSettings.Items.AddObject(nil, GetLanguageText(self.Name, TabApplication.Name, lngRus),
@@ -605,23 +711,58 @@ begin
 
   tvSettings.Select(tvSettings.Items[0]);
 
-
-
-  // pcSettings.ActivePageIndex := 0;
+  self.Height := self.Height - pcSettings.TabHeight;
 
   UpdateLanguage(self, lngRus);
 end;
 
-procedure TSettings.tvSettingsChange(Sender: TObject; Node: TTreeNode);
+procedure TSettings.tvSettingsAdvancedCustomDrawItem(Sender: TCustomTreeView; Node: TTreeNode;
+  State: TCustomDrawState; Stage: TCustomDrawStage; var PaintImages, DefaultDraw: boolean);
+var
+  ARect, DRect: TRect;
 begin
-  //
-  // ShowMessage(IntToStr(integer(Node.Data)));
-  pcSettings.ActivePageIndex := integer(Node.Data);
+  DRect := Node.DisplayRect(true);
+
+  ARect := DRect;
+  ARect.Left := ARect.Left - 2;
+  ARect.Right := Sender.ClientWidth;
+
+  if cdsSelected in State then
+    Sender.Canvas.Brush.Color := GetShadowColor(clHighlight, 115);
+  Sender.Canvas.FillRect(ARect);
+
+  DrawText(Sender.Canvas.handle, PCHAR(Node.Text), -1, DRect,
+    DT_VCENTER or DT_SINGLELINE or DT_LEFT);
+
 end;
 
-procedure TSettings.tvSettingsChanging(Sender: TObject; Node: TTreeNode; var AllowChange: boolean);
+procedure TSettings.tvSettingsCustomDrawItem(Sender: TCustomTreeView; Node: TTreeNode;
+  State: TCustomDrawState; var DefaultDraw: boolean);
+var
+  DRect: TRect;
 begin
-  //
+  DRect := Node.DisplayRect(true);
+  DRect.Left := 0;
+  DRect.Right := Sender.ClientWidth;
+
+  if cdsSelected in State then
+    Sender.Canvas.Brush.Color := GetShadowColor(clHighlight, 115);
+  Sender.Canvas.FillRect(DRect);
+end;
+
+procedure TSettings.tvSettingsChange(Sender: TObject; Node: TTreeNode);
+var
+  pageIndex: integer;
+begin
+  pageIndex := integer(Node.Data);
+  case pageIndex of
+    3:
+      lDBTestConnection.Caption := '';
+    4:
+      lKodiTestConnection.Caption := '';
+  end;
+
+  pcSettings.ActivePageIndex := pageIndex;
 end;
 
 procedure TSettings.cbApplicationAutoRunClick(Sender: TObject);
@@ -665,45 +806,32 @@ begin
     edComPortShowLast.Text := IntToStr(udComPortShowLast.Max);
 end;
 
-procedure TSettings.btnKodiSelectFileClick(Sender: TObject);
-var
-  OpenDialog: TOpenDialog;
-begin
-  OpenDialog := TOpenDialog.Create(self);
-  try
-    if FileExists(edKodiFileName.Text) then
-      OpenDialog.InitialDir := ExtractFileDir(edKodiFileName.Text)
-    else
-      OpenDialog.InitialDir := ExtractFileDir(Application.ExeName);
-
-    OpenDialog.Filter := 'Приложения|*.exe';
-
-    if (OpenDialog.Execute) and (FileExists(OpenDialog.FileName)) then
-      edKodiFileName.Text := OpenDialog.FileName;
-  finally
-    OpenDialog.Free;
-  end;
-end;
-
 procedure TSettings.btnKodiTestConnectClick(Sender: TObject);
 var
   http: TIdHTTP;
-  LoginInfo: TStringList;
   M: TStringStream;
   obj, obj_r, obj_v: ISuperObject;
 begin
   lKodiTestConnection.Caption := '';
   try
     http := TIdHTTP.Create(nil);
-    http.HandleRedirects := true;
-    http.ProtocolVersion := pv1_0;
-    M := TStringStream.Create('');
-    http.Get('http://' + edKodiIP.Text + ':' + edKodiPort.Text +
-      '/jsonrpc?request={"jsonrpc":"2.0","method":"Application.GetProperties","params":{"properties":["name","version"]},"id":1}',
-      M);
-    obj := so(M.DataString);
-    M.Free;
-    http.Free;
+    try
+      http.HandleRedirects := true;
+      http.ProtocolVersion := pv1_0;
+
+      M := TStringStream.Create('');
+      try
+        http.Get('http://' + edKodiIP.Text + ':' + edKodiPort.Text +
+          '/jsonrpc?request={"jsonrpc":"2.0","method":"Application.GetProperties","params":{"properties":["name","version"]},"id":1}',
+          M);
+        obj := so(M.DataString);
+      finally
+        M.Free;
+      end;
+
+    finally
+      http.Free;
+    end;
 
     lKodiTestConnection.Font.Color := clBlue;
 
@@ -718,23 +846,15 @@ begin
   except
     on E: EIdSocketError do
     begin
-      M.Free;
-      http.Free;
+      lKodiTestConnection.Font.Color := clRed;
       if E.LastError = 10061 then
-      begin
-        lKodiTestConnection.Font.Color := clRed;
         lKodiTestConnection.Caption :=
-          'Не удалось установить соединение с приложением. Возможно, приложение не запущено.';
-      end
+          'Не удалось установить соединение с приложением. Возможно, приложение не запущено.'
       else
-        MessageDlg(E.Message, mtWarning, [mbOK], 0);
+        lKodiTestConnection.Caption := E.Message;
     end;
     on E: Exception do
-    begin
-      M.Free;
-      http.Free;
-      MessageDlg(E.Message, mtWarning, [mbOK], 0);
-    end;
+      MessageDlg(E.Message, mtError, [mbOK], 0);
   end;
 end;
 
@@ -752,52 +872,6 @@ end;
 procedure TSettings.btnCloseClick(Sender: TObject);
 begin
   self.Close;
-end;
-
-procedure TSettings.btnDBCreateClick(Sender: TObject);
-var
-  DBSaveDialog: TSaveDialog;
-begin
-  DBSaveDialog := TSaveDialog.Create(self);
-  try
-    DBSaveDialog.Filter := 'Базы данных Microsoft Access 2007-2013|*.accdb';
-    DBSaveDialog.DefaultExt := '*.accdb';
-    DBSaveDialog.FileName := 'db';
-    DBSaveDialog.InitialDir := ExtractFilePath(Application.ExeName);
-
-    if DBSaveDialog.Execute then
-      try
-        uDataBase.CreateDB(DBSaveDialog.FileName);
-        edDBFileName.Text := DBSaveDialog.FileName;
-      except
-        on E: Exception do
-          MessageDlg(E.Message, mtWarning, [mbOK], 0);
-      end;
-
-  finally
-    DBSaveDialog.Free;
-  end;
-end;
-
-procedure TSettings.btnDBSelectFileClick(Sender: TObject);
-var
-  OpenDialog: TOpenDialog;
-begin
-  OpenDialog := TOpenDialog.Create(self);
-  try
-    if FileExists(edDBFileName.Text) then
-      OpenDialog.InitialDir := ExtractFileDir(edDBFileName.Text)
-    else
-      OpenDialog.InitialDir := ExtractFileDir(Application.ExeName);
-
-    OpenDialog.Filter :=
-      'Базы данных Microsoft Access 2007-2013|*.accdb|Базы данных Microsoft Access 2003|*.mdb';
-
-    if (OpenDialog.Execute) and (FileExists(OpenDialog.FileName)) then
-      edDBFileName.Text := OpenDialog.FileName;
-  finally
-    OpenDialog.Free;
-  end;
 end;
 
 procedure TSettings.btnDBTestConnectionClick(Sender: TObject);
