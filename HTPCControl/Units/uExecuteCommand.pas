@@ -230,7 +230,7 @@ function TExecuteCommand.LineOperations(Operations: TOperations): string;
 var
   OWait: integer;
 begin
-  LineOperations(Operations, OWait);
+  Result := LineOperations(Operations, OWait);
 end;
 
 procedure TExecuteCommand.ClearPrevious;
