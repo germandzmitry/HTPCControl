@@ -73,7 +73,7 @@ type
     FIcon: TIcon;
   public
     constructor Create(EIndex: integer; Command: string);
-    destructor Destroy;
+    destructor Destroy; override;
 
     property EIndex: integer read FEIndex;
     property Command: string read FCommand write FCommand;
@@ -119,7 +119,6 @@ end;
 
 procedure TExecuteCommand.Execute(RCommand: TRemoteCommand; RepeatPrevious: boolean = false);
 var
-  EIndex: integer;
   Operations: TOperations;
   ThreadExecute: TThreadExecuteCommand;
 begin
@@ -144,7 +143,7 @@ begin
     ThreadExecute.OnTerminate := onThreadTerminate;
     ThreadExecute.FreeOnTerminate := True;
     ThreadExecute.Priority := tpLower;
-    ThreadExecute.Resume;
+    ThreadExecute.Start;
 
     DoExecuteCommandBegin(FEIndex, RCommand, Operations, RepeatPrevious);
   end;

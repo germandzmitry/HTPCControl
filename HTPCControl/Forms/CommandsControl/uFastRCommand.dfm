@@ -40,7 +40,7 @@ object frmFastRCommand: TfrmFastRCommand
     Height = 25
     Anchors = [akRight, akBottom]
     Caption = 'btnSave'
-    TabOrder = 4
+    TabOrder = 3
     OnClick = btnSaveClick
   end
   object pOperationHeader: TPanel
@@ -233,7 +233,7 @@ object frmFastRCommand: TfrmFastRCommand
     Caption = 'pOperationType'
     Color = clWhite
     ParentBackground = False
-    TabOrder = 3
+    TabOrder = 2
     DesignSize = (
       420
       195)
@@ -250,6 +250,10 @@ object frmFastRCommand: TfrmFastRCommand
       TabOrder = 0
       object TabPressKeyboard: TTabSheet
         Caption = 'TabPressKeyboard'
+        ExplicitLeft = 0
+        ExplicitTop = 0
+        ExplicitWidth = 0
+        ExplicitHeight = 0
         DesignSize = (
           412
           162)
@@ -357,6 +361,10 @@ object frmFastRCommand: TfrmFastRCommand
       object TabRunApplication: TTabSheet
         Caption = 'TabRunApplication'
         ImageIndex = 1
+        ExplicitLeft = 0
+        ExplicitTop = 0
+        ExplicitWidth = 0
+        ExplicitHeight = 0
         DesignSize = (
           412
           162)

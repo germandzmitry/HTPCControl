@@ -4,7 +4,8 @@ interface
 
 uses
   Winapi.Windows, Winapi.Messages, Vcl.StdCtrls, Vcl.Controls, Vcl.Graphics, Vcl.Themes,
-  Vcl.Dialogs, Vcl.GraphUtil, System.Classes, System.SysUtils, uExecuteCommand;
+  Vcl.Dialogs, Vcl.GraphUtil, System.Classes, System.SysUtils, uExecuteCommand,
+  System.UITypes;
 
 type
   TCustomListBox = class(TListBox)
@@ -98,16 +99,26 @@ begin
   DrawText(Self.Canvas.Handle, PChar(Self.Items[Index]), -1, DrawRect,
     DT_WORDBREAK or DT_EDITCONTROL);
 
+  // Порядковый номер
+  { DrawRect := Rect;
+    inc(DrawRect.Left, 4);
+    inc(DrawRect.Top, 4);
+    Dec(DrawRect.Right, 94);
+    Dec(DrawRect.Bottom, 4);
+
+    DrawText(Self.Canvas.Handle, PChar(IntToStr(ObjRCommand.EIndex)), -1, DrawRect,
+    DT_VCENTER or DT_SINGLELINE or DT_LEFT); }
+
   // Рамка
-  // if odSelected in State then
-  // begin
-  // DrawRect := Rect;
-  // inc(DrawRect.Left, 1);
-  // Dec(DrawRect.Right, 1);
-  // inc(DrawRect.Bottom, 1);
-  // LDetails := StyleServices.GetElementDetails(ttbButtonPressed);
-  // StyleServices.DrawElement(Self.Canvas.Handle, LDetails, DrawRect);
-  // end;
+  { if odSelected in State then
+    begin
+    DrawRect := Rect;
+    inc(DrawRect.Left, 1);
+    Dec(DrawRect.Right, 1);
+    inc(DrawRect.Bottom, 1);
+    LDetails := StyleServices.GetElementDetails(ttbButtonPressed);
+    StyleServices.DrawElement(Self.Canvas.Handle, LDetails, DrawRect);
+    end; }
 
   if odFocused in State then
     Self.Canvas.DrawFocusRect(Rect);

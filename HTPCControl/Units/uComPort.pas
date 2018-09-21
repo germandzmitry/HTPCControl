@@ -44,8 +44,8 @@ type
   end;
 
   TComPort = class
-    function Open(): boolean;
-    function Close(): boolean;
+    procedure Open();
+    procedure Close();
     function WriteStr(Str: string): Integer;
   private
     FEventThread: TComThread;
@@ -83,7 +83,7 @@ type
     procedure DoAfterClose; dynamic;
   public
     constructor Create(Port: string);
-    destructor Destroy;
+    destructor Destroy; override;
     procedure ClearBuffer(Input, Output: boolean);
     procedure AbortAllAsync;
 
@@ -395,7 +395,7 @@ begin
   end;
 end;
 
-function TComPort.Open: boolean;
+procedure TComPort.Open;
 begin
   // Если соединеие уже установленно, ничего не делаем
   if not FConnected then
@@ -421,7 +421,7 @@ begin
   end;
 end;
 
-function TComPort.Close: boolean;
+procedure TComPort.Close;
 begin
   if FConnected then
   begin

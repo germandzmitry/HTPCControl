@@ -69,7 +69,6 @@ type
     function Starting(): boolean;
   private
     FHook: THandle;
-    FWindow: HWND;
     SetHook: function(Wnd: HWND; var Error: Cardinal): BOOL; stdcall;
     RemoveHook: function(var Error: Cardinal): BOOL; stdcall;
 {$IFDEF WIN64}
@@ -155,7 +154,6 @@ implementation
 
 constructor TThreadShellApplication_x86.Create(Wnd: HWND; ShowConsole: boolean);
 var
-  Rlst: LongBool;
   CommandLine: String;
   CreationFlags: DWORD;
   SecurityAttr: TSecurityAttributes;
@@ -256,7 +254,7 @@ begin
         Synchronize(
           procedure
           begin
-            DoPipe(Str, saRead);
+            DoPipe(String(Str), saRead);
           end);
       end
       // Если нечего читать, ждем, иначе поток съедает 25-30% процесора
@@ -552,67 +550,74 @@ begin
   try
     Result.Icon := TIcon.Create();
     SmallIconEXE(Result.FileName, Result.Icon);
-
-    Len := GetFileVersionInfoSize(PChar(Result.FileName), dummy);
-    if Len = 0 then
-      Exit;
-    // RaiseLastOSError;
-    GetMem(buf, Len);
-
-    if not GetFileVersionInfo(PChar(Result.FileName), 0, Len, buf) then
-      Exit;
-    // RaiseLastOSError;
-
-    if not VerQueryValue(buf, '\VarFileInfo\Translation\', pntr, Len) then
-      Exit;
-    // RaiseLastOSError;
-
-    lang := Format('%.4x%.4x', [PLandCodepage(pntr)^.wLanguage, PLandCodepage(pntr)^.wCodePage]);
-
-    if VerQueryValue(buf, PChar('\StringFileInfo\' + lang + '\CompanyName'), pntr, Len)
-    { and (@len <> nil) } then
-      Result.CompanyName := PChar(pntr);
-    if VerQueryValue(buf, PChar('\StringFileInfo\' + lang + '\FileDescription'), pntr, Len)
-    { and (@len <> nil) } then
-      Result.FileDescription := PChar(pntr);
-    if VerQueryValue(buf, PChar('\StringFileInfo\' + lang + '\FileVersion'), pntr, Len)
-    { and (@len <> nil) } then
-      Result.FileVersion := PChar(pntr);
-    if VerQueryValue(buf, PChar('\StringFileInfo\' + lang + '\InternalName'), pntr, Len)
-    { and (@len <> nil) } then
-      Result.InternalName := PChar(pntr);
-    if VerQueryValue(buf, PChar('\StringFileInfo\' + lang + '\LegalCopyright'), pntr, Len)
-    { and (@len <> nil) } then
-      Result.LegalCopyright := PChar(pntr);
-    if VerQueryValue(buf, PChar('\StringFileInfo\' + lang + '\LegalTrademarks'), pntr, Len)
-    { and (@len <> nil) } then
-      Result.LegalTrademarks := PChar(pntr);
-    if VerQueryValue(buf, PChar('\StringFileInfo\' + lang + '\OriginalFileName'), pntr, Len)
-    { and (@len <> nil) } then
-      Result.OriginalFileName := PChar(pntr);
-    if VerQueryValue(buf, PChar('\StringFileInfo\' + lang + '\ProductName'), pntr, Len)
-    { and (@len <> nil) } then
-      Result.ProductName := PChar(pntr);
-    if VerQueryValue(buf, PChar('\StringFileInfo\' + lang + '\ProductVersion'), pntr, Len)
-    { and (@len <> nil) } then
-      Result.ProductVersion := PChar(pntr);
-    if VerQueryValue(buf, PChar('\StringFileInfo\' + lang + '\Comments'), pntr, Len)
-    { and (@len <> nil) } then
-      Result.Comments := PChar(pntr);
-    if VerQueryValue(buf, PChar('\StringFileInfo\' + lang + '\PrivateBuild'), pntr, Len)
-    { and (@len <> nil) } then
-      Result.PrivateBuild := PChar(pntr);
-    if VerQueryValue(buf, PChar('\StringFileInfo\' + lang + '\SpecialBuild'), pntr, Len)
-    { and (@len <> nil) } then
-      Result.SpecialBuild := PChar(pntr);
-    FreeMem(buf);
   except
-    on E: Exception do
-    begin
-      FreeMem(buf);
-      Result.FileDescription := ExtractFileName(Result.FileName);
-    end;
+
   end;
+
+  Len := GetFileVersionInfoSize(PChar(Result.FileName), dummy);
+  if Len = 0 then
+    Exit;
+
+  GetMem(buf, Len);
+  try
+
+    try
+      if not GetFileVersionInfo(PChar(Result.FileName), 0, Len, buf) then
+        Exit;
+      // RaiseLastOSError;
+
+      if not VerQueryValue(buf, '\VarFileInfo\Translation\', pntr, Len) then
+        Exit;
+      // RaiseLastOSError;
+
+      lang := Format('%.4x%.4x', [PLandCodepage(pntr)^.wLanguage, PLandCodepage(pntr)^.wCodePage]);
+
+      if VerQueryValue(buf, PChar('\StringFileInfo\' + lang + '\CompanyName'), pntr, Len)
+      { and (@len <> nil) } then
+        Result.CompanyName := PChar(pntr);
+      if VerQueryValue(buf, PChar('\StringFileInfo\' + lang + '\FileDescription'), pntr, Len)
+      { and (@len <> nil) } then
+        Result.FileDescription := PChar(pntr);
+      if VerQueryValue(buf, PChar('\StringFileInfo\' + lang + '\FileVersion'), pntr, Len)
+      { and (@len <> nil) } then
+        Result.FileVersion := PChar(pntr);
+      if VerQueryValue(buf, PChar('\StringFileInfo\' + lang + '\InternalName'), pntr, Len)
+      { and (@len <> nil) } then
+        Result.InternalName := PChar(pntr);
+      if VerQueryValue(buf, PChar('\StringFileInfo\' + lang + '\LegalCopyright'), pntr, Len)
+      { and (@len <> nil) } then
+        Result.LegalCopyright := PChar(pntr);
+      if VerQueryValue(buf, PChar('\StringFileInfo\' + lang + '\LegalTrademarks'), pntr, Len)
+      { and (@len <> nil) } then
+        Result.LegalTrademarks := PChar(pntr);
+      if VerQueryValue(buf, PChar('\StringFileInfo\' + lang + '\OriginalFileName'), pntr, Len)
+      { and (@len <> nil) } then
+        Result.OriginalFileName := PChar(pntr);
+      if VerQueryValue(buf, PChar('\StringFileInfo\' + lang + '\ProductName'), pntr, Len)
+      { and (@len <> nil) } then
+        Result.ProductName := PChar(pntr);
+      if VerQueryValue(buf, PChar('\StringFileInfo\' + lang + '\ProductVersion'), pntr, Len)
+      { and (@len <> nil) } then
+        Result.ProductVersion := PChar(pntr);
+      if VerQueryValue(buf, PChar('\StringFileInfo\' + lang + '\Comments'), pntr, Len)
+      { and (@len <> nil) } then
+        Result.Comments := PChar(pntr);
+      if VerQueryValue(buf, PChar('\StringFileInfo\' + lang + '\PrivateBuild'), pntr, Len)
+      { and (@len <> nil) } then
+        Result.PrivateBuild := PChar(pntr);
+      if VerQueryValue(buf, PChar('\StringFileInfo\' + lang + '\SpecialBuild'), pntr, Len)
+      { and (@len <> nil) } then
+        Result.SpecialBuild := PChar(pntr);
+    except
+      on E: Exception do
+        Result.FileDescription := ExtractFileName(Result.FileName);
+    end;
+
+  finally
+    FreeMem(buf);
+  end;
+  // RaiseLastOSError;
+
 end;
 
 { }
@@ -660,7 +665,7 @@ begin
     Icon := TIcon.Create;
     try
       SHGetFileInfo(PChar(FileName), 0, FileInfo, SizeOf(FileInfo), SHGFI_ICON);
-      Icon.Handle := FileInfo.hIcon;
+      Icon.Handle := FileInfo.HICON;
       Image.Picture.Icon := Icon;
     finally
       Icon.Free;

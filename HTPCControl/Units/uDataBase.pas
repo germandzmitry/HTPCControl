@@ -14,7 +14,7 @@ type
   // Таблица KeyboardGroup
   TKeyboardGroup = Record
     Group: integer;
-    Description: string[255];
+    Description: string;
   end;
 
   TKeyboardGroups = array of TKeyboardGroup;
@@ -22,7 +22,7 @@ type
   // Таблица Keyboard
   TKeyboard = record
     Key: integer;
-    Desc: String[255];
+    Desc: String;
     Group: integer;
   end;
 
@@ -31,8 +31,8 @@ type
 
   // Таблица RemoteCommand
   TRemoteCommand = record
-    Command: string[100];
-    Desc: string[255];
+    Command: string;
+    Desc: string;
     LongPress: boolean;
     RepeatPrevious: boolean;
   end;
@@ -43,27 +43,27 @@ type
   // Таблица OperationRunApplication
   TORunApplication = record
     id: integer;
-    Command: string[100];
+    Command: string;
     pSort: integer;
     Wait: integer;
-    Application: string[255];
+    Application: string;
   end;
 
   // Таблица OperationPressKeyboard
   TOPressKeyboard = record
     id: integer;
-    Command: string[100];
+    Command: string;
     pSort: integer;
     Wait: integer;
     Key1: integer;
     Key2: integer;
     Key3: integer;
-    ForApplication: string[255];
+    ForApplication: string;
   end;
 
   // Все операции для команды
   TOperation = Record
-    Command: string[100];
+    Command: string;
     OSort: integer;
     OWait: integer;
     OType: TopType;
@@ -163,9 +163,11 @@ begin
     raise;
   end;
 
+  Connection := TADOConnection.Create(nil);
+  Query := TADOQuery.Create(nil);
   try
+
     // конектимся к новой бд
-    Connection := TADOConnection.Create(nil);
     Connection.ConnectionString := 'Provider=Microsoft.ACE.OLEDB.12.0;Data Source=' + FileName +
       ';Persist Security Info=False';
     Connection.Connected := True;
@@ -173,7 +175,6 @@ begin
     {
       Создаем таблицы
     }
-    Query := TADOQuery.Create(nil);
     Query.Connection := Connection;
 
     // Справочник - Группы клавиатуры
@@ -349,14 +350,10 @@ begin
     addKeybord(Query, VK_MEDIA_STOP, 'Стоп', 6);
     addKeybord(Query, VK_MEDIA_PLAY_PAUSE, 'Играть/Пауза', 6);
 
+  finally
     Connection.Connected := false;
     Query.Free;
     Connection.Free;
-  except
-    Connection.Connected := false;
-    Query.Free;
-    Connection.Free;
-    raise;
   end;
 end;
 
@@ -450,8 +447,8 @@ begin
   if not FConnection.Connected then
     exit;
 
+  Query := TADOQuery.Create(nil);
   try
-    Query := TADOQuery.Create(nil);
     Query.Connection := FConnection;
     Query.Sql.Clear;
     Query.Sql.Text := 'select key, description, group from Keyboard';
@@ -480,8 +477,8 @@ begin
   if not FConnection.Connected then
     exit;
 
+  Query := TADOQuery.Create(nil);
   try
-    Query := TADOQuery.Create(nil);
     Query.Connection := FConnection;
     Query.Sql.Clear;
     Query.Sql.Text := 'select key, description, group from Keyboard where key = ' + IntToStr(Key);
@@ -518,8 +515,8 @@ begin
   if not FConnection.Connected then
     exit;
 
+  Query := TADOQuery.Create(nil);
   try
-    Query := TADOQuery.Create(nil);
     Query.Connection := FConnection;
     Query.Sql.Clear;
     Query.Sql.Text :=
@@ -792,9 +789,9 @@ begin
   if Key3 > 0 then
     sKey3 := IntToStr(Key3);
 
+  Query := TADOQuery.Create(nil);
   try
     // Создание запуска приложения
-    Query := TADOQuery.Create(nil);
     Query.Connection := FConnection;
     Query.Sql.Clear;
     Query.Sql.Text :=
@@ -866,8 +863,8 @@ begin
   if not FConnection.Connected then
     exit;
 
+  Query := TADOQuery.Create(nil);
   try
-    Query := TADOQuery.Create(nil);
     Query.Connection := FConnection;
     Query.Sql.Clear;
     Query.Sql.Text := 'SELECT * FROM (                                                ' +

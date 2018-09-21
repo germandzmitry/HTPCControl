@@ -299,7 +299,7 @@ begin
       ',"properties":["file"]}');
     objItem := get.O['result'].O['item'];
 
-    Result.PLabel := Utf8ToAnsi(objItem.s['label']);
+    Result.PLabel :=Utf8ToAnsi(objItem.s['label']);
     Result.PType := Utf8ToAnsi(objItem.s['type']);
     Result.PFile := Utf8ToAnsi(objItem.s['file']);
   except
@@ -314,23 +314,29 @@ var
   get: ISuperObject;
   str: string;
 begin
+
   Result := nil;
+
+  M := TStringStream.Create('');
   try
-    M := TStringStream.Create('');
     str := 'http://' + FIP + ':' + inttostr(FPort) + '/jsonrpc?request={"jsonrpc":"2.0","method":' +
       query + ',"id":1}';
     FHTTP.get(str, M);
     get := so(M.DataString);
-    M.Free;
     Result := get;
-  except
-    on E: Exception do
-    begin
-      M.Free;
-      Result := nil;
-      raise Exception.Create(E.Message);
-    end;
+  finally
+    M.Free;
   end;
+
+  // try
+  // except
+  // on E: Exception do
+  // begin
+  //
+  // Result := nil;
+  // raise Exception.Create(E.Message);
+  // end;
+  // end;
 end;
 
 end.

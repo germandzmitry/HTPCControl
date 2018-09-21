@@ -4,7 +4,7 @@ interface
 
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
-  Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.StdCtrls;
+  Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.StdCtrls, System.UITypes;
 
 type
   TfrmSendComPort = class(TForm)
@@ -62,7 +62,7 @@ begin
         eSendText.Text := '';
     except
       on E: Exception do
-        MessageDlg(E.Message, mtWarning, [mbOK], 0);
+        MessageDlg(E.Message, mtError, [mbOK], 0);
     end
 end;
 

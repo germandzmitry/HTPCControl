@@ -4,7 +4,7 @@ interface
 
 uses
   System.SysUtils, Vcl.Forms, Vcl.ActnList, Vcl.StdCtrls, Vcl.ExtCtrls,
-  Vcl.Buttons, Vcl.ComCtrls, Vcl.Tabs, Vcl.DockTabSet, IniFiles;
+  Vcl.Buttons, Vcl.ComCtrls, Vcl.Tabs, Vcl.DockTabSet, IniFiles, System.Classes;
 
 const
   lngRus: string = 'Russian';
@@ -22,7 +22,6 @@ end;
 
 function GetLanguageText(ASection, AMsg: string; ASelectedLanguage: string): string;
 var
-  s: string;
   lng: TIniFile;
   LLanguagePath: string;
 begin

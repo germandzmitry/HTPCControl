@@ -30,6 +30,13 @@ object Main: TMain
     ExplicitLeft = 200
     ExplicitHeight = 501
   end
+  object Label1: TLabel
+    Left = 672
+    Top = 72
+    Width = 31
+    Height = 13
+    Caption = 'Label1'
+  end
   object StatusBar: TStatusBar
     Left = 0
     Top = 556
@@ -170,20 +177,6 @@ object Main: TMain
         DesignSize = (
           409
           27)
-        object lKodiPlayingFile: TLabel
-          Left = 17
-          Top = 7
-          Width = 72
-          Height = 13
-          Margins.Left = 16
-          Margins.Top = 0
-          Margins.Right = 0
-          Margins.Bottom = 0
-          Alignment = taRightJustify
-          BiDiMode = bdLeftToRight
-          Caption = 'lKodiPlayingFile'
-          ParentBiDiMode = False
-        end
         object mKodiPlayingFileV: TMemo
           Left = 256
           Top = 5
@@ -193,6 +186,15 @@ object Main: TMain
           Lines.Strings = (
             'mKodiPlayingFileV')
           TabOrder = 0
+        end
+        object mKodiPlayingFileL: TMemo
+          Left = 17
+          Top = 5
+          Width = 128
+          Height = 17
+          Lines.Strings = (
+            'mKodiPlayingFileL')
+          TabOrder = 1
         end
       end
       object pKodiHeader: TPanel
@@ -240,18 +242,6 @@ object Main: TMain
         DesignSize = (
           409
           29)
-        object lKodiPlayingLabel: TLabel
-          Left = 17
-          Top = 8
-          Width = 81
-          Height = 13
-          Margins.Left = 16
-          Margins.Top = 0
-          Margins.Right = 0
-          Margins.Bottom = 0
-          Alignment = taRightJustify
-          Caption = 'lKodiPlayingLabel'
-        end
         object mKodiPlayingLabelV: TMemo
           Left = 256
           Top = 6
@@ -261,6 +251,15 @@ object Main: TMain
           Lines.Strings = (
             'mKodiPlayingLabelV')
           TabOrder = 0
+        end
+        object mKodiPlayingLabelL: TMemo
+          Left = 17
+          Top = 6
+          Width = 128
+          Height = 17
+          Lines.Strings = (
+            'mKodiPlayingLabelL')
+          TabOrder = 1
         end
       end
       object pShellApplicationHeader: TPanel
@@ -296,13 +295,6 @@ object Main: TMain
         DesignSize = (
           409
           25)
-        object lShellApplication_x86: TLabel
-          Left = 17
-          Top = 6
-          Width = 100
-          Height = 13
-          Caption = 'lShellApplication_x86'
-        end
         object mShellApplication_x86V: TMemo
           Left = 256
           Top = 4
@@ -310,8 +302,17 @@ object Main: TMain
           Height = 17
           Anchors = [akTop, akRight]
           Lines.Strings = (
-            'mShellApplication_x86')
+            'mShellApplication_x86V')
           TabOrder = 0
+        end
+        object mShellApplication_x86L: TMemo
+          Left = 17
+          Top = 4
+          Width = 128
+          Height = 17
+          Lines.Strings = (
+            'mShellApplication_x86L')
+          TabOrder = 1
         end
       end
       object pShellApplicationFile: TPanel
@@ -327,13 +328,6 @@ object Main: TMain
         DesignSize = (
           409
           25)
-        object lShellApplicationFile: TLabel
-          Left = 17
-          Top = 6
-          Width = 92
-          Height = 13
-          Caption = 'lShellApplicationFile'
-        end
         object mShellApplicationFileV: TMemo
           Left = 256
           Top = 4
@@ -341,8 +335,17 @@ object Main: TMain
           Height = 17
           Anchors = [akTop, akRight]
           Lines.Strings = (
-            'mShellApplicationFile')
+            'mShellApplicationFileV')
           TabOrder = 0
+        end
+        object mShellApplicationFileL: TMemo
+          Left = 17
+          Top = 4
+          Width = 128
+          Height = 17
+          Lines.Strings = (
+            'mShellApplicationFileL')
+          TabOrder = 1
         end
       end
       object pRemoteControlHeader: TPanel
@@ -567,7 +570,7 @@ object Main: TMain
     Left = 376
     Top = 128
     Bitmap = {
-      494C010113002001CC0110001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
+      494C010113002001D80110001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000005000000001002000000000000050
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000

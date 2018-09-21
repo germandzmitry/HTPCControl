@@ -6,7 +6,7 @@ uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
   Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.StdCtrls, Vcl.ExtCtrls, Vcl.ComCtrls,
   uDataBase, Vcl.GraphUtil, Vcl.Themes, Vcl.Buttons, ShellApi, Vcl.Tabs,
-  Vcl.DockTabSet, Vcl.ButtonGroup, uLine;
+  Vcl.DockTabSet, Vcl.ButtonGroup, uLine, System.UITypes;
 
 type
   TfrcType = (frcAdd, frcEdit);

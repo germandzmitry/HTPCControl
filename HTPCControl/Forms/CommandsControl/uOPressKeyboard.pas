@@ -186,9 +186,6 @@ begin
 end;
 
 procedure TfrmOPressKeyboard.FormKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
-var
-  i, j: Integer;
-  keyboard: TKeyboard;
 begin
 
   FDownKey.Clear;

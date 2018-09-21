@@ -56,21 +56,17 @@ type
     ActionToolBar1: TActionToolBar;
     ActShellAppStart: TAction;
     ActShellAppStop: TAction;
-    lKodiPlayingLabel: TLabel;
     ActKodiStart: TAction;
     ActKodiStop: TAction;
     SplitterBottom: TSplitter;
     scrbFooter: TScrollBox;
     plvReadComPort: TPanel;
-    lKodiPlayingFile: TLabel;
     pKodiPlayingFile: TPanel;
     pKodiHeader: TPanel;
     pKodiPlayingLabel: TPanel;
     pShellApplicationHeader: TPanel;
     pShellApplication_x86: TPanel;
-    lShellApplication_x86: TLabel;
     pShellApplicationFile: TPanel;
-    lShellApplicationFile: TLabel;
     pRemoteControlHeader: TPanel;
     pRemoteControlLast: TPanel;
     mShellApplicationFileV: TMemo;
@@ -83,6 +79,11 @@ type
     mShellApplicationH: TMemo;
     mKodiH: TMemo;
     AppNotification: TNotificationCenter;
+    mShellApplicationFileL: TMemo;
+    mShellApplication_x86L: TMemo;
+    mKodiPlayingLabelL: TMemo;
+    mKodiPlayingFileL: TMemo;
+    Label1: TLabel;
     procedure FormCreate(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure FormShow(Sender: TObject);
@@ -284,7 +285,6 @@ begin
       MessageDlg(E.Message, mtError, [mbOK], 0);
     end;
   end;
-
 end;
 
 procedure TMain.FormShow(Sender: TObject);
@@ -715,11 +715,7 @@ end;
 procedure TMain.SetMemoValue(AMemo: TMemo; Value: string);
 begin
   AMemo.Lines.Clear;
-  // AMemo.
-  // AMemo.Lines.Add(Value);
-  // SetScrollPos(AMemo.Handle, SB_VERT, 0, False);
   AMemo.Lines.Text := Value;
-  // AMemo.Lines.CommaText := Value;
   SetMemoHeight(AMemo);
 end;
 
@@ -795,10 +791,8 @@ begin
 
     LIcon := TIcon.Create();
     try
-
       if FileExists(LSubItemText) then
         SmallIconEXE(LSubItemText, LIcon);
-      // SmallIconFromExecutableFile(LSubItemText, LIcon);
 
       Sender.Canvas.Draw(ARect.left + 5, ARect.Top + 1, LIcon);
       LLeft := LIcon.width + 5;
@@ -1300,7 +1294,7 @@ var
     end;
   end;
 
-  procedure SettingLabelHeader(AMemo: TMemo);
+  procedure SettingMemoHeader(AMemo: TMemo);
   begin
     with AMemo do
     begin
@@ -1329,25 +1323,7 @@ var
     end;
   end;
 
-  procedure SettingLabel(ALabel: TLabel); overload;
-  begin
-    with ALabel do
-    begin
-      Alignment := taRightJustify;
-      AutoSize := False;
-      Top := 0;
-      left := LLeft * 2;
-      width := LWidth;
-      Height := 13;
-      WordWrap := True;
-
-      // ParentColor := False;
-      // TRANSPARENT := False;
-      // Color := clGreen;
-    end;
-  end;
-
-  procedure SettingLabel(AMemo: TMemo); overload;
+  procedure SettingLabel(AMemo: TMemo);
   begin
     with AMemo do
     begin
@@ -1363,24 +1339,6 @@ var
       // Color := clGreen;
     end;
   end;
-
-// procedure SettingValue(ALabel: TLabel);
-// begin
-// with ALabel do
-// begin
-// AutoSize := False;
-// Top := 0;
-// Left := (LLeft * 2) + LWidth + 4;
-// Width := scrbFooter.Width - ALabel.Left - 10;
-// Height := 13;
-// WordWrap := True;
-// Anchors := [akLeft, akTop, akRight];
-//
-// // ParentColor := False;
-// // TRANSPARENT := False;
-// // Color := clRed;
-// end;
-// end;
 
   procedure SettingValue(AMemo: TMemo);
   begin
@@ -1405,7 +1363,7 @@ begin
 
   // RemoteControl
   SettingPanelHeader(pRemoteControlHeader);
-  SettingLabelHeader(mRemoteControlH);
+  SettingMemoHeader(mRemoteControlH);
 
   SettingPanel(pRemoteControlLast);
   SettingLabel(mRemoteControlLastL);
@@ -1413,26 +1371,26 @@ begin
 
   // ShellApplication
   SettingPanelHeader(pShellApplicationHeader);
-  SettingLabelHeader(mShellApplicationH);
-
+  SettingMemoHeader(mShellApplicationH);
+  //
   SettingPanel(pShellApplication_x86);
-  SettingLabel(lShellApplication_x86);
+  SettingLabel(mShellApplication_x86L);
   SettingValue(mShellApplication_x86V);
-
+  //
   SettingPanel(pShellApplicationFile);
-  SettingLabel(lShellApplicationFile);
+  SettingLabel(mShellApplicationFileL);
   SettingValue(mShellApplicationFileV);
 
   // Kodi
   SettingPanelHeader(pKodiHeader);
-  SettingLabelHeader(mKodiH);
-
+  SettingMemoHeader(mKodiH);
+  //
   SettingPanel(pKodiPlayingLabel);
-  SettingLabel(lKodiPlayingLabel);
+  SettingLabel(mKodiPlayingLabelL);
   SettingValue(mKodiPlayingLabelV);
 
   SettingPanel(pKodiPlayingFile);
-  SettingLabel(lKodiPlayingFile);
+  SettingLabel(mKodiPlayingFileL);
   SettingValue(mKodiPlayingFileV);
 
   plvReadComPort.Align := alClient;
@@ -1446,8 +1404,8 @@ begin
   for i := 0 to self.ComponentCount - 1 do
   begin
     // Label
-    if self.Components[i] is TLabel then
-      TLabel(self.Components[i]).Caption := '';
+    // if self.Components[i] is TLabel then
+    // TLabel(self.Components[i]).Caption := '';
     // Memo
     if self.Components[i] is TMemo then
       TMemo(self.Components[i]).Lines.Clear;
@@ -1658,7 +1616,6 @@ end;
 procedure TMain.onExecuteCommandBegin(EIndex: Integer; RCommand: TRemoteCommand; Operations: string;
   RepeatPrevious: Boolean);
 var
-  Rect, DrawRect: TRect;
   ObjRCommand: TObjectRemoteCommand;
 begin
 
@@ -1670,7 +1627,7 @@ begin
       lbRemoteControl.Items.Delete(0);
     end;
 
-    ObjRCommand := TObjectRemoteCommand.Create(EIndex, RCommand.Command);
+    ObjRCommand := TObjectRemoteCommand.Create(EIndex, string(RCommand.Command));
     if RepeatPrevious then
       ilSmall.GetIcon(13, ObjRCommand.Icon);
     lbRemoteControl.Items.AddObject(Operations, ObjRCommand);
@@ -1686,6 +1643,7 @@ var
   i: Integer;
   ObjRCommand: TObjectRemoteCommand;
 begin
+  ObjRCommand := nil;
 
   for i := 0 to lbRemoteControl.Items.Count - 1 do
     if TObjectRemoteCommand(lbRemoteControl.Items.Objects[i]).EIndex = EIndex then
