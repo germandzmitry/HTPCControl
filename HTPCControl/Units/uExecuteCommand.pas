@@ -6,11 +6,12 @@ uses Winapi.Windows, System.SysUtils, System.Classes, Vcl.Graphics,
   uDataBase, uLanguage, uTypes, uShellApplication, SyncObjs;
 
 type
-  TExecuteCommandState = (ecBegin, ecEnd);
+  TExecuteCommandState = (ecBegin, ecExecuting, ecEnd);
 
 type
   TExecuteCommandBeginEvent = procedure(EIndex: integer; RCommand: TRemoteCommand;
-    Operations: String; RepeatPrevious: boolean) of object;
+    Operations: String; OWait: integer; RepeatPrevious: boolean) of object;
+  TExecuteCommandExecutingEvent = procedure(EIndex: integer; Step: integer) of object;
   TExecuteCommandEndEvent = procedure(EIndex: integer) of object;
   TPreviousCommandEvent = procedure(Operations: string) of object;
 
@@ -24,28 +25,31 @@ type
     FEIndex: integer;
     FPrevRCommand: PRemoteCommand;
 
-    FOnExecuteCommandBegin: TExecuteCommandBeginEvent;
-    FOnExecuteCommandEnd: TExecuteCommandEndEvent;
+    FOnExecuteBegin: TExecuteCommandBeginEvent;
+    FOnExecuteEnd: TExecuteCommandEndEvent;
+    FOnExecuting: TExecuteCommandExecutingEvent;
     FOnPreviousCommand: TPreviousCommandEvent;
 
     procedure onThreadTerminate(Sender: TObject);
+    procedure onThreadExecuting(EIndex: integer; Step: integer);
 
-    procedure DoExecuteCommandBegin(EIndex: integer; RCommand: TRemoteCommand;
-      Operations: TOperations; RepeatPrevious: boolean); dynamic;
-    procedure DoExecuteCommandEnd(EIndex: integer); dynamic;
+    procedure DoExecuteBegin(EIndex: integer; RCommand: TRemoteCommand; Operations: TOperations;
+      RepeatPrevious: boolean); dynamic;
+    procedure DoExecuteEnd(EIndex: integer); dynamic;
+    procedure DoExecuting(EIndex: integer; Step: integer); dynamic;
     procedure DoPreviousCommand(Operations: string); dynamic;
 
     procedure SetPrevious(RCommand: TRemoteCommand; Operations: string);
-    function LineOperations(Operations: TOperations): string;
+    function LineOperations(Operations: TOperations): string; overload;
+    function LineOperations(Operations: TOperations; var OWait: integer): string; overload;
 
   public
     constructor Create(DB: TDataBase); overload;
     destructor Destroy; override;
 
-    property OnExecuteCommandBegin: TExecuteCommandBeginEvent read FOnExecuteCommandBegin
-      write FOnExecuteCommandBegin;
-    property OnExecuteCommandEnd: TExecuteCommandEndEvent read FOnExecuteCommandEnd
-      write FOnExecuteCommandEnd;
+    property OnExecuteBegin: TExecuteCommandBeginEvent read FOnExecuteBegin write FOnExecuteBegin;
+    property OnExecuteEnd: TExecuteCommandEndEvent read FOnExecuteEnd write FOnExecuteEnd;
+    property OnExecuting: TExecuteCommandExecutingEvent read FOnExecuting write FOnExecuting;
     property OnPreviousCommand: TPreviousCommandEvent read FOnPreviousCommand
       write FOnPreviousCommand;
   end;
@@ -56,6 +60,10 @@ type
     FEIndex: integer;
     FOperations: TOperations;
 
+    FOnExecuting: TExecuteCommandExecutingEvent;
+
+    procedure DoExecuting(EIndex: integer; Step: integer); dynamic;
+
     procedure RunApplication(Operation: TORunApplication; OText: string);
     procedure PressKeyboard(Operation: TOPressKeyboard; OText: string);
   protected
@@ -64,6 +72,8 @@ type
     constructor Create(CriticalSection: TCriticalSection; EIndex: integer;
       Operations: TOperations); overload;
     destructor Destroy; override;
+
+    property OnExecuting: TExecuteCommandExecutingEvent read FOnExecuting write FOnExecuting;
   end;
 
   TObjectRemoteCommand = class
@@ -71,14 +81,18 @@ type
     FCommand: string;
     FState: TExecuteCommandState;
     FIcon: TIcon;
+    FAll: integer;
+    FCurrent: integer;
   public
-    constructor Create(EIndex: integer; Command: string);
+    constructor Create(EIndex: integer; Command: string; All: integer);
     destructor Destroy; override;
 
     property EIndex: integer read FEIndex;
     property Command: string read FCommand write FCommand;
     property State: TExecuteCommandState read FState write FState;
     property Icon: TIcon read FIcon write FIcon;
+    property All: integer read FAll;
+    property Current: integer read FCurrent write FCurrent;
   end;
 
 implementation
@@ -98,17 +112,30 @@ begin
   inherited;
 end;
 
-procedure TExecuteCommand.DoExecuteCommandBegin(EIndex: integer; RCommand: TRemoteCommand;
+procedure TExecuteCommand.DoExecuteBegin(EIndex: integer; RCommand: TRemoteCommand;
   Operations: TOperations; RepeatPrevious: boolean);
+var
+  OWait: integer;
+  OLine: string;
 begin
-  if Assigned(FOnExecuteCommandBegin) then
-    FOnExecuteCommandBegin(EIndex, RCommand, LineOperations(Operations), RepeatPrevious);
+
+  if Assigned(FOnExecuteBegin) then
+  begin
+    OLine := LineOperations(Operations, OWait);
+    FOnExecuteBegin(EIndex, RCommand, OLine, OWait, RepeatPrevious);
+  end;
 end;
 
-procedure TExecuteCommand.DoExecuteCommandEnd(EIndex: integer);
+procedure TExecuteCommand.DoExecuteEnd(EIndex: integer);
 begin
-  if Assigned(FOnExecuteCommandEnd) then
-    FOnExecuteCommandEnd(EIndex);
+  if Assigned(FOnExecuteEnd) then
+    FOnExecuteEnd(EIndex);
+end;
+
+procedure TExecuteCommand.DoExecuting(EIndex: integer; Step: integer);
+begin
+  if Assigned(FOnExecuting) then
+    FOnExecuting(EIndex, Step);
 end;
 
 procedure TExecuteCommand.DoPreviousCommand(Operations: string);
@@ -140,19 +167,26 @@ begin
   begin
     inc(FEIndex);
     ThreadExecute := TThreadExecuteCommand.Create(FCS, FEIndex, Operations);
+    ThreadExecute.OnExecuting := onThreadExecuting;
     ThreadExecute.OnTerminate := onThreadTerminate;
     ThreadExecute.FreeOnTerminate := True;
     ThreadExecute.Priority := tpLower;
     ThreadExecute.Start;
 
-    DoExecuteCommandBegin(FEIndex, RCommand, Operations, RepeatPrevious);
+    DoExecuteBegin(FEIndex, RCommand, Operations, RepeatPrevious);
   end;
 
 end;
 
+procedure TExecuteCommand.onThreadExecuting(EIndex: integer; Step: integer);
+begin
+  if Assigned(FOnExecuting) then
+    FOnExecuting(EIndex, Step);
+end;
+
 procedure TExecuteCommand.onThreadTerminate(Sender: TObject);
 begin
-  DoExecuteCommandEnd(TThreadExecuteCommand(Sender).FEIndex);
+  DoExecuteEnd(TThreadExecuteCommand(Sender).FEIndex);
 end;
 
 procedure TExecuteCommand.SetPrevious(RCommand: TRemoteCommand; Operations: string);
@@ -168,7 +202,7 @@ begin
     ClearPrevious;
 end;
 
-function TExecuteCommand.LineOperations(Operations: TOperations): string;
+function TExecuteCommand.LineOperations(Operations: TOperations; var OWait: integer): string;
 var
   i: integer;
 
@@ -183,9 +217,20 @@ begin
   if Length(Operations) > 0 then
   begin
     Result := OperationLine(Operations[0]);
+    OWait := Operations[0].OWait;
     for i := 1 to Length(Operations) - 1 do
+    begin
+      OWait := OWait + Operations[i].OWait;
       Result := Result + #13#10 + OperationLine(Operations[i]);
+    end;
   end;
+end;
+
+function TExecuteCommand.LineOperations(Operations: TOperations): string;
+var
+  OWait: integer;
+begin
+  LineOperations(Operations, OWait);
 end;
 
 procedure TExecuteCommand.ClearPrevious;
@@ -215,18 +260,35 @@ begin
   inherited;
 end;
 
+procedure TThreadExecuteCommand.DoExecuting(EIndex: integer; Step: integer);
+begin
+  if Assigned(FOnExecuting) then
+    FOnExecuting(EIndex, Step);
+end;
+
 procedure TThreadExecuteCommand.Execute;
 var
-  i: integer;
+  i, sl, slAll: integer;
 begin
   FCS.Enter;
+  sl := 0;
+  slAll := 0;
   try
     for i := 0 to Length(FOperations) - 1 do
     begin
 
       // задержка перед выполнением
       if FOperations[i].OWait > 0 then
-        sleep(FOperations[i].OWait);
+      begin
+        sl := 0;
+        while sl < FOperations[i].OWait do
+        begin
+          sleep(100);
+          sl := sl + 100;
+          DoExecuting(FEIndex, slAll + sl);
+        end;
+      end;
+      slAll := slAll + FOperations[i].OWait;
 
       case FOperations[i].OType of
         opApplication:
@@ -324,12 +386,13 @@ end;
 
 { TObjectRemoteCommand }
 
-constructor TObjectRemoteCommand.Create(EIndex: integer; Command: string);
+constructor TObjectRemoteCommand.Create(EIndex: integer; Command: string; All: integer);
 begin
   Self.FEIndex := EIndex;
   Self.FCommand := Command;
   Self.FState := ecBegin;
   Self.FIcon := TIcon.Create();
+  Self.FAll := All;
 end;
 
 destructor TObjectRemoteCommand.Destroy;

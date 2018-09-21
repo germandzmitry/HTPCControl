@@ -41,6 +41,7 @@ var
   DrawRect: TRect;
   LDetails: TThemedElementDetails;
   ObjRCommand: TObjectRemoteCommand;
+  LRight: Integer;
 begin
 
   ObjRCommand := (Self.Items.Objects[Index] as TObjectRemoteCommand);
@@ -57,13 +58,30 @@ begin
   if odSelected in State then
     Self.Canvas.Brush.Color := GetShadowColor(clHighlight, 115);
 
-  if ObjRCommand.State = ecBegin then
-    if odSelected in State then
-      Self.Canvas.Brush.Color := $E6CBD5
-    else
-      Self.Canvas.Brush.Color := GetShadowColor(clRed, 80);
+  case ObjRCommand.State of
+    ecBegin:
+      begin
+        Self.Canvas.Brush.Color := GetShadowColor(clYellow, 80);
+        Self.Canvas.FillRect(Rect);
+      end;
+    ecExecuting:
+      begin
+        if ObjRCommand.All > 0 then
+          LRight := round(Rect.Right / ObjRCommand.All * ObjRCommand.Current);
 
-  Self.Canvas.FillRect(Rect);
+        DrawRect := Rect;
+        DrawRect.Left := LRight;
+        Self.Canvas.FillRect(DrawRect);
+
+        DrawRect := Rect;
+        DrawRect.Right := LRight;
+        Self.Canvas.Brush.Color := GetShadowColor(clLime, 80);
+        Self.Canvas.FillRect(DrawRect);
+      end;
+    ecEnd:
+      Self.Canvas.FillRect(Rect);
+  end;
+
   Self.Canvas.Font.Color := clBlack;
 
   // Команда
@@ -73,10 +91,12 @@ begin
   DrawRect.Right := DrawRect.Left + 90;
   Dec(DrawRect.Bottom, 4);
 
+  SetBkMode(Self.Canvas.Handle, TRANSPARENT);
   Self.Canvas.Font.Style := Self.Canvas.Font.Style + [fsBold];
   DrawText(Self.Canvas.Handle, PChar(ObjRCommand.Command), -1, DrawRect,
     DT_VCENTER or DT_SINGLELINE or DT_RIGHT);
   Self.Canvas.Font.Style := Self.Canvas.Font.Style - [fsBold];
+  SetBkMode(Self.Canvas.Handle, OPAQUE);
 
   // Иконка
   Self.Canvas.Draw(Rect.Left + 5, Rect.Top + round(Rect.Height / 2) -
@@ -98,8 +118,11 @@ begin
   Dec(DrawRect.Right, 4);
   Dec(DrawRect.Bottom, 4);
 
+  SetBkMode(Self.Canvas.Handle, TRANSPARENT);
   DrawText(Self.Canvas.Handle, PChar(Self.Items[Index]), -1, DrawRect,
     DT_WORDBREAK or DT_EDITCONTROL);
+  SetBkMode(Self.Canvas.Handle, OPAQUE);
+
 
   // Порядковый номер
   { DrawRect := Rect;

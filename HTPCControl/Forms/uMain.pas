@@ -181,8 +181,9 @@ type
       const ApplicationData: TEXEVersionData);
 
     procedure onExecuteCommandBegin(EIndex: Integer; RCommand: TRemoteCommand; Operations: string;
-      RepeatPrevious: Boolean);
+      OWait: Integer; RepeatPrevious: Boolean);
     procedure onExecuteCommandEnd(EIndex: Integer);
+    procedure onExecuteCommandExecuting(EIndex: Integer; Step: Integer);
     procedure onExecuteCommandPrevious(Operations: string);
 
     procedure onKodiRunning(Running: Boolean);
@@ -1518,8 +1519,9 @@ begin
     if not Assigned(FExecuteCommand) then
       FExecuteCommand := TExecuteCommand.Create(FDataBase);
 
-    FExecuteCommand.onExecuteCommandBegin := onExecuteCommandBegin;
-    FExecuteCommand.onExecuteCommandEnd := onExecuteCommandEnd;
+    FExecuteCommand.onExecuteBegin := onExecuteCommandBegin;
+    FExecuteCommand.OnExecuting := onExecuteCommandExecuting;
+    FExecuteCommand.onExecuteEnd := onExecuteCommandEnd;
     FExecuteCommand.OnPreviousCommand := onExecuteCommandPrevious;
   except
     on E: Exception do
@@ -1614,7 +1616,7 @@ begin
 end;
 
 procedure TMain.onExecuteCommandBegin(EIndex: Integer; RCommand: TRemoteCommand; Operations: string;
-  RepeatPrevious: Boolean);
+  OWait: Integer; RepeatPrevious: Boolean);
 var
   ObjRCommand: TObjectRemoteCommand;
 begin
@@ -1627,7 +1629,7 @@ begin
       lbRemoteControl.Items.Delete(0);
     end;
 
-    ObjRCommand := TObjectRemoteCommand.Create(EIndex, string(RCommand.Command));
+    ObjRCommand := TObjectRemoteCommand.Create(EIndex, string(RCommand.Command), OWait);
     if RepeatPrevious then
       ilSmall.GetIcon(13, ObjRCommand.Icon);
     lbRemoteControl.Items.AddObject(Operations, ObjRCommand);
@@ -1657,8 +1659,29 @@ begin
 
   ObjRCommand.State := ecEnd;
 
-  lbRemoteControl.Repaint;
+  InvalidateRect(lbRemoteControl.Handle, lbRemoteControl.ItemRect(i), True);
+end;
 
+procedure TMain.onExecuteCommandExecuting(EIndex: Integer; Step: Integer);
+var
+  i: Integer;
+  ObjRCommand: TObjectRemoteCommand;
+begin
+  ObjRCommand := nil;
+
+  for i := 0 to lbRemoteControl.Items.Count - 1 do
+    if TObjectRemoteCommand(lbRemoteControl.Items.Objects[i]).EIndex = EIndex then
+    begin
+      ObjRCommand := (lbRemoteControl.Items.Objects[i] as TObjectRemoteCommand);
+      break;
+    end;
+
+  if ObjRCommand = nil then
+    exit;
+
+  ObjRCommand.State := ecExecuting;
+  ObjRCommand.Current := Step;
+  InvalidateRect(lbRemoteControl.Handle, lbRemoteControl.ItemRect(i), True);
 end;
 
 procedure TMain.onExecuteCommandPrevious(Operations: string);
