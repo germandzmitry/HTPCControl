@@ -214,16 +214,30 @@ var
   end;
 
 begin
-  if Length(Operations) > 0 then
-  begin
-    Result := OperationLine(Operations[0]);
-    OWait := Operations[0].OWait;
-    for i := 1 to Length(Operations) - 1 do
+  case Length(Operations) of
+    0:
+      begin
+
+      end;
+    1:
+      begin
+        Result := Operations[0].Operation;
+        OWait := Operations[0].OWait;
+        if Operations[0].OWait > 0 then
+          Result := Result + ' (' + floattostr(Operations[0].OWait / 1000) + ' c.)'
+      end;
+  else
     begin
-      OWait := OWait + Operations[i].OWait;
-      Result := Result + #13#10 + OperationLine(Operations[i]);
+      Result := OperationLine(Operations[0]);
+      OWait := Operations[0].OWait;
+      for i := 1 to Length(Operations) - 1 do
+      begin
+        OWait := OWait + Operations[i].OWait;
+        Result := Result + #13#10 + OperationLine(Operations[i]);
+      end;
     end;
   end;
+
 end;
 
 function TExecuteCommand.LineOperations(Operations: TOperations): string;
