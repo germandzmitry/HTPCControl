@@ -102,7 +102,6 @@ type
     procedure FormDestroy(Sender: TObject);
     procedure ActRCRCommandsControlExecute(Sender: TObject);
     procedure AppEventsMinimize(Sender: TObject);
-    procedure TrayClick(Sender: TObject);
     procedure TrayDblClick(Sender: TObject);
     procedure FormCloseQuery(Sender: TObject; var CanClose: Boolean);
     procedure ActFileExecute(Sender: TObject);
@@ -125,13 +124,17 @@ type
     procedure ActKodiStopExecute(Sender: TObject);
     procedure scrbFooterResize(Sender: TObject);
     procedure lvReadComPortDblClick(Sender: TObject);
+    procedure scrbFooterMouseWheelDown(Sender: TObject; Shift: TShiftState; MousePos: TPoint;
+      var Handled: Boolean);
+    procedure scrbFooterMouseWheelUp(Sender: TObject; Shift: TShiftState; MousePos: TPoint;
+      var Handled: Boolean);
   private
     { Private declarations }
     plvRemoteControl: TPanel;
     plvShellApplication: TPanel;
     plvEventKodi: TPanel;
 
-    lbRemoteControl: TCustomListBox;
+    lbRemoteControl: TCustomListBoxRC;
     lvShellApplication: TListView;
     lvEventKodi: TListView;
 
@@ -644,9 +647,15 @@ end;
 {$IFDEF DEBUG}
 
 procedure TMain.edTestReadDataKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
+var
+  Mgs: TMsg;
 begin
   if Key = VK_RETURN then
+  begin
     btnTestReadDataClick(btnTestReadData);
+    // убираем beep
+    PeekMessage(Mgs, 0, WM_CHAR, WM_CHAR, PM_REMOVE);
+  end;
 end;
 
 procedure TMain.btnTestReadDataClick(Sender: TObject);
@@ -764,6 +773,20 @@ begin
   end;
 end;
 
+procedure TMain.scrbFooterMouseWheelDown(Sender: TObject; Shift: TShiftState; MousePos: TPoint;
+  var Handled: Boolean);
+begin
+  (Sender as TScrollBox).VertScrollBar.Position := (Sender as TScrollBox)
+    .VertScrollBar.Position + 4;
+end;
+
+procedure TMain.scrbFooterMouseWheelUp(Sender: TObject; Shift: TShiftState; MousePos: TPoint;
+  var Handled: Boolean);
+begin
+  (Sender as TScrollBox).VertScrollBar.Position := (Sender as TScrollBox)
+    .VertScrollBar.Position - 4;
+end;
+
 procedure TMain.scrbFooterResize(Sender: TObject);
 begin
   SetMemoHeight(mRemoteControlLastV);
@@ -869,11 +892,6 @@ begin
     Sender.Canvas.Font.Color := clRed;
 
   // DefaultDraw := False;
-end;
-
-procedure TMain.TrayClick(Sender: TObject);
-begin
-  // OpenTray;
 end;
 
 procedure TMain.TrayDblClick(Sender: TObject);
@@ -1107,7 +1125,7 @@ begin
     TabPosition := TTabPosition.tpTop;
     TextFormat := [tfCenter];
     DoubleBuffered := True;
-    Style := tsButtons;
+    style := tsButtons;
     TabHeight := 24;
   end;
   SendMessage(FPageClient.Handle, WM_UPDATEUISTATE, MakeLong(UIS_SET, UISF_HIDEFOCUS), 0);
@@ -1133,7 +1151,7 @@ begin
     Margins.Bottom := 0;
   end;
 
-  lbRemoteControl := TCustomListBox.Create(plvRemoteControl);
+  lbRemoteControl := TCustomListBoxRC.Create(plvRemoteControl);
   with lbRemoteControl do
   begin
     Parent := plvRemoteControl;
@@ -1303,7 +1321,7 @@ var
       left := LLeft;
       width := Parent.width - LLeft;
       Height := 13;
-      Font.Style := [fsBold];
+      Font.style := [fsBold];
       BorderStyle := bsNone;
     end;
   end;
@@ -1569,7 +1587,7 @@ begin
     if lvReadComPort.Items.Count = 0 then
       num := 1
     else
-      num := StrToInt(lvReadComPort.Items[lvReadComPort.Items.Count - 1].Caption) + 1;
+      num := strtoint(lvReadComPort.Items[lvReadComPort.Items.Count - 1].Caption) + 1;
 
     LItem := lvReadComPort.Items.Add;
     LItem.Caption := inttostr(num);
@@ -1623,7 +1641,9 @@ begin
 
   lbRemoteControl.Items.BeginUpdate;
   try
-    if lbRemoteControl.Items.Count >= FSetting.RemoteControl.ShowLast then
+    if (lbRemoteControl.Items.Count > 0) and
+      (lbRemoteControl.Items.Count >= FSetting.RemoteControl.ShowLast) and
+      ((lbRemoteControl.Items.Objects[0] as TObjectRemoteCommand).State = ecEnd) then
     begin
       (lbRemoteControl.Items.Objects[0] as TObjectRemoteCommand).Free;
       lbRemoteControl.Items.Delete(0);
@@ -1660,6 +1680,14 @@ begin
   ObjRCommand.State := ecEnd;
 
   InvalidateRect(lbRemoteControl.Handle, lbRemoteControl.ItemRect(i), True);
+
+  if (lbRemoteControl.Items.Count > 0) and
+    (lbRemoteControl.Items.Count >= FSetting.RemoteControl.ShowLast + 1) and
+    ((lbRemoteControl.Items.Objects[0] as TObjectRemoteCommand).State = ecEnd) then
+  begin
+    (lbRemoteControl.Items.Objects[0] as TObjectRemoteCommand).Free;
+    lbRemoteControl.Items.Delete(0);
+  end;
 end;
 
 procedure TMain.onExecuteCommandExecuting(EIndex: Integer; Step: Integer);

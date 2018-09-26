@@ -26,13 +26,12 @@ object Main: TMain
     Height = 527
     Color = clBtnFace
     ParentColor = False
-    ResizeStyle = rsUpdate
     ExplicitLeft = 200
     ExplicitHeight = 501
   end
   object Label1: TLabel
     Left = 672
-    Top = 72
+    Top = 64
     Width = 31
     Height = 13
     Caption = 'Label1'
@@ -68,27 +67,6 @@ object Main: TMain
     BevelOuter = bvNone
     Caption = 'pComPort'
     TabOrder = 1
-    object ActionToolBar1: TActionToolBar
-      Left = 0
-      Top = 0
-      Width = 337
-      Height = 29
-      ActionManager = ActionManager
-      Caption = 'ActionToolBar1'
-      Color = clMenuBar
-      ColorMap.DisabledFontColor = 7171437
-      ColorMap.HighlightColor = clWhite
-      ColorMap.BtnSelectedFont = clBlack
-      ColorMap.UnusedColor = clWhite
-      Font.Charset = DEFAULT_CHARSET
-      Font.Color = clBlack
-      Font.Height = -11
-      Font.Name = 'Tahoma'
-      Font.Style = []
-      HorzMargin = 8
-      ParentFont = False
-      Spacing = 0
-    end
     object plvReadComPort: TPanel
       AlignWithMargins = True
       Left = 24
@@ -127,6 +105,27 @@ object Main: TMain
         OnDblClick = lvReadComPortDblClick
       end
     end
+    object ActionToolBar1: TActionToolBar
+      Left = 0
+      Top = 0
+      Width = 337
+      Height = 29
+      ActionManager = ActionManager
+      Caption = 'ActionToolBar1'
+      Color = clMenuBar
+      ColorMap.DisabledFontColor = 7171437
+      ColorMap.HighlightColor = clWhite
+      ColorMap.BtnSelectedFont = clBlack
+      ColorMap.UnusedColor = clWhite
+      Font.Charset = DEFAULT_CHARSET
+      Font.Color = clBlack
+      Font.Height = -11
+      Font.Name = 'Tahoma'
+      Font.Style = []
+      HorzMargin = 8
+      ParentFont = False
+      Spacing = 0
+    end
   end
   object pClient: TPanel
     Left = 349
@@ -138,23 +137,23 @@ object Main: TMain
     TabOrder = 2
     object SplitterBottom: TSplitter
       Left = 0
-      Top = 58
+      Top = 70
       Width = 420
       Height = 6
       Cursor = crVSplit
       Align = alBottom
-      ResizeStyle = rsUpdate
       ExplicitTop = 294
       ExplicitWidth = 591
     end
     object scrbFooter: TScrollBox
       AlignWithMargins = True
       Left = 0
-      Top = 64
+      Top = 76
       Width = 417
-      Height = 309
+      Height = 297
       Margins.Left = 0
       Margins.Top = 0
+      VertScrollBar.Tracking = True
       Align = alBottom
       BevelInner = bvNone
       BevelOuter = bvNone
@@ -163,6 +162,8 @@ object Main: TMain
       ParentColor = False
       ParentCtl3D = False
       TabOrder = 0
+      OnMouseWheelDown = scrbFooterMouseWheelDown
+      OnMouseWheelUp = scrbFooterMouseWheelUp
       OnResize = scrbFooterResize
       object pKodiPlayingFile: TPanel
         AlignWithMargins = True
@@ -408,6 +409,7 @@ object Main: TMain
     Top = 0
     Width = 780
     Height = 29
+    UseSystemFont = False
     ActionManager = ActionManager
     Caption = 'ActionMainMenuBar'
     Color = clMenuBar
@@ -416,7 +418,7 @@ object Main: TMain
     ColorMap.BtnSelectedFont = clBlack
     ColorMap.UnusedColor = clWhite
     Font.Charset = DEFAULT_CHARSET
-    Font.Color = clWindowText
+    Font.Color = clBlack
     Font.Height = -12
     Font.Name = 'Segoe UI'
     Font.Style = []
@@ -569,7 +571,7 @@ object Main: TMain
     Left = 376
     Top = 128
     Bitmap = {
-      494C010113002001DC0110001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
+      494C010113002001EC0110001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000005000000001002000000000000050
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000
@@ -1269,7 +1271,6 @@ object Main: TMain
     end
   end
   object Tray: TTrayIcon
-    OnClick = TrayClick
     OnDblClick = TrayDblClick
     Left = 448
     Top = 128
