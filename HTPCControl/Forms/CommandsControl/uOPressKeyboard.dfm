@@ -34,7 +34,6 @@ object frmOPressKeyboard: TfrmOPressKeyboard
     TabOrder = 0
     TabStop = False
     OnClick = btnSaveClick
-    ExplicitTop = 285
   end
   object pKeyboard: TPanel
     Left = 0
@@ -82,7 +81,6 @@ object frmOPressKeyboard: TfrmOPressKeyboard
     TabOrder = 2
     TabStop = False
     OnClick = btnCancelClick
-    ExplicitTop = 285
   end
   object pTop: TPanel
     Left = 0

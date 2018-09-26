@@ -595,6 +595,7 @@ procedure TfrmOPressKeyboard.drawKeyboardList;
 var
   i, LClientHieght, sm: Integer;
   LColumn: TListColumn;
+  Icon: TIcon;
 begin
 
   sm := 20;
@@ -670,8 +671,17 @@ begin
     Top := round(LClientHieght / 2) - 35 + 8;
     Width := 24;
     Height := 22;
-    Caption := '→';
     OnClick := sbtnRightClick;
+
+    Icon := TIcon.Create;
+    try
+      main.ilSmall.GetIcon(17, Icon);
+      Glyph.Width := Icon.Width;
+      Glyph.Height := Icon.Height;
+      Glyph.Canvas.Draw(0, 0, Icon);
+    finally
+      Icon.Free;
+    end;
   end;
 
   with TSpeedButton.Create(pKeyboard) do
@@ -681,8 +691,17 @@ begin
     Top := round(LClientHieght / 2) - 11 + 8;
     Width := 24;
     Height := 22;
-    Caption := '←';
     OnClick := sbtnLeftClick;
+
+    Icon := TIcon.Create;
+    try
+      main.ilSmall.GetIcon(16, Icon);
+      Glyph.Width := Icon.Width;
+      Glyph.Height := Icon.Height;
+      Glyph.Canvas.Draw(0, 0, Icon);
+    finally
+      Icon.Free;
+    end;
   end;
 
   with TSpeedButton.Create(pKeyboard) do
@@ -692,8 +711,17 @@ begin
     Top := round(LClientHieght / 2) + 13 + 8;
     Width := 24;
     Height := 22;
-    Caption := '←'#13#10'←';
     OnClick := sbtnLeftAllClick;
+
+    Icon := TIcon.Create;
+    try
+      main.ilSmall.GetIcon(15, Icon);
+      Glyph.Width := Icon.Width;
+      Glyph.Height := Icon.Height;
+      Glyph.Canvas.Draw(0, 0, Icon);
+    finally
+      Icon.Free;
+    end;
   end;
 
 end;
