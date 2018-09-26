@@ -180,8 +180,7 @@ end;
 
 procedure TExecuteCommand.onThreadExecuting(EIndex: integer; Step: integer);
 begin
-  if Assigned(FOnExecuting) then
-    FOnExecuting(EIndex, Step);
+  DoExecuting(EIndex, Step);
 end;
 
 procedure TExecuteCommand.onThreadTerminate(Sender: TObject);
@@ -287,6 +286,7 @@ begin
   FCS.Enter;
   sl := 0;
   slAll := 0;
+
   try
     for i := 0 to Length(FOperations) - 1 do
     begin
@@ -312,14 +312,13 @@ begin
       end;
     end;
   finally
-    if Assigned(FCS) then
-      FCS.Leave;
+    FCS.Leave;
   end;
 end;
 
 procedure TThreadExecuteCommand.PressKeyboard(Operation: TOPressKeyboard; OText: string);
 var
-  i, len: integer;
+  i, len, si: integer;
   KeyInputs: array of TInput;
   FileName: string;
 
@@ -330,6 +329,11 @@ var
       SetLength(KeyInputs, Length(KeyInputs) + 1);
       KeyInputs[Length(KeyInputs) - 1].Itype := INPUT_KEYBOARD;
       KeyInputs[Length(KeyInputs) - 1].ki.wVk := Key;
+
+      KeyInputs[Length(KeyInputs) - 1].ki.wScan := MapVirtualKey(Key, 0);
+      KeyInputs[Length(KeyInputs) - 1].ki.time := 0;
+      KeyInputs[Length(KeyInputs) - 1].ki.dwExtraInfo := 0;
+
       KeyInputs[Length(KeyInputs) - 1].ki.dwFlags := KEYEVENTF_EXTENDEDKEY;
     end;
   end;
@@ -363,7 +367,9 @@ begin
       KEYEVENTF_KEYUP;
   end;
 
-  SendInput(Length(KeyInputs), KeyInputs[0], SizeOf(TInput));
+  si := SendInput(Length(KeyInputs), KeyInputs[0], SizeOf(TInput));
+
+  // showmessage(inttostr());
 end;
 
 procedure TThreadExecuteCommand.RunApplication(Operation: TORunApplication; OText: string);
