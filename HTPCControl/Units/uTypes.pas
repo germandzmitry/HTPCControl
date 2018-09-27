@@ -11,8 +11,8 @@ type
 type
   TReadComPort = Record
     Command: string;
+    Desc: string;
     Exists: boolean;
-    Execute: boolean;
   End;
 
   PReadComPortData = ^TReadComPort;
