@@ -5,6 +5,22 @@ interface
 uses Winapi.Windows, System.SysUtils, System.Classes, Vcl.Graphics,
   uDataBase, uLanguage, uTypes, uShellApplication, SyncObjs;
 
+{ https://docs.microsoft.com/ru-ru/windows/desktop/inputdev/about-keyboard-input#extended-key-flag }
+{ Extended-Key Flag
+  The extended-key flag indicates whether the keystroke message originated from
+  one of the additional keys on the enhanced keyboard.
+  The extended keys consist of the ALT and CTRL keys on the right-hand side of the keyboard;
+  the INS, DEL, HOME, END, PAGE UP, PAGE DOWN, and arrow keys in the clusters to the left of the numeric keypad;
+  the NUM LOCK key;
+  the BREAK (CTRL+PAUSE) key;
+  the PRINT SCRN key;
+  and the divide (/) and ENTER keys in the numeric keypad.
+  The extended-key flag is set if the key is an extended key. }
+const
+  ExtendedKeys: set of Byte = [VK_RCONTROL, VK_RMENU, VK_INSERT, VK_DELETE, VK_HOME, VK_END,
+    VK_PRIOR, VK_NEXT, VK_LEFT, VK_UP, VK_RIGHT, VK_DOWN, VK_NUMLOCK, VK_PAUSE, VK_SNAPSHOT,
+    VK_DIVIDE];
+
 type
   TExecuteCommandState = (ecBegin, ecExecuting, ecEnd);
 
@@ -328,13 +344,14 @@ var
     begin
       SetLength(KeyInputs, Length(KeyInputs) + 1);
       KeyInputs[Length(KeyInputs) - 1].Itype := INPUT_KEYBOARD;
-      KeyInputs[Length(KeyInputs) - 1].ki.wVk := Key;
 
-      KeyInputs[Length(KeyInputs) - 1].ki.wScan := MapVirtualKey(Key, 0);
+      KeyInputs[Length(KeyInputs) - 1].ki.wVk := Key;
+      KeyInputs[Length(KeyInputs) - 1].ki.wScan := 0; // MapVirtualKey(Key, 0);
       KeyInputs[Length(KeyInputs) - 1].ki.time := 0;
       KeyInputs[Length(KeyInputs) - 1].ki.dwExtraInfo := 0;
 
-      KeyInputs[Length(KeyInputs) - 1].ki.dwFlags := KEYEVENTF_EXTENDEDKEY;
+      if Key in ExtendedKeys then
+        KeyInputs[Length(KeyInputs) - 1].ki.dwFlags := KEYEVENTF_EXTENDEDKEY;
     end;
   end;
 
