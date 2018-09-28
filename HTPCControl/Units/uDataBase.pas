@@ -9,6 +9,7 @@ uses
 const
   tcApplication = 'A';
   tcKeyboard = 'K';
+  tcComPort = 'C';
 
 type
   // Таблица KeyboardGroup
@@ -48,6 +49,21 @@ type
     Wait: integer;
     Application: string;
   end;
+
+  // Таблица OperationSendComPort
+  {TOSendComPort = record
+    id: integer;
+    Command: string;
+    pSort: integer;
+    Wait: integer;
+    Name: string;
+    Value: string;
+    ShowOnDisplay: boolean;
+    DisplayValue: string;
+    DisplayCol: integer;
+    DisplayRow: integer;
+    DisplayTime: integer;
+  end;}
 
   // Таблица OperationPressKeyboard
   TOPressKeyboard = record

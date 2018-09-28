@@ -242,6 +242,7 @@ object frmRCommandsControl: TfrmRCommandsControl
       Sorted = True
       TabOrder = 1
       OnClick = lbRCommandsClick
+      OnDblClick = lbRCommandsDblClick
       OnDrawItem = lbRCommandsDrawItem
       OnMeasureItem = lbRCommandsMeasureItem
     end
@@ -294,6 +295,12 @@ object frmRCommandsControl: TfrmRCommandsControl
       ImageIndex = 14
       OnExecute = ActORunApplicationExecute
     end
+    object ActOSendComPort: TAction
+      Category = 'Operation'
+      Caption = 'ActOSendComPort'
+      ImageIndex = 19
+      OnExecute = ActOSendComPortExecute
+    end
     object ActOEdit: TAction
       Category = 'Operation'
       Caption = 'ActOEdit'
@@ -338,6 +345,10 @@ object frmRCommandsControl: TfrmRCommandsControl
             Action = ActORunApplication
             Caption = 'ActO&RunApplication'
             ImageIndex = 14
+          end
+          item
+            Action = ActOSendComPort
+            ImageIndex = 19
           end
           item
             Caption = '-'

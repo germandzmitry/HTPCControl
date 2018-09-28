@@ -565,7 +565,7 @@ begin
     DefSpaceWidth);
   drawButton(VK_RMENU, 'Alt', ALeft, DefWidth + round(DefWidth / 2) - DefSpaceWidth);
   drawButton(VK_RWIN, 'Win', ALeft, DefWidth + round(DefWidth / 2) - DefSpaceWidth);
-  drawButton(VK_APPS, '_', ALeft, DefWidth + round(DefWidth / 2) - DefSpaceWidth);
+  drawButton(VK_APPS, 'Ξ', ALeft, DefWidth + round(DefWidth / 2) - DefSpaceWidth);
   drawButton(VK_RCONTROL, 'Ctrl', ALeft, AllWidth - ALeft);
   ALeft := ALeft + (DefSpaceHeight * 4);
   drawButton(VK_LEFT, '←', ALeft, DefWidth);
@@ -628,6 +628,7 @@ begin
       begin
         Header := FKeyboardGroups[i].Description;
         GroupID := FKeyboardGroups[i].Group;
+        State := State + [lgsCollapsible];
       end;
 
     Items.BeginUpdate;
@@ -639,7 +640,6 @@ begin
         Data := Pointer(FKeyboards[i].Key);
       end;
     Items.EndUpdate;
-
   end;
 
   FlvDownKey := TListView.Create(pKeyboard);

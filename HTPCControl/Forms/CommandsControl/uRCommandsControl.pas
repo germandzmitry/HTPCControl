@@ -39,6 +39,7 @@ type
     lbRCommands: TListBox;
     plbRCommandsTitle: TPanel;
     lCommandsTitle: TLabel;
+    ActOSendComPort: TAction;
     procedure FormCreate(Sender: TObject);
     procedure ActOEditExecute(Sender: TObject);
     procedure ActODeleteExecute(Sender: TObject);
@@ -54,6 +55,8 @@ type
       State: TOwnerDrawState);
     procedure lbRCommandsClick(Sender: TObject);
     procedure lbRCommandsMeasureItem(Control: TWinControl; Index: Integer; var Height: Integer);
+    procedure lbRCommandsDblClick(Sender: TObject);
+    procedure ActOSendComPortExecute(Sender: TObject);
   private
     { Private declarations }
 
@@ -121,6 +124,11 @@ procedure TfrmRCommandsControl.lbRCommandsClick(Sender: TObject);
 begin
   if lbRCommands.ItemIndex > -1 then
     ReadRemoteCommand(lbRCommands.Items.Names[lbRCommands.ItemIndex]);
+end;
+
+procedure TfrmRCommandsControl.lbRCommandsDblClick(Sender: TObject);
+begin
+  ActRCEditExecute(ActRCEdit);
 end;
 
 procedure TfrmRCommandsControl.lbRCommandsDrawItem(Control: TWinControl; Index: Integer;
@@ -368,6 +376,11 @@ begin
   end;
 end;
 
+procedure TfrmRCommandsControl.ActOSendComPortExecute(Sender: TObject);
+begin
+  //
+end;
+
 procedure TfrmRCommandsControl.ActOEditExecute(Sender: TObject);
 var
   frmORunApp: TfrmORunApplication;
@@ -473,6 +486,7 @@ begin
 
     ActOPressKeyboard.Enabled := not RCommand.RepeatPrevious;
     ActORunApplication.Enabled := not RCommand.RepeatPrevious;
+    ActOSendComPort.Enabled := not RCommand.RepeatPrevious;
     ActOEdit.Enabled := not RCommand.RepeatPrevious;
     ActODelete.Enabled := not RCommand.RepeatPrevious;
 
