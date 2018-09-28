@@ -40,6 +40,7 @@ type
     plbRCommandsTitle: TPanel;
     lCommandsTitle: TLabel;
     ActOSendComPort: TAction;
+    ActOMouse: TAction;
     procedure FormCreate(Sender: TObject);
     procedure ActOEditExecute(Sender: TObject);
     procedure ActODeleteExecute(Sender: TObject);
@@ -57,6 +58,8 @@ type
     procedure lbRCommandsMeasureItem(Control: TWinControl; Index: Integer; var Height: Integer);
     procedure lbRCommandsDblClick(Sender: TObject);
     procedure ActOSendComPortExecute(Sender: TObject);
+    procedure ActOMouseExecute(Sender: TObject);
+    procedure FormShow(Sender: TObject);
   private
     { Private declarations }
 
@@ -78,7 +81,7 @@ implementation
 
 {$R *.dfm}
 
-uses uMain, uLanguage, uTypes, uRCommand, uORunApplication, uOPressKeyboard;
+uses uMain, uLanguage, uTypes, uRCommand, uORunApplication, uOPressKeyboard, uOMouse;
 
 procedure TfrmRCommandsControl.FormCreate(Sender: TObject);
 var
@@ -118,6 +121,12 @@ procedure TfrmRCommandsControl.FormKeyDown(Sender: TObject; var Key: Word; Shift
 begin
   if Key = 27 then
     close;
+end;
+
+procedure TfrmRCommandsControl.FormShow(Sender: TObject);
+begin
+  pClient.Width := pClient.Width + 1;
+  pClient.Width := pClient.Width - 1;
 end;
 
 procedure TfrmRCommandsControl.lbRCommandsClick(Sender: TObject);
@@ -385,6 +394,7 @@ procedure TfrmRCommandsControl.ActOEditExecute(Sender: TObject);
 var
   frmORunApp: TfrmORunApplication;
   frmOPressKey: TfrmOPressKeyboard;
+  frmOMouse: TfrmOMouse;
   Operation: TOperation;
 begin
 
@@ -440,7 +450,53 @@ begin
           frmORunApp.Free;
         end;
       end;
+    opMouse:
+      begin
+        frmOMouse := TfrmOMouse.Create(self);
+        try
+          frmOMouse.moType := moEdit;
+
+          frmOMouse.Id := Operation.Mouse.Id;
+          frmOMouse.Command := Operation.Command;
+          frmOMouse.udPSort.Position := Operation.Mouse.pSort;
+          frmOMouse.udWait.Position := Operation.Mouse.Wait;
+          frmOMouse.edForApplication.Text := Operation.Mouse.ForApplication;
+
+          frmOMouse.cbEvent.ItemIndex := frmOMouse.cbEvent.Items.IndexOfObject
+            (TObject(Operation.Mouse.Event));
+          frmOMouse.edX.Text := inttostr(Operation.Mouse.X);
+          frmOMouse.edY.Text := inttostr(Operation.Mouse.Y);
+
+          if frmOMouse.ShowModal = mrOK then
+            ReadOperation(Operation.Command);
+        finally
+          frmOMouse.Free;
+        end;
+      end;
   end;
+end;
+
+procedure TfrmRCommandsControl.ActOMouseExecute(Sender: TObject);
+var
+  frmOMouse: TfrmOMouse;
+begin
+  if lbRCommands.ItemIndex = -1 then
+  begin
+    MessageDlg(uLanguage.GetLanguageMsg('msgRCSelectCommand', lngRus), mtWarning, [mbOK], 0);
+    Exit;
+  end;
+
+  frmOMouse := TfrmOMouse.Create(self);
+  try
+    frmOMouse.moType := moAdd;
+    frmOMouse.Command := lbRCommands.Items.Names[lbRCommands.ItemIndex];
+    frmOMouse.udPSort.Position := lvOperation.Items.Count + 1;
+    if frmOMouse.ShowModal = mrOK then
+      ReadOperation(lbRCommands.Items.Names[lbRCommands.ItemIndex]);
+  finally
+    frmOMouse.Free;
+  end;
+
 end;
 
 procedure TfrmRCommandsControl.ActODeleteExecute(Sender: TObject);
@@ -464,6 +520,8 @@ begin
           Main.DataBase.DeletePressKeyboard(Operation.PressKeyboard.Id);
         opApplication:
           Main.DataBase.DeleteRunApplication(Operation.RunApplication.Id);
+        opMouse:
+          Main.DataBase.DeleteMouse(Operation.Mouse.Id);
       end;
       ReadOperation(Operation.Command);
     except
@@ -485,6 +543,7 @@ begin
     cbLongPress.Checked := RCommand.LongPress;
 
     ActOPressKeyboard.Enabled := not RCommand.RepeatPrevious;
+    ActOMouse.Enabled := not RCommand.RepeatPrevious;
     ActORunApplication.Enabled := not RCommand.RepeatPrevious;
     ActOSendComPort.Enabled := not RCommand.RepeatPrevious;
     ActOEdit.Enabled := not RCommand.RepeatPrevious;
@@ -515,7 +574,7 @@ begin
     for i := 0 to Length(Operations) - 1 do
     begin
       LItem := lvOperation.Items.Add;
-      LItem.Caption := IntToStr(Operations[i].OSort);
+      LItem.Caption := inttostr(Operations[i].OSort);
       LItem.SubItems.Add(Operations[i].Operation);
       LItem.SubItems.Add(floattostr(Operations[i].OWait / 1000) + ' с.');
 

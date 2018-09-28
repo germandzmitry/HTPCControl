@@ -10,6 +10,7 @@ const
   tcApplication = 'A';
   tcKeyboard = 'K';
   tcComPort = 'C';
+  tcMouse = 'M';
 
 type
   // Таблица KeyboardGroup
@@ -26,6 +27,14 @@ type
     Desc: String;
     Group: integer;
   end;
+
+  // Таблица MouseEvent
+  TMouseEvent = record
+    Event: integer;
+    Desc: String;
+  end;
+
+  TMouseEvents = array of TMouseEvent;
 
   PKeyboard = ^TKeyboard;
   TKeyboards = array of TKeyboard;
@@ -51,7 +60,7 @@ type
   end;
 
   // Таблица OperationSendComPort
-  {TOSendComPort = record
+  { TOSendComPort = record
     id: integer;
     Command: string;
     pSort: integer;
@@ -63,7 +72,7 @@ type
     DisplayCol: integer;
     DisplayRow: integer;
     DisplayTime: integer;
-  end;}
+    end; }
 
   // Таблица OperationPressKeyboard
   TOPressKeyboard = record
@@ -77,6 +86,19 @@ type
     ForApplication: string;
   end;
 
+  // Таблица OperationMouse
+  TOMouse = record
+    id: integer;
+    Command: string;
+    pSort: integer;
+    Wait: integer;
+    Event: integer;
+    X: integer;
+    Y: integer;
+    Wheel: integer;
+    ForApplication: string;
+  end;
+
   // Все операции для команды
   TOperation = Record
     Command: string;
@@ -86,6 +108,7 @@ type
     Operation: string;
     PressKeyboard: TOPressKeyboard;
     RunApplication: TORunApplication;
+    Mouse: TOMouse;
   End;
 
   POperation = ^TOperation;
@@ -97,6 +120,7 @@ type
     procedure Disconnect;
 
     function getKeyboardGroups(): TKeyboardGroups;
+    function getMouseEvents(): TMouseEvents;
 
     function GetKeyboards(): TKeyboards;
     function GetKeyboard(Key: integer): TKeyboard;
@@ -125,6 +149,12 @@ type
     procedure UpdatePressKeyboard(const id, pSort, Wait, Key1, Key2, Key3: integer;
       const ForApplication: string);
     procedure DeletePressKeyboard(const id: integer);
+
+    procedure CreateMouse(const Command: string; const pSort, Wait, Event, X, Y, Wheel: integer;
+      const ForApplication: string);
+    procedure UpdateMouse(const id, pSort, Wait, Event, X, Y, Wheel: integer;
+      const ForApplication: string);
+    procedure DeleteMouse(const id: integer);
 
     function GetOperation(const Command: string): TOperations;
 
@@ -158,6 +188,13 @@ procedure CreateDB(FileName: string);
   begin
     Query.Sql.Text := 'insert into Keyboard([key], [description], [group]) values (' + IntToStr(Key)
       + ', ' + '''' + Description + ''', ' + IntToStr(Group) + ')';
+    Query.ExecSQL;
+  end;
+
+  procedure addMouseEvent(Query: TADOQuery; Event: integer; Description: string);
+  begin
+    Query.Sql.Text := 'insert into MouseEvent([event], [description]) values (' + IntToStr(Event) +
+      ', ' + '''' + Description + ''')';
     Query.ExecSQL;
   end;
 
@@ -208,7 +245,14 @@ begin
       '  [group] integer references KeyboardGroup([group]))';
     Query.ExecSQL;
 
-    // Справочник - Кнопки пульта
+    // Справочник - События мышки
+    Query.Sql.Text :=
+      'CREATE TABLE MouseEvent(                                                      ' +
+      '  [event] integer primary key,                                                ' +
+      '  [description] string (255))';
+    Query.ExecSQL;
+
+    // Кнопки пульта
     Query.Sql.Text :=
       'CREATE TABLE RemoteCommand(                                                   ' +
       '  [command] string(100) primary key,                                          ' +
@@ -228,7 +272,7 @@ begin
       '  [description] string(255))';
     Query.ExecSQL;
 
-    // Запуск приложений
+    // Клавиатура
     Query.Sql.Text :=
       'CREATE TABLE OperationPressKeyboard(                                          ' +
       '  [id] counter primary key,                                                   ' +
@@ -241,6 +285,25 @@ begin
       '  [forApplication] string(255),                                               ' +
       '  [description] string(255))';
     Query.ExecSQL;
+
+    // Мышка
+    Query.Sql.Text :=
+      'CREATE TABLE OperationMouse(                                                  ' +
+      '  [id] counter primary key,                                                   ' +
+      '  [command] string(100) references RemoteCommand([command]) on delete cascade,' +
+      '  [pSort] integer,                                                            ' +
+      '  [wait] integer default 0,                                                   ' +
+      '  [event] integer references MouseEvent([event]),                             ' +
+      '  [x] integer,                                                                ' +
+      '  [y] integer,                                                                ' +
+      '  [wheel] integer,                                                            ' +
+      '  [forApplication] string(255),                                               ' +
+      '  [description] string(255))';
+    Query.ExecSQL;
+
+    addMouseEvent(Query, 1, 'Движение указателя мышки');
+    addMouseEvent(Query, 2, 'Левый клик');
+    addMouseEvent(Query, 3, 'Правый клик');
 
     addKeybordGroup(Query, 0, 'Функциональные клавиши');
     addKeybord(Query, VK_F1, 'F1', 0);
@@ -451,6 +514,37 @@ begin
     Query.Active := false;
     Query.Free;
   end;
+end;
+
+function TDataBase.getMouseEvents(): TMouseEvents;
+var
+  Query: TADOQuery;
+  MouseEvents: TMouseEvents;
+begin
+  if not FConnection.Connected then
+    exit;
+
+  Query := TADOQuery.Create(nil);
+  try
+    Query.Connection := FConnection;
+    Query.Sql.Clear;
+    Query.Sql.Text := 'SELECT event, description FROM MouseEvent';
+    Query.ExecSQL;
+    Query.Active := True;
+    Query.First;
+    while not Query.Eof do
+    begin
+      SetLength(MouseEvents, Length(MouseEvents) + 1);
+      MouseEvents[Query.RecNo - 1].Event := Query.FieldByName('event').AsInteger;
+      MouseEvents[Query.RecNo - 1].Desc := Query.FieldByName('description').AsString;
+      Query.Next;
+    end;
+    Result := MouseEvents;
+  finally
+    Query.Active := false;
+    Query.Free;
+  end;
+
 end;
 
 function TDataBase.GetKeyboards(): TKeyboards;
@@ -872,6 +966,89 @@ begin
   end;
 end;
 
+procedure TDataBase.CreateMouse(const Command: string;
+  const pSort, Wait, Event, X, Y, Wheel: integer; const ForApplication: string);
+var
+  Query: TADOQuery;
+begin
+  if not FConnection.Connected then
+    exit;
+
+  Query := TADOQuery.Create(nil);
+  try
+    Query.Connection := FConnection;
+    Query.Sql.Clear;
+    Query.Sql.Add('INSERT INTO OperationMouse                                         ' +
+      '  (command, pSort, wait, event, x, y, wheel, forApplication)                   ' +
+      '  VALUES (:command, :pSort, :wait, :event, :x, :y, :wheel, :forApplication)');
+    Query.Parameters.ParamValues['command'] := Command;
+    Query.Parameters.ParamValues['pSort'] := pSort;
+    Query.Parameters.ParamValues['wait'] := Wait;
+    Query.Parameters.ParamValues['event'] := Event;
+    Query.Parameters.ParamValues['x'] := X;
+    Query.Parameters.ParamValues['y'] := Y;
+    Query.Parameters.ParamValues['wheel'] := Wheel;
+    Query.Parameters.ParamValues['forApplication'] := ForApplication;
+    Query.ExecSQL;
+
+  finally
+    Query.Free;
+  end;
+end;
+
+procedure TDataBase.UpdateMouse(const id, pSort, Wait, Event, X, Y, Wheel: integer;
+  const ForApplication: string);
+var
+  Query: TADOQuery;
+begin
+  if not FConnection.Connected then
+    exit;
+
+  Query := TADOQuery.Create(nil);
+  try
+    Query.Connection := FConnection;
+    Query.Sql.Clear;
+    Query.Sql.Add('UPDATE OperationMouse                                                          '
+      + '  SET pSort = :pSort,                                                          ' +
+      '      wait = :wait,                                                            ' +
+      '      event = :event,                                                          ' +
+      '      x = :x,                                                                  ' +
+      '      y = :y,                                                                  ' +
+      '      wheel = :wheel,                                                          ' +
+      '      forApplication = :forApplication                                         ' +
+      '  WHERE id = :id');
+    Query.Parameters.ParamValues['id'] := id;
+    Query.Parameters.ParamValues['pSort'] := pSort;
+    Query.Parameters.ParamValues['wait'] := Wait;
+    Query.Parameters.ParamValues['event'] := Event;
+    Query.Parameters.ParamValues['x'] := X;
+    Query.Parameters.ParamValues['y'] := Y;
+    Query.Parameters.ParamValues['wheel'] := Wheel;
+    Query.Parameters.ParamValues['forApplication'] := ForApplication;
+    Query.ExecSQL;
+  finally
+    Query.Free;
+  end;
+end;
+
+procedure TDataBase.DeleteMouse(const id: integer);
+var
+  Query: TADOQuery;
+begin
+  if not FConnection.Connected then
+    exit;
+
+  Query := TADOQuery.Create(nil);
+  try
+    Query.Connection := FConnection;
+    Query.Sql.Clear;
+    Query.Sql.Text := 'delete from OperationMouse where id = ' + IntToStr(id);
+    Query.ExecSQL;
+  finally
+    Query.Free;
+  end;
+end;
+
 function TDataBase.GetOperation(const Command: string): TOperations;
 var
   Query: TADOQuery;
@@ -894,6 +1071,9 @@ begin
       '        opk.key3                as key3,                                       ' +
       '        opk.forApplication      as forApplication,                             ' +
       '        null                    as application,                                ' +
+      '        null                    as event,                                      ' +
+      '        null                    as x,                                          ' +
+      '        null                    as y,                                          ' +
       '        kk1.Description                                                        ' +
       '          & IIF(isNull(opk.Key2), "", " + " & kk2.Description)                 ' +
       '          & IIF(isNull(opk.Key3), "", " + " & kk3.Description)                 ' +
@@ -915,8 +1095,30 @@ begin
       '        null                    as key3,                                       ' +
       '        null                    as forApplication,                             ' +
       '        ora.application         as application,                                ' +
+      '        null                    as event,                                      ' +
+      '        null                    as x,                                          ' +
+      '        null                    as y,                                          ' +
       '        ora.Application         as operation                                   ' +
       '      FROM OperationRunApplication as ora                                      ' +
+      '    UNION ALL                                                                  ' +
+      '    SELECT om.command           as command,                                    ' +
+      '        om.psort                as psort,                                      ' +
+      '        om.wait                 as wait,                                       ' +
+      '        om.id                   as id,                                         ' +
+      '        "' + tcMouse + '"       as type,                                       ' +
+      '        null                    as key1,                                       ' +
+      '        null                    as key2,                                       ' +
+      '        null                    as key3,                                       ' +
+      '        null                    as forApplication,                             ' +
+      '        null                    as application,                                ' +
+      '        om.event                as event,                                      ' +
+      '        om.x                    as x,                                          ' +
+      '        om.y                    as y,                                          ' +
+      '        me.description                                                         ' +
+      '          & IIF(om.event = 1, " x=" & om.x & ", y=" & om.y)                    ' +
+      '                                as operation                                   ' +
+      '      FROM OperationMouse as om                                                ' +
+      '        INNER JOIN MouseEvent AS me ON me.Event = om.Event                     ' +
       '  )                                                                            ' +
       '  WHERE command = "' + Command + '"                                            ' +
       '  ORDER BY psort, type, operation                                              ';
@@ -952,6 +1154,21 @@ begin
         Result[Query.RecNo - 1].PressKeyboard.Key1 := Query.FieldByName('key1').AsInteger;
         Result[Query.RecNo - 1].PressKeyboard.Key2 := Query.FieldByName('key2').AsInteger;
         Result[Query.RecNo - 1].PressKeyboard.Key3 := Query.FieldByName('key3').AsInteger;
+        Result[Query.RecNo - 1].PressKeyboard.ForApplication :=
+          Query.FieldByName('forApplication').AsString;
+      end
+      else if Query.FieldByName('type').AsString = tcMouse then
+      begin
+        Result[Query.RecNo - 1].OType := opMouse;
+        Result[Query.RecNo - 1].Mouse.id := Query.FieldByName('id').AsInteger;
+        Result[Query.RecNo - 1].Mouse.Command := Result[Query.RecNo - 1].Command;
+        Result[Query.RecNo - 1].Mouse.pSort := Query.FieldByName('psort').AsInteger;
+        Result[Query.RecNo - 1].Mouse.Wait := Query.FieldByName('wait').AsInteger;
+
+        Result[Query.RecNo - 1].Mouse.Event := Query.FieldByName('event').AsInteger;
+        Result[Query.RecNo - 1].Mouse.X := Query.FieldByName('x').AsInteger;
+        Result[Query.RecNo - 1].Mouse.Y := Query.FieldByName('y').AsInteger;
+
         Result[Query.RecNo - 1].PressKeyboard.ForApplication :=
           Query.FieldByName('forApplication').AsString;
       end;

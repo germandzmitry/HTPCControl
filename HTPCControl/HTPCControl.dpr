@@ -27,7 +27,8 @@ uses
   uOPressKeyboard in 'Forms\CommandsControl\uOPressKeyboard.pas' {frmOPressKeyboard},
   uCustomListBox in 'Customs\uCustomListBox.pas',
   uFastRCommand in 'Forms\CommandsControl\uFastRCommand.pas' {frmFastRCommand},
-  uIcon in 'Units\uIcon.pas';
+  uIcon in 'Units\uIcon.pas',
+  uOMouse in 'Forms\CommandsControl\uOMouse.pas' {frmOMouse};
 
 {$R *.res}
 

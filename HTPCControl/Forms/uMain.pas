@@ -712,6 +712,7 @@ procedure TMain.SetMemoHeight(AMemo: TMemo);
 var
   Can: TCanvas;
 begin
+
   Can := TCanvas.Create;
   Can.Handle := CreateCompatibleDC(GetDC(0));
   try
@@ -722,6 +723,8 @@ begin
     Can.Handle := 0;
     Can.Free;
   end;
+
+  scrbFooter.Realign;
 end;
 
 procedure TMain.SetMemoValue(AMemo: TMemo; Value: string);
@@ -949,21 +952,26 @@ begin
   // Данные
   DrawRect := Rect;
   dec(DrawRect.Right, 4);
+  Sender.Canvas.Font.style := Sender.Canvas.Font.style + [fsBold];
   DrawText(Sender.Canvas.Handle, PChar(Item.SubItems[0]), -1, DrawRect,
     DT_VCENTER or DT_SINGLELINE or DT_LEFT or DT_END_ELLIPSIS);
+  Sender.Canvas.Font.style := Sender.Canvas.Font.style - [fsBold];
   Sender.Canvas.Font.Color := clBlack;
 
   // Текст к команде
   if TReadComPort(Item.Data^).Exists and (Length(Trim(TReadComPort(Item.Data^).Desc)) > 0) then
   begin
     DrawRect := Rect;
+    Sender.Canvas.Font.style := Sender.Canvas.Font.style + [fsBold];
     DrawRect.left := DrawRect.left + Sender.Canvas.TextWidth(Item.SubItems[0]) + 4;
+    Sender.Canvas.Font.style := Sender.Canvas.Font.style - [fsBold];
+
     if DrawRect.left < Rect.Right then
     begin
-      Sender.Canvas.Font.Style := Sender.Canvas.Font.Style + [fsItalic];
+      Sender.Canvas.Font.style := Sender.Canvas.Font.style + [fsItalic];
       DrawText(Sender.Canvas.Handle, PChar(TReadComPort(Item.Data^).Desc), -1, DrawRect,
         DT_VCENTER or DT_SINGLELINE or DT_LEFT or DT_END_ELLIPSIS);
-      Sender.Canvas.Font.Style := Sender.Canvas.Font.Style - [fsItalic];
+      Sender.Canvas.Font.style := Sender.Canvas.Font.style - [fsItalic];
     end;
   end;
 end;
@@ -1199,7 +1207,7 @@ begin
     TabPosition := TTabPosition.tpTop;
     TextFormat := [tfCenter];
     DoubleBuffered := True;
-    Style := tsButtons;
+    style := tsButtons;
     TabHeight := 24;
   end;
   SendMessage(FPageClient.Handle, WM_UPDATEUISTATE, MakeLong(UIS_SET, UISF_HIDEFOCUS), 0);
@@ -1397,7 +1405,7 @@ var
       left := LLeft;
       Width := Parent.Width - LLeft;
       Height := 13;
-      Font.Style := [fsBold];
+      Font.style := [fsBold];
       BorderStyle := bsNone;
     end;
   end;
@@ -1468,9 +1476,13 @@ begin
   SettingPanelHeader(pShellApplicationHeader);
   SettingMemoHeader(mShellApplicationH);
   //
+{$IFDEF WIN64}
   SettingPanel(pShellApplication_x86);
   SettingLabel(mShellApplication_x86L);
   SettingValue(mShellApplication_x86V);
+{$ELSE}
+  pShellApplication_x86.Visible := False;
+{$ENDIF}
   //
   SettingPanel(pShellApplicationFile);
   SettingLabel(mShellApplicationFileL);
@@ -1487,6 +1499,8 @@ begin
   SettingPanel(pKodiPlayingFile);
   SettingLabel(mKodiPlayingFileL);
   SettingValue(mKodiPlayingFileV);
+
+  pKodiPlayingFile.Constraints.MinHeight := mKodiPlayingFileL.Height + 5;
 
   plvReadComPort.Align := alClient;
   lvReadComPort.Align := alClient;
@@ -1560,7 +1574,6 @@ begin
     lvShellApplication.Perform(CM_RecreateWnd, 0, 0);
 
   SetMemoValue(mShellApplicationFileV, ApplicationData.FileName);
-
 end;
 
 procedure TMain.onShellApplicationRunning(Running: Boolean);

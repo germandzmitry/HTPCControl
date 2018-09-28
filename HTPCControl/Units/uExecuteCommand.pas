@@ -82,6 +82,7 @@ type
 
     procedure RunApplication(Operation: TORunApplication; OText: string);
     procedure PressKeyboard(Operation: TOPressKeyboard; OText: string);
+    procedure Mouse(Operation: TOMouse; OText: string);
   protected
     procedure Execute; override;
   public
@@ -325,11 +326,75 @@ begin
           RunApplication(FOperations[i].RunApplication, FOperations[i].Operation);
         opKyeboard:
           PressKeyboard(FOperations[i].PressKeyboard, FOperations[i].Operation);
+        opMouse:
+          Mouse(FOperations[i].Mouse, FOperations[i].Operation);
       end;
     end;
   finally
     FCS.Leave;
   end;
+end;
+
+procedure TThreadExecuteCommand.Mouse(Operation: TOMouse; OText: string);
+var
+  KeyInputs: array of TInput;
+  FileName: string;
+begin
+
+  if (Length(Operation.ForApplication) > 0) and FileExists(Operation.ForApplication) then
+  begin
+    // текущее актуальное приложение
+    try
+      FileName := uShellApplication.GetExePath(GetForegroundWindow);
+      if FileName <> Operation.ForApplication then
+        Exit;
+    except
+      on E: Exception do
+    end;
+  end;
+
+  case Operation.Event of
+    1:
+      begin
+        SetLength(KeyInputs, Length(KeyInputs) + 1);
+        KeyInputs[Length(KeyInputs) - 1].Itype := INPUT_MOUSE;
+        KeyInputs[Length(KeyInputs) - 1].mi.dx := Operation.X;
+        KeyInputs[Length(KeyInputs) - 1].mi.dy := Operation.Y;
+        KeyInputs[Length(KeyInputs) - 1].mi.dwFlags := MOUSEEVENTF_MOVE;
+        KeyInputs[Length(KeyInputs) - 1].ki.time := 0;
+        KeyInputs[Length(KeyInputs) - 1].ki.dwExtraInfo := 0;
+      end;
+    2:
+      begin
+        SetLength(KeyInputs, Length(KeyInputs) + 1);
+        KeyInputs[Length(KeyInputs) - 1].Itype := INPUT_MOUSE;
+        KeyInputs[Length(KeyInputs) - 1].mi.dwFlags := MOUSEEVENTF_LEFTDOWN;
+        KeyInputs[Length(KeyInputs) - 1].ki.time := 0;
+        KeyInputs[Length(KeyInputs) - 1].ki.dwExtraInfo := 0;
+
+        SetLength(KeyInputs, Length(KeyInputs) + 1);
+        KeyInputs[Length(KeyInputs) - 1].Itype := INPUT_MOUSE;
+        KeyInputs[Length(KeyInputs) - 1].mi.dwFlags := MOUSEEVENTF_LEFTUP;
+        KeyInputs[Length(KeyInputs) - 1].ki.time := 0;
+        KeyInputs[Length(KeyInputs) - 1].ki.dwExtraInfo := 0;
+      end;
+    3:
+      begin
+        SetLength(KeyInputs, Length(KeyInputs) + 1);
+        KeyInputs[Length(KeyInputs) - 1].Itype := INPUT_MOUSE;
+        KeyInputs[Length(KeyInputs) - 1].mi.dwFlags := MOUSEEVENTF_RIGHTDOWN;
+        KeyInputs[Length(KeyInputs) - 1].ki.time := 0;
+        KeyInputs[Length(KeyInputs) - 1].ki.dwExtraInfo := 0;
+
+        SetLength(KeyInputs, Length(KeyInputs) + 1);
+        KeyInputs[Length(KeyInputs) - 1].Itype := INPUT_MOUSE;
+        KeyInputs[Length(KeyInputs) - 1].mi.dwFlags := MOUSEEVENTF_RIGHTUP;
+        KeyInputs[Length(KeyInputs) - 1].ki.time := 0;
+        KeyInputs[Length(KeyInputs) - 1].ki.dwExtraInfo := 0;
+      end;
+  end;
+
+  SendInput(Length(KeyInputs), KeyInputs[0], SizeOf(TInput));
 end;
 
 procedure TThreadExecuteCommand.PressKeyboard(Operation: TOPressKeyboard; OText: string);

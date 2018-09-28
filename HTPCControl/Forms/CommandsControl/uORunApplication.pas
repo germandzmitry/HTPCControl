@@ -72,8 +72,6 @@ begin
 
   FLineTop := TLine.Create(pTop, alBottom, clBlack, clBlack);
   FLineBottom := TLine.Create(pApplication, alBottom, clBlack, clBlack);
-  // FLineBottom := TLine.Create(pApplication, alBottom, clWhite,
-  // RGB(Random(256), Random(256), Random(256)));
 
   UpdateLanguage(self, lngRus);
 

@@ -148,8 +148,6 @@ procedure TfrmOPressKeyboard.FormShow(Sender: TObject);
 begin
   drawKeyboard;
   FLineTop := TLine.Create(pTop, alBottom, clBlack, clBlack);
-  // FLineBottom := TLine.Create(pKeyboard, alBottom, clWhite,
-  // RGB(Random(256), Random(256), Random(256)));
   dtsKeyboardType.Top := 0;
 
   // GetHighlightColor(rgb(217, 217, 220)) = clBtnFace

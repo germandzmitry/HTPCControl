@@ -18,12 +18,13 @@ object frmRCommandsControl: TfrmRCommandsControl
   OnCreate = FormCreate
   OnDestroy = FormDestroy
   OnKeyDown = FormKeyDown
+  OnShow = FormShow
   PixelsPerInch = 96
   TextHeight = 13
   object pClient: TPanel
-    Left = 191
+    Left = 167
     Top = 0
-    Width = 530
+    Width = 554
     Height = 361
     BevelOuter = bvNone
     Caption = 'pClient'
@@ -32,9 +33,9 @@ object frmRCommandsControl: TfrmRCommandsControl
     TabOrder = 0
     object plvOperation: TPanel
       AlignWithMargins = True
-      Left = 24
+      Left = 7
       Top = 144
-      Width = 505
+      Width = 538
       Height = 201
       BevelOuter = bvNone
       BorderStyle = bsSingle
@@ -73,7 +74,7 @@ object frmRCommandsControl: TfrmRCommandsControl
       object ActTBOperation: TActionToolBar
         Left = 0
         Top = 0
-        Width = 503
+        Width = 536
         Height = 26
         ActionManager = amAllCommand
         Caption = 'ActTBOperation'
@@ -92,13 +93,14 @@ object frmRCommandsControl: TfrmRCommandsControl
         ParentShowHint = False
         ShowHint = True
         Spacing = 0
+        ExplicitWidth = 503
       end
     end
     object pCommandHeader: TPanel
       AlignWithMargins = True
       Left = 3
       Top = 3
-      Width = 524
+      Width = 548
       Height = 94
       Align = alTop
       BevelOuter = bvNone
@@ -110,8 +112,9 @@ object frmRCommandsControl: TfrmRCommandsControl
       ParentBackground = False
       ParentCtl3D = False
       TabOrder = 0
+      ExplicitWidth = 524
       DesignSize = (
-        522
+        546
         92)
       object lCommand: TLabel
         Left = 3
@@ -143,7 +146,7 @@ object frmRCommandsControl: TfrmRCommandsControl
       object lCommandV: TLabel
         Left = 168
         Top = 8
-        Width = 343
+        Width = 367
         Height = 13
         Anchors = [akLeft, akTop, akRight]
         AutoSize = False
@@ -159,7 +162,7 @@ object frmRCommandsControl: TfrmRCommandsControl
       object lDescriptionV: TLabel
         Left = 168
         Top = 27
-        Width = 343
+        Width = 367
         Height = 13
         Anchors = [akLeft, akTop, akRight]
         AutoSize = False
@@ -178,21 +181,23 @@ object frmRCommandsControl: TfrmRCommandsControl
       object cbRepeat: TCheckBox
         Left = 168
         Top = 66
-        Width = 343
+        Width = 367
         Height = 17
         TabStop = False
         Anchors = [akLeft, akTop, akRight]
         Caption = 'cbRepeat'
         TabOrder = 0
+        ExplicitWidth = 343
       end
       object cbLongPress: TCheckBox
         Left = 168
         Top = 46
-        Width = 343
+        Width = 367
         Height = 17
         Anchors = [akLeft, akTop, akRight]
         Caption = 'cbLongPress'
         TabOrder = 1
+        ExplicitWidth = 343
       end
     end
   end
@@ -289,6 +294,12 @@ object frmRCommandsControl: TfrmRCommandsControl
       ImageIndex = 12
       OnExecute = ActOPressKeyboardExecute
     end
+    object ActOMouse: TAction
+      Category = 'Operation'
+      Caption = 'ActOMouse'
+      ImageIndex = 20
+      OnExecute = ActOMouseExecute
+    end
     object ActORunApplication: TAction
       Category = 'Operation'
       Caption = 'ActORunApplication'
@@ -342,12 +353,17 @@ object frmRCommandsControl: TfrmRCommandsControl
             ImageIndex = 12
           end
           item
+            Action = ActOMouse
+            ImageIndex = 20
+          end
+          item
             Action = ActORunApplication
             Caption = 'ActO&RunApplication'
             ImageIndex = 14
           end
           item
             Action = ActOSendComPort
+            Caption = 'Act&OSendComPort'
             ImageIndex = 19
           end
           item

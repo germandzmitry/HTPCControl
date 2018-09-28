@@ -6,7 +6,7 @@ const
   FileSetting = 'Setting.ini';
 
 type
-  TopType = (opKyeboard, opApplication);
+  TopType = (opKyeboard, opApplication, opMouse);
 
 type
   TReadComPort = Record
