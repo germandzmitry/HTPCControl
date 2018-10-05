@@ -41,6 +41,8 @@ type
     lCommandsTitle: TLabel;
     ActOSendComPort: TAction;
     ActOMouse: TAction;
+    plvOperationFooter: TPanel;
+    lTotalCommandWait: TLabel;
     procedure FormCreate(Sender: TObject);
     procedure ActOEditExecute(Sender: TObject);
     procedure ActODeleteExecute(Sender: TObject);
@@ -60,6 +62,10 @@ type
     procedure ActOSendComPortExecute(Sender: TObject);
     procedure ActOMouseExecute(Sender: TObject);
     procedure FormShow(Sender: TObject);
+    procedure lvOperationCustomDraw(Sender: TCustomListView; const ARect: TRect;
+      var DefaultDraw: Boolean);
+    procedure lvOperationDrawItem(Sender: TCustomListView; Item: TListItem; Rect: TRect;
+      State: TOwnerDrawState);
   private
     { Private declarations }
 
@@ -163,16 +169,13 @@ begin
 
   // Команда
   DrawRect := Rect;
-  inc(DrawRect.Left, 6);
-  inc(DrawRect.Top, 2);
-  dec(DrawRect.Right, 2);
+  DrawRect.Inflate(-6, -3, -2, 0);
 
-  // LB.Canvas.Font.Style := LB.Canvas.Font.Style + [fsBold];
   DrawText(LB.Canvas.Handle, PChar(LB.Items.Names[Index]), -1, DrawRect, DT_SINGLELINE or DT_LEFT);
-  // LB.Canvas.Font.Style := self.Canvas.Font.Style - [fsBold];
 
   // Текст к команде
-  inc(DrawRect.Top, 2);
+  DrawRect.Inflate(0, -2, 0, 0);
+  // inc(DrawRect.Top, 2);
   inc(DrawRect.Top, LB.Canvas.TextHeight((Control as TListBox).Items[Index]));
 
   LB.Canvas.Font.Style := LB.Canvas.Font.Style + [fsItalic];
@@ -188,9 +191,120 @@ procedure TfrmRCommandsControl.lbRCommandsMeasureItem(Control: TWinControl; Inde
   var Height: Integer);
 begin
   if Length(trim((Control as TListBox).Items.ValueFromIndex[Index])) > 0 then
-    Height := 32
+    Height := 34
   else
-    Height := 17;
+    Height := 19;
+end;
+
+procedure TfrmRCommandsControl.lvOperationCustomDraw(Sender: TCustomListView; const ARect: TRect;
+  var DefaultDraw: Boolean);
+var
+  R: TRect;
+  S: String;
+  H: Integer;
+begin
+  if Sender.Items.Count > 0 then
+    exit;
+
+  if (lbRCommands.ItemIndex > -1) and (cbRepeat.Checked) then
+    S := GetLanguageText(self.Name, 'lvOperationTitleRepeatPrevious', lngRus)
+  else
+    S := GetLanguageText(self.Name, 'lvOperationTitle', lngRus);
+
+  Sender.Canvas.Font.Size := 10;
+
+  R := ARect;
+  R.Inflate(-4, -4);
+  H := (R.Bottom - R.Top) div 2 + DrawText(Sender.Canvas.Handle, PChar(S), -1, R,
+    DT_WORDBREAK or DT_CALCRECT) div 2;
+
+  R := ARect;
+  R.Inflate(-4, -4);
+  R.Top := (R.Bottom - R.Top) div 2 - H div 2;
+
+  DrawText(Sender.Canvas.Handle, PChar(S), -1, R, DT_CENTER or DT_WORDBREAK);
+end;
+
+procedure TfrmRCommandsControl.lvOperationDrawItem(Sender: TCustomListView; Item: TListItem;
+  Rect: TRect; State: TOwnerDrawState);
+var
+  i: Integer;
+  SubItemR, DrawR: TRect;
+  Format: Cardinal;
+  Icon: TIcon;
+  Operation: TOperation;
+begin
+
+  if Item = nil then
+    exit;
+
+  Operation := TOperation(Item.Data^);
+
+  if odSelected in State then
+    Sender.Canvas.Brush.Color := GetShadowColor(clHighlight, 115)
+  else
+  begin
+    // if (Item.Index mod 2) = 0 then
+    Sender.Canvas.Brush.Color := clWhite
+    // else
+    // Sender.Canvas.Brush.Color := clBtnFace;
+  end;
+  Sender.Canvas.Pen.Color := rgb(229, 229, 229); // clBtnFace;
+  Sender.Canvas.Font.Color := clWindowText;
+
+  Sender.Canvas.FillRect(Rect);
+
+  DrawR := Rect;
+  DrawR.Right := DrawR.Left + Sender.Column[0].Width - 5;
+  DrawText(Sender.Canvas.Handle, PChar(Item.Caption), -1, DrawR, DT_VCENTER or DT_RIGHT or
+    DT_SINGLELINE);
+
+  // Sender.Canvas.MoveTo(DrawR.Left + Sender.Column[0].Width - 1, DrawR.Top);
+  // Sender.Canvas.LineTo(DrawR.Left + Sender.Column[0].Width - 1, DrawR.Bottom);
+
+  for i := 1 to (Sender as TListView).Columns.Count - 1 do
+  begin
+    ListView_GetSubItemRect(Sender.Handle, Item.Index, i, LVIR_BOUNDS, @SubItemR);
+
+    { if i < (Sender as TListView).Columns.Count - 1 then
+      begin
+      Sender.Canvas.MoveTo(SubItemR.Right - 1, SubItemR.Top);
+      Sender.Canvas.LineTo(SubItemR.Right - 1, SubItemR.Bottom);
+      end; }
+
+    case Sender.Column[i].Alignment of
+      taLeftJustify:
+        Format := DT_LEFT;
+      taRightJustify:
+        Format := DT_RIGHT;
+      taCenter:
+        Format := DT_CENTER;
+    end;
+
+    SubItemR.Inflate(-5, 0, -5, 0);
+    if i = 1 then
+    begin
+      Icon := TIcon.Create();
+      try
+        case Operation.OType of
+          opKyeboard:
+            Main.ilSmall.GetIcon(12, Icon);
+          opApplication:
+            Main.ilSmall.GetIcon(14, Icon);
+          opMouse:
+            Main.ilSmall.GetIcon(20, Icon);
+        end;
+
+        Sender.Canvas.Draw(SubItemR.Left, SubItemR.Top + 1, Icon);
+        SubItemR.Inflate(-5 - Icon.Width, 0, 0, 0);
+      finally
+        Icon.Free;
+      end;
+    end;
+
+    DrawText(Sender.Canvas.Handle, PChar(Item.SubItems[i - 1]), -1, SubItemR,
+      Format or DT_VCENTER or DT_SINGLELINE or DT_END_ELLIPSIS);
+  end;
 end;
 
 procedure TfrmRCommandsControl.lvOperationDblClick(Sender: TObject);
@@ -231,6 +345,9 @@ begin
   FLineOpearion := TLine.Create(plvOperation, clBlack, clBlack);
   ActTBOperation.Top := 0;
 
+  lTotalCommandWait.Align := alClient;
+  TLine.Create(plvOperationFooter, clBlack, clBlack);
+
   // чистим контролы
   for i := 0 to self.ComponentCount - 1 do
   begin
@@ -248,7 +365,6 @@ begin
       TPanel(self.Components[i]).Caption := '';
   end;
 
-  SendMessage(lvOperation.Handle, WM_UPDATEUISTATE, MakeLong(UIS_SET, UISF_HIDEFOCUS), 0);
 end;
 
 procedure TfrmRCommandsControl.ActRCAddExecute(Sender: TObject);
@@ -278,7 +394,7 @@ begin
   if lbRCommands.ItemIndex = -1 then
   begin
     MessageDlg(uLanguage.GetLanguageMsg('msgRCSelectCommand', lngRus), mtWarning, [mbOK], 0);
-    Exit;
+    exit;
   end;
 
   try
@@ -287,7 +403,7 @@ begin
     on E: Exception do
     begin
       MessageDlg(E.Message, mtError, [mbOK], 0);
-      Exit;
+      exit;
     end;
   end;
 
@@ -316,7 +432,7 @@ begin
   if lbRCommands.ItemIndex = -1 then
   begin
     MessageDlg(uLanguage.GetLanguageMsg('msgRCSelectCommand', lngRus), mtWarning, [mbOK], 0);
-    Exit;
+    exit;
   end;
 
   if MessageDlg(Format(GetLanguageMsg('msgDBDeleteRemoteCommand', lngRus),
@@ -348,7 +464,7 @@ begin
   if lbRCommands.ItemIndex = -1 then
   begin
     MessageDlg(uLanguage.GetLanguageMsg('msgRCSelectCommand', lngRus), mtWarning, [mbOK], 0);
-    Exit;
+    exit;
   end;
 
   frmOPressKey := TfrmOPressKeyboard.Create(self);
@@ -370,7 +486,7 @@ begin
   if lbRCommands.ItemIndex = -1 then
   begin
     MessageDlg(uLanguage.GetLanguageMsg('msgRCSelectCommand', lngRus), mtWarning, [mbOK], 0);
-    Exit;
+    exit;
   end;
 
   frmORunApp := TfrmORunApplication.Create(self);
@@ -401,7 +517,7 @@ begin
   if lvOperation.SelCount = 0 then
   begin
     MessageDlg(uLanguage.GetLanguageMsg('msgRCSelectOperation', lngRus), mtWarning, [mbOK], 0);
-    Exit;
+    exit;
   end;
 
   Operation := TOperation(lvOperation.Selected.Data^);
@@ -483,7 +599,7 @@ begin
   if lbRCommands.ItemIndex = -1 then
   begin
     MessageDlg(uLanguage.GetLanguageMsg('msgRCSelectCommand', lngRus), mtWarning, [mbOK], 0);
-    Exit;
+    exit;
   end;
 
   frmOMouse := TfrmOMouse.Create(self);
@@ -507,7 +623,7 @@ begin
   if lvOperation.SelCount = 0 then
   begin
     MessageDlg(uLanguage.GetLanguageMsg('msgRCSelectOperation', lngRus), mtWarning, [mbOK], 0);
-    Exit;
+    exit;
   end;
 
   Operation := TOperation(lvOperation.Selected.Data^);
@@ -562,7 +678,10 @@ var
   i: Integer;
   LItem: TListItem;
   Op: POperation;
+  TotalWait: Integer;
 begin
+  TotalWait := 0;
+
   try
     Operations := Main.DataBase.getOperation(Command);
     lvOperation.Items.BeginUpdate;
@@ -581,8 +700,17 @@ begin
       new(Op);
       Op^ := Operations[i];
       LItem.Data := Op;
+
+      inc(TotalWait, Operations[i].OWait);
     end;
     lvOperation.Items.EndUpdate;
+
+    lTotalCommandWait.Caption := Format(GetLanguageText(self.Name, lTotalCommandWait.Name, lngRus),
+      [floattostr(TotalWait / 1000)])
+
+    // StaticText1.Caption := 'Общее время выполнения: ' + floattostr(TotalWait / 1000) + ' с.';
+
+    // lvOperation.Columns[1].Width := -2;
   except
     on E: Exception do
       MessageDlg(E.Message, mtError, [mbOK], 0);

@@ -25,7 +25,7 @@ object frmRCommandsControl: TfrmRCommandsControl
     Left = 167
     Top = 0
     Width = 554
-    Height = 361
+    Height = 329
     BevelOuter = bvNone
     Caption = 'pClient'
     Ctl3D = True
@@ -34,19 +34,19 @@ object frmRCommandsControl: TfrmRCommandsControl
     object plvOperation: TPanel
       AlignWithMargins = True
       Left = 7
-      Top = 144
+      Top = 112
       Width = 538
       Height = 201
       BevelOuter = bvNone
       BorderStyle = bsSingle
       Caption = 'plvOperation'
-      Color = clYellow
       Ctl3D = False
+      ParentBackground = False
       ParentCtl3D = False
       TabOrder = 1
       object lvOperation: TListView
-        Left = 96
-        Top = 60
+        Left = 80
+        Top = 44
         Width = 345
         Height = 74
         BorderStyle = bsNone
@@ -65,11 +65,14 @@ object frmRCommandsControl: TfrmRCommandsControl
             Width = 70
           end>
         ColumnClick = False
+        OwnerDraw = True
         ReadOnly = True
         RowSelect = True
         TabOrder = 0
         ViewStyle = vsReport
+        OnCustomDraw = lvOperationCustomDraw
         OnDblClick = lvOperationDblClick
+        OnDrawItem = lvOperationDrawItem
       end
       object ActTBOperation: TActionToolBar
         Left = 0
@@ -93,6 +96,33 @@ object frmRCommandsControl: TfrmRCommandsControl
         ParentShowHint = False
         ShowHint = True
         Spacing = 0
+      end
+      object plvOperationFooter: TPanel
+        Left = 0
+        Top = 179
+        Width = 536
+        Height = 20
+        Align = alBottom
+        BevelOuter = bvNone
+        Caption = 'plvOperationFooter'
+        Color = clWhite
+        ParentBackground = False
+        TabOrder = 2
+        DesignSize = (
+          536
+          20)
+        object lTotalCommandWait: TLabel
+          AlignWithMargins = True
+          Left = 400
+          Top = 2
+          Width = 121
+          Height = 13
+          Alignment = taRightJustify
+          Anchors = [akLeft, akTop, akRight]
+          AutoSize = False
+          Caption = 'lTotalCommandWait'
+          ExplicitWidth = 127
+        end
       end
     end
     object pCommandHeader: TPanel
@@ -274,16 +304,15 @@ object frmRCommandsControl: TfrmRCommandsControl
         Font.Style = []
         ParentFont = False
         Layout = tlCenter
-        ExplicitLeft = 0
-        ExplicitTop = 0
-        ExplicitWidth = 145
+        ExplicitLeft = 10
+        ExplicitTop = 6
       end
     end
   end
   object alAllCommand: TActionList
     Images = Main.ilSmall
-    Left = 256
-    Top = 296
+    Left = 24
+    Top = 344
     object ActOPressKeyboard: TAction
       Category = 'Operation'
       Caption = 'ActOPressKeyboard'
@@ -410,8 +439,8 @@ object frmRCommandsControl: TfrmRCommandsControl
         Caption = 'alAllCommand'
       end>
     Images = Main.ilSmall
-    Left = 336
-    Top = 296
+    Left = 104
+    Top = 344
     StyleName = 'Platform Default'
   end
   object ColorMap: TStandardColorMap
@@ -419,7 +448,7 @@ object frmRCommandsControl: TfrmRCommandsControl
     UnusedColor = 16514043
     Color = clMenuBar
     MenuColor = clMenu
-    Left = 415
-    Top = 296
+    Left = 183
+    Top = 344
   end
 end
