@@ -462,10 +462,10 @@ begin
           frmOMouse.udWait.Position := Operation.Mouse.Wait;
           frmOMouse.edForApplication.Text := Operation.Mouse.ForApplication;
 
-          frmOMouse.cbEvent.ItemIndex := frmOMouse.cbEvent.Items.IndexOfObject
-            (TObject(Operation.Mouse.Event));
-          frmOMouse.edX.Text := inttostr(Operation.Mouse.X);
-          frmOMouse.edY.Text := inttostr(Operation.Mouse.Y);
+          frmOMouse.MouseEvent := Operation.Mouse.Event;
+          frmOMouse.MouseX := Operation.Mouse.X;
+          frmOMouse.MouseY := Operation.Mouse.Y;
+          frmOMouse.MouseWheel := Operation.Mouse.Wheel;
 
           if frmOMouse.ShowModal = mrOK then
             ReadOperation(Operation.Command);

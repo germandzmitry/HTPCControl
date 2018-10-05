@@ -12,6 +12,13 @@ const
   tcComPort = 'C';
   tcMouse = 'M';
 
+const
+  meMoveMouse = 1;
+  meLeftCLick = 2;
+  meRightCLick = 3;
+  meScrollWheel = 4;
+  meWheelClick = 5;
+
 type
   // Таблица KeyboardGroup
   TKeyboardGroup = Record
@@ -301,9 +308,11 @@ begin
       '  [description] string(255))';
     Query.ExecSQL;
 
-    addMouseEvent(Query, 1, 'Движение указателя мышки');
-    addMouseEvent(Query, 2, 'Левый клик');
-    addMouseEvent(Query, 3, 'Правый клик');
+    addMouseEvent(Query, meMoveMouse, 'Движение указателя');
+    addMouseEvent(Query, meLeftCLick, 'Левый клик');
+    addMouseEvent(Query, meRightCLick, 'Правый клик');
+    addMouseEvent(Query, meScrollWheel, 'Вращение колеса');
+    addMouseEvent(Query, meWheelClick, 'Клик колесом');
 
     addKeybordGroup(Query, 0, 'Функциональные клавиши');
     addKeybord(Query, VK_F1, 'F1', 0);
@@ -1074,6 +1083,7 @@ begin
       '        null                    as event,                                      ' +
       '        null                    as x,                                          ' +
       '        null                    as y,                                          ' +
+      '        null                    as wheel,                                      ' +
       '        kk1.Description                                                        ' +
       '          & IIF(isNull(opk.Key2), "", " + " & kk2.Description)                 ' +
       '          & IIF(isNull(opk.Key3), "", " + " & kk3.Description)                 ' +
@@ -1098,6 +1108,7 @@ begin
       '        null                    as event,                                      ' +
       '        null                    as x,                                          ' +
       '        null                    as y,                                          ' +
+      '        null                    as wheel,                                      ' +
       '        ora.Application         as operation                                   ' +
       '      FROM OperationRunApplication as ora                                      ' +
       '    UNION ALL                                                                  ' +
@@ -1114,8 +1125,10 @@ begin
       '        om.event                as event,                                      ' +
       '        om.x                    as x,                                          ' +
       '        om.y                    as y,                                          ' +
+      '        om.wheel                as wheel,                                      ' +
       '        me.description                                                         ' +
       '          & IIF(om.event = 1, " x=" & om.x & ", y=" & om.y)                    ' +
+      '          & IIF(om.event = 4, " " & om.wheel)                                  ' +
       '                                as operation                                   ' +
       '      FROM OperationMouse as om                                                ' +
       '        INNER JOIN MouseEvent AS me ON me.Event = om.Event                     ' +
@@ -1168,6 +1181,7 @@ begin
         Result[Query.RecNo - 1].Mouse.Event := Query.FieldByName('event').AsInteger;
         Result[Query.RecNo - 1].Mouse.X := Query.FieldByName('x').AsInteger;
         Result[Query.RecNo - 1].Mouse.Y := Query.FieldByName('y').AsInteger;
+        Result[Query.RecNo - 1].Mouse.Wheel := Query.FieldByName('wheel').AsInteger;
 
         Result[Query.RecNo - 1].PressKeyboard.ForApplication :=
           Query.FieldByName('forApplication').AsString;

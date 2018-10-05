@@ -3,7 +3,7 @@ object frmOMouse: TfrmOMouse
   Top = 0
   BorderStyle = bsDialog
   Caption = 'frmOMouse'
-  ClientHeight = 239
+  ClientHeight = 383
   ClientWidth = 420
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
@@ -19,35 +19,9 @@ object frmOMouse: TfrmOMouse
   OnShow = FormShow
   DesignSize = (
     420
-    239)
+    383)
   PixelsPerInch = 96
   TextHeight = 13
-  object btnSave: TButton
-    Left = 256
-    Top = 206
-    Width = 75
-    Height = 25
-    Anchors = [akRight, akBottom]
-    Caption = 'btnSave'
-    TabOrder = 2
-    TabStop = False
-    OnClick = btnSaveClick
-    ExplicitLeft = 454
-    ExplicitTop = 292
-  end
-  object btnCancel: TButton
-    Left = 337
-    Top = 206
-    Width = 75
-    Height = 25
-    Anchors = [akRight, akBottom]
-    Caption = 'btnCancel'
-    TabOrder = 3
-    TabStop = False
-    OnClick = btnCancelClick
-    ExplicitLeft = 535
-    ExplicitTop = 292
-  end
   object pTop: TPanel
     Left = 0
     Top = 0
@@ -58,7 +32,6 @@ object frmOMouse: TfrmOMouse
     Caption = 'pTop'
     ParentBackground = False
     TabOrder = 0
-    ExplicitWidth = 645
     DesignSize = (
       420
       97)
@@ -139,7 +112,6 @@ object frmOMouse: TfrmOMouse
       ReadOnly = True
       TabOrder = 4
       Text = 'edForApplication'
-      ExplicitWidth = 275
     end
     object edWait: TEdit
       Left = 159
@@ -168,65 +140,57 @@ object frmOMouse: TfrmOMouse
     Left = 0
     Top = 97
     Width = 420
-    Height = 101
+    Height = 267
     Align = alTop
     Anchors = [akLeft, akTop, akRight, akBottom]
     BevelOuter = bvNone
     Caption = 'pMouse'
     Color = clWhite
+    DoubleBuffered = True
     ParentBackground = False
+    ParentDoubleBuffered = False
     TabOrder = 1
-    ExplicitHeight = 235
-    object lEvent: TLabel
-      Left = 8
-      Top = 16
-      Width = 145
-      Height = 13
-      Alignment = taRightJustify
-      AutoSize = False
-      Caption = 'lEvent'
+    OnClick = pMouseClick
+    object dtsMouseType: TDockTabSet
+      Left = 0
+      Top = 242
+      Width = 420
+      Height = 25
+      Align = alBottom
+      Font.Charset = DEFAULT_CHARSET
+      Font.Color = clWindowText
+      Font.Height = -11
+      Font.Name = 'Tahoma'
+      Font.Style = []
+      SelectedColor = clWhite
+      Style = tsModernTabs
+      Tabs.Strings = (
+        'Mouse'
+        'Manual')
+      TabIndex = 0
+      OnClick = dtsMouseTypeClick
     end
-    object lX: TLabel
-      Left = 8
-      Top = 43
-      Width = 145
-      Height = 13
-      Alignment = taRightJustify
-      AutoSize = False
-      Caption = 'lX'
-    end
-    object lY: TLabel
-      Left = 8
-      Top = 70
-      Width = 145
-      Height = 13
-      Alignment = taRightJustify
-      AutoSize = False
-      Caption = 'lY'
-    end
-    object edX: TEdit
-      Left = 159
-      Top = 40
-      Width = 121
-      Height = 21
-      TabOrder = 1
-      Text = 'edX'
-    end
-    object edY: TEdit
-      Left = 159
-      Top = 67
-      Width = 121
-      Height = 21
-      TabOrder = 2
-      Text = 'edY'
-    end
-    object cbEvent: TComboBox
-      Left = 159
-      Top = 13
-      Width = 224
-      Height = 21
-      Style = csDropDownList
-      TabOrder = 0
-    end
+  end
+  object btnSave: TButton
+    Left = 256
+    Top = 350
+    Width = 75
+    Height = 25
+    Anchors = [akRight, akBottom]
+    Caption = 'btnSave'
+    TabOrder = 2
+    TabStop = False
+    OnClick = btnSaveClick
+  end
+  object btnCancel: TButton
+    Left = 337
+    Top = 350
+    Width = 75
+    Height = 25
+    Anchors = [akRight, akBottom]
+    Caption = 'btnCancel'
+    TabOrder = 3
+    TabStop = False
+    OnClick = btnCancelClick
   end
 end

@@ -93,7 +93,6 @@ object frmRCommandsControl: TfrmRCommandsControl
         ParentShowHint = False
         ShowHint = True
         Spacing = 0
-        ExplicitWidth = 503
       end
     end
     object pCommandHeader: TPanel
@@ -112,7 +111,6 @@ object frmRCommandsControl: TfrmRCommandsControl
       ParentBackground = False
       ParentCtl3D = False
       TabOrder = 0
-      ExplicitWidth = 524
       DesignSize = (
         546
         92)
@@ -187,7 +185,6 @@ object frmRCommandsControl: TfrmRCommandsControl
         Anchors = [akLeft, akTop, akRight]
         Caption = 'cbRepeat'
         TabOrder = 0
-        ExplicitWidth = 343
       end
       object cbLongPress: TCheckBox
         Left = 168
@@ -197,7 +194,6 @@ object frmRCommandsControl: TfrmRCommandsControl
         Anchors = [akLeft, akTop, akRight]
         Caption = 'cbLongPress'
         TabOrder = 1
-        ExplicitWidth = 343
       end
     end
   end
@@ -354,6 +350,7 @@ object frmRCommandsControl: TfrmRCommandsControl
           end
           item
             Action = ActOMouse
+            Caption = 'ActO&Mouse'
             ImageIndex = 20
           end
           item

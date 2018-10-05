@@ -354,7 +354,7 @@ begin
   end;
 
   case Operation.Event of
-    1:
+    meMoveMouse:
       begin
         SetLength(KeyInputs, Length(KeyInputs) + 1);
         KeyInputs[Length(KeyInputs) - 1].Itype := INPUT_MOUSE;
@@ -364,7 +364,7 @@ begin
         KeyInputs[Length(KeyInputs) - 1].ki.time := 0;
         KeyInputs[Length(KeyInputs) - 1].ki.dwExtraInfo := 0;
       end;
-    2:
+    meLeftCLick:
       begin
         SetLength(KeyInputs, Length(KeyInputs) + 1);
         KeyInputs[Length(KeyInputs) - 1].Itype := INPUT_MOUSE;
@@ -378,7 +378,7 @@ begin
         KeyInputs[Length(KeyInputs) - 1].ki.time := 0;
         KeyInputs[Length(KeyInputs) - 1].ki.dwExtraInfo := 0;
       end;
-    3:
+    meRightCLick:
       begin
         SetLength(KeyInputs, Length(KeyInputs) + 1);
         KeyInputs[Length(KeyInputs) - 1].Itype := INPUT_MOUSE;
@@ -389,6 +389,29 @@ begin
         SetLength(KeyInputs, Length(KeyInputs) + 1);
         KeyInputs[Length(KeyInputs) - 1].Itype := INPUT_MOUSE;
         KeyInputs[Length(KeyInputs) - 1].mi.dwFlags := MOUSEEVENTF_RIGHTUP;
+        KeyInputs[Length(KeyInputs) - 1].ki.time := 0;
+        KeyInputs[Length(KeyInputs) - 1].ki.dwExtraInfo := 0;
+      end;
+    meScrollWheel:
+      begin
+        SetLength(KeyInputs, Length(KeyInputs) + 1);
+        KeyInputs[Length(KeyInputs) - 1].Itype := INPUT_MOUSE;
+        KeyInputs[Length(KeyInputs) - 1].mi.mouseData := 240;
+        KeyInputs[Length(KeyInputs) - 1].mi.dwFlags := MOUSEEVENTF_WHEEL;
+        KeyInputs[Length(KeyInputs) - 1].ki.time := 0;
+        KeyInputs[Length(KeyInputs) - 1].ki.dwExtraInfo := 0;
+      end;
+    meWheelClick:
+      begin
+        SetLength(KeyInputs, Length(KeyInputs) + 1);
+        KeyInputs[Length(KeyInputs) - 1].Itype := INPUT_MOUSE;
+        KeyInputs[Length(KeyInputs) - 1].mi.dwFlags := MOUSEEVENTF_MIDDLEDOWN;
+        KeyInputs[Length(KeyInputs) - 1].ki.time := 0;
+        KeyInputs[Length(KeyInputs) - 1].ki.dwExtraInfo := 0;
+
+        SetLength(KeyInputs, Length(KeyInputs) + 1);
+        KeyInputs[Length(KeyInputs) - 1].Itype := INPUT_MOUSE;
+        KeyInputs[Length(KeyInputs) - 1].mi.dwFlags := MOUSEEVENTF_MIDDLEUP;
         KeyInputs[Length(KeyInputs) - 1].ki.time := 0;
         KeyInputs[Length(KeyInputs) - 1].ki.dwExtraInfo := 0;
       end;
