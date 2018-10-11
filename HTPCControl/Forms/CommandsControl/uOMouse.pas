@@ -1,4 +1,4 @@
-unit uOMouse;
+п»їunit uOMouse;
 
 interface
 
@@ -70,8 +70,6 @@ type
     FudWheel: TUpDown;
     FMouseEvents: TMouseEvents;
 
-    clPen, clSelPen, clBrush, clSelBrush: ARGB;
-
     procedure DrawMouse;
     procedure DropMouse;
 
@@ -79,7 +77,7 @@ type
     procedure DropManual;
 
     procedure FormatMouseEvent;
-    procedure CreatePolygonMouse(X, Y: Integer);
+    // procedure CreatePolygonMouse(X, Y: Integer);
     procedure MoveMouse(X, Y: Integer);
     function DrawMouseState: TdmState;
 
@@ -111,14 +109,110 @@ type
 var
   frmOMouse: TfrmOMouse;
   OffsetX, OffsetY: Integer;
-  PolygonLeftClick, PolygonRightClick, PolygonScrollWheel, PolygonMoveL, PolygonMoveR, PolygonMoveU,
-    PolygonMoveD: array of TGPPoint;
+  // PolygonLeftClick, PolygonRightClick, PolygonScrollWheel, PolygonMoveL, PolygonMoveR, PolygonMoveU,
+  // PolygonMoveD: array of TGPPoint;
+  PathLC, PathRC, PathWC, PathML, PathMR, PathMU, PathMD: TGPGraphicsPath;
 
 implementation
 
 {$R *.dfm}
 
 uses uMain, uLanguage, uIcon;
+
+procedure TfrmOMouse.FormCreate(Sender: TObject);
+var
+  i: Integer;
+  Icon: TIcon;
+begin
+
+  // С‡РёСЃС‚РёРј РєРѕРЅС‚СЂРѕР»С‹
+  for i := 0 to self.ComponentCount - 1 do
+  begin
+    // Label
+    if self.Components[i] is TLabel then
+      TLabel(self.Components[i]).Caption := '';
+    // Edit
+    if self.Components[i] is TEdit then
+      TEdit(self.Components[i]).Text := '';
+    // Button
+    if self.Components[i] is TButton then
+      TButton(self.Components[i]).Caption := '';
+    // Panel
+    if self.Components[i] is TPanel then
+      TPanel(self.Components[i]).Caption := '';
+  end;
+
+  UpdateLanguage(self, lngRus);
+
+  Icon := TIcon.Create;
+  try
+    StockIcon(SIID_FOLDER, Icon);
+    sbtnForApplication.Glyph.Width := Icon.Width;
+    sbtnForApplication.Glyph.Height := Icon.Height;
+    sbtnForApplication.Glyph.Canvas.Draw(0, 0, Icon);
+    sbtnForApplication.Flat := True;
+  finally
+    Icon.Free;
+  end;
+
+  FMouseEvents := Main.DataBase.getMouseEvents;
+
+  PathLC := TGPGraphicsPath.Create();
+  PathRC := TGPGraphicsPath.Create();
+  PathWC := TGPGraphicsPath.Create();
+  PathML := TGPGraphicsPath.Create();
+  PathMR := TGPGraphicsPath.Create();
+  PathMU := TGPGraphicsPath.Create();
+  PathMD := TGPGraphicsPath.Create();
+
+end;
+
+procedure TfrmOMouse.FormShow(Sender: TObject);
+begin
+
+  FLineTop := TLine.Create(pTop, alBottom, clBlack, clBlack);
+  dtsMouseType.Top := 0;
+
+  // GetHighlightColor(rgb(217, 217, 220)) = clBtnFace
+  dtsMouseType.BackgroundColor := rgb(217, 217, 220);
+
+  FpMouseType := TPanel.Create(pMouse);
+  with FpMouseType do
+  begin
+    parent := pMouse;
+    left := 0;
+    Top := dtsMouseType.Top;
+    Width := dtsMouseType.Width;
+    Height := 2;
+    ParentBackground := False;
+    Color := clWhite;
+    BevelOuter := bvNone;
+    Caption := '';
+    BringToFront;
+  end;
+
+  OffsetX := 20;
+  OffsetY := 20;
+
+  if FmoType = moEdit then
+    FormatMouseEvent;
+
+  DrawMouse;
+end;
+
+procedure TfrmOMouse.FormDestroy(Sender: TObject);
+begin
+  PathLC.Free;
+  PathRC.Free;
+  PathWC.Free;
+  PathML.Free;
+  PathMR.Free;
+  PathMU.Free;
+  PathMD.Free;
+
+  FLineTop.Free;
+  FpMouseType.Free;
+end;
 
 procedure TfrmOMouse.FormatMouseEvent;
 begin
@@ -163,84 +257,6 @@ begin
   end;
 end;
 
-procedure TfrmOMouse.FormCreate(Sender: TObject);
-var
-  i: Integer;
-  Icon: TIcon;
-begin
-
-  // чистим контролы
-  for i := 0 to self.ComponentCount - 1 do
-  begin
-    // Label
-    if self.Components[i] is TLabel then
-      TLabel(self.Components[i]).Caption := '';
-    // Edit
-    if self.Components[i] is TEdit then
-      TEdit(self.Components[i]).Text := '';
-    // Button
-    if self.Components[i] is TButton then
-      TButton(self.Components[i]).Caption := '';
-    // Panel
-    if self.Components[i] is TPanel then
-      TPanel(self.Components[i]).Caption := '';
-  end;
-
-  UpdateLanguage(self, lngRus);
-
-  Icon := TIcon.Create;
-  try
-    StockIcon(SIID_FOLDER, Icon);
-    sbtnForApplication.Glyph.Width := Icon.Width;
-    sbtnForApplication.Glyph.Height := Icon.Height;
-    sbtnForApplication.Glyph.Canvas.Draw(0, 0, Icon);
-    sbtnForApplication.Flat := True;
-  finally
-    Icon.Free;
-  end;
-
-  FMouseEvents := Main.DataBase.getMouseEvents;
-
-  clPen := MakeColor(255, 173, 173, 173);
-  clBrush := MakeColor(255, 225, 225, 225);
-
-  clSelPen := MakeColor(255, 0, 84, 153);
-  clSelBrush := MakeColor(255, 204, 228, 247);
-end;
-
-procedure TfrmOMouse.FormShow(Sender: TObject);
-begin
-
-  FLineTop := TLine.Create(pTop, alBottom, clBlack, clBlack);
-  dtsMouseType.Top := 0;
-
-  // GetHighlightColor(rgb(217, 217, 220)) = clBtnFace
-  dtsMouseType.BackgroundColor := rgb(217, 217, 220);
-
-  FpMouseType := TPanel.Create(pMouse);
-  with FpMouseType do
-  begin
-    parent := pMouse;
-    left := 0;
-    Top := dtsMouseType.Top;
-    Width := dtsMouseType.Width;
-    Height := 2;
-    ParentBackground := False;
-    Color := clWhite;
-    BevelOuter := bvNone;
-    Caption := '';
-    BringToFront;
-  end;
-
-  OffsetX := 20;
-  OffsetY := 20;
-
-  if FmoType = moEdit then
-    FormatMouseEvent;
-
-  DrawMouse;
-end;
-
 procedure TfrmOMouse.MoveMouse(X, Y: Integer);
 var
   i: Integer;
@@ -261,7 +277,7 @@ begin
     inc(i);
 
     FpbMouse.Repaint;
-    Sleep(20);
+    Sleep(10);
 
     if (X = OffsetX) and (Y = OffsetY) then
       Break;
@@ -280,50 +296,43 @@ begin
   FMouseY := 0;
   FMouseWheel := 0;
 
-  if PtInRegion(CreatePolygonRgn(PolygonLeftClick[0], length(PolygonLeftClick), WINDING), m.X, m.Y)
-  then
+  if PathLC.IsVisible(m.X, m.Y) then
   begin
     FMouseEvent := 2;
     MoveMouse(20, 20);
   end
-  else if PtInRegion(CreatePolygonRgn(PolygonRightClick[0], length(PolygonRightClick), WINDING),
-    m.X, m.Y) then
+  else if PathRC.IsVisible(m.X, m.Y) then
   begin
     FMouseEvent := 3;
     MoveMouse(20, 20);
   end
-  else if PtInRegion(CreatePolygonRgn(PolygonScrollWheel[0], length(PolygonScrollWheel), WINDING),
-    m.X, m.Y) then
+  else if PathWC.IsVisible(m.X, m.Y) then
   begin
     FMouseEvent := 5;
     MoveMouse(20, 20);
   end
-  else if PtInRegion(CreatePolygonRgn(PolygonMoveL[0], length(PolygonMoveL), WINDING), m.X, m.Y)
-  then
+  else if PathML.IsVisible(m.X, m.Y) then
   begin
     FMouseEvent := 1;
     FMouseX := -10;
     FMouseY := 0;
     MoveMouse(0, 20);
   end
-  else if PtInRegion(CreatePolygonRgn(PolygonMoveU[0], length(PolygonMoveU), WINDING), m.X, m.Y)
-  then
+  else if PathMU.IsVisible(m.X, m.Y) then
   begin
     FMouseEvent := 1;
     FMouseX := 0;
     FMouseY := -10;
     MoveMouse(20, 0);
   end
-  else if PtInRegion(CreatePolygonRgn(PolygonMoveR[0], length(PolygonMoveR), WINDING), m.X, m.Y)
-  then
+  else if PathMR.IsVisible(m.X, m.Y) then
   begin
     FMouseEvent := 1;
     FMouseX := 10;
     FMouseY := 0;
     MoveMouse(40, 20);
   end
-  else if PtInRegion(CreatePolygonRgn(PolygonMoveD[0], length(PolygonMoveD), WINDING), m.X, m.Y)
-  then
+  else if PathMD.IsVisible(m.X, m.Y) then
   begin
     FMouseEvent := 1;
     FMouseX := 0;
@@ -341,212 +350,383 @@ begin
 end;
 
 procedure TfrmOMouse.pbMousePaint(Sender: TObject);
-
-  procedure SetPenBrush(CState, DState: TdmState; var APen: TGPPen; var ABrush: TGPSolidBrush);
-  begin
-    if (CState = DState) and (CState <> dmNone) then
-    begin
-      APen.SetColor(clSelPen);
-      ABrush.SetColor(clSelBrush);
-    end
-    else
-    begin
-      APen.SetColor(clPen);
-      ABrush.SetColor(clBrush);
-    end;
-  end;
-
 var
-  r, DrawR, MouseR: TGPRect;
+  R, DrawR, MouseR: TGPRect;
   graphicsGDIPlus: TGPGraphics;
   Pen, PenRed: TGPPen;
   Brush, BrushWhite: TGPSolidBrush;
-  points: array of TGPPoint;
+  Path, PathBody: TGPGraphicsPath;
   DrawPolygon: Boolean;
   DrawState: TdmState;
+  Points: array of TGPPoint;
+  clSelBrush: ARGB;
+  i, j: Integer;
+  lineCap: TLineCap;
+  PathBodyRect: TGPRectF;
+  X, Y, S: single;
 begin
+  clSelBrush := MakeColor(255, 204, 228, 247);
 
-  CreatePolygonMouse(OffsetX, OffsetY);
   DrawPolygon := False;
 
   graphicsGDIPlus := TGPGraphics.Create((Sender as TPaintBox).Canvas.Handle);
-  Pen := TGPPen.Create(clPen, 1);
+  Path := TGPGraphicsPath.Create;
+  PathBody := TGPGraphicsPath.Create;
+  Pen := TGPPen.Create(MakeColor(255, 173, 173, 173), 1);
   PenRed := TGPPen.Create(MakeColor(255, 255, 0, 0), 1);
 
-  Brush := TGPSolidBrush.Create(clBrush);
+  Brush := TGPSolidBrush.Create(MakeColor(255, 225, 225, 225));
   BrushWhite := TGPSolidBrush.Create(MakeColor(255, 255, 255, 255));
 
   DrawState := DrawMouseState;
 
   try
-    r := MakeRect(0, 0, (Sender as TPaintBox).Width - 1, (Sender as TPaintBox).Height - 1);
-    MouseR := MakeRect(r.X + OffsetX, r.Y + OffsetY, 101, 200);
+    R := MakeRect(0, 0, (Sender as TPaintBox).Width - 1, (Sender as TPaintBox).Height - 1);
+    MouseR := MakeRect(R.X + OffsetX, R.Y + OffsetY, 101, 200);
     graphicsGDIPlus.SetSmoothingMode(SmoothingMode.SmoothingModeAntiAlias);
 
-    // провод ------------------------------------------------------------------
-    SetLength(points, 3);
-    points[0] := MakePoint(MouseR.X + 50, MouseR.Y + 28);
-    points[1] := MakePoint(MouseR.X + 70, 20);
-    points[2] := MakePoint(70, 0);
-    graphicsGDIPlus.DrawCurve(Pen, PGPPoint(@points[0]), 3, 1.0);
+    // -------------------------------------------------------------------------
+    // РџСЂРѕРІРѕРґ
+    // -------------------------------------------------------------------------
+    SetLength(Points, 3);
+    Points[0] := MakePoint(MouseR.X + 50, MouseR.Y + 26);
+    Points[1] := MakePoint(MouseR.X + 70, 20);
+    Points[2] := MakePoint(70, 0);
+    graphicsGDIPlus.DrawCurve(Pen, PGPPoint(@Points[0]), 3, 1.0);
 
-    // левая -------------------------------------------------------------------
-    SetPenBrush(dmLeftClick, DrawState, Pen, Brush);
+    // -------------------------------------------------------------------------
+    // РўРµР»Рѕ - С‚РѕР»СЊРєРѕ СЂР°СЃС‡РµС‚ РґР»СЏ СЃС‚СЂРµР»РѕС‡РµРє, РЅРµ РІС‹РІРѕРґ
+    // -------------------------------------------------------------------------
+    PathBody.StartFigure;
+    PathBody.AddArc(MakeRect(MouseR.X - 50, MouseR.Y + 29, 200, 80), 216, 108); // РїРµСЂРµРґ
+    PathBody.AddArc(MakeRect(MouseR.X + 96, MouseR.Y - 121, 200, 400), 204, -50); // РїСЂР°РІРѕ
+    PathBody.AddArc(MakeRect(MouseR.X, MouseR.Y + 79, 100, 120), 343, 214); // РЅРёР·
+    PathBody.AddArc(MakeRect(MouseR.X - 196, MouseR.Y - 121, 200, 400), 25, -49); // Р»РµРІРѕ
+    PathBody.CloseFigure;
 
-    DrawR := MakeRect(MouseR.X, MouseR.Y + 30, 93, 131);
-    graphicsGDIPlus.FillPie(Brush, DrawR, 180, 90);
-    graphicsGDIPlus.DrawArc(Pen, DrawR, 180, 90);
-    graphicsGDIPlus.DrawLine(Pen, DrawR.X, DrawR.Y + 66, DrawR.X + 47, DrawR.Y + 66);
-    graphicsGDIPlus.DrawLine(Pen, DrawR.X + 47, DrawR.Y + 66, DrawR.X + 47, DrawR.Y);
+    // -------------------------------------------------------------------------
+    // РЎС‚СЂРµР»РєРё РґРІРёР¶РµРЅРёСЏ
+    // -------------------------------------------------------------------------
 
-    // левая - выемка под колесо
-    DrawR := MakeRect(MouseR.X + 39, MouseR.Y + 37, 22, 22);
-    graphicsGDIPlus.FillPie(BrushWhite, DrawR, 180, 90);
-    graphicsGDIPlus.DrawArc(Pen, DrawR, 180, 75);
+    Pen.SetColor(MakeColor(255, 90, 90, 90));
+    Brush.SetColor(MakeColor(255, 225, 225, 225));
 
-    DrawR := MakeRect(MouseR.X + 39, MouseR.Y + 47, 9, 33);
-    graphicsGDIPlus.FillRectangle(BrushWhite, DrawR);
-    graphicsGDIPlus.DrawLine(Pen, DrawR.X, DrawR.Y, DrawR.X, DrawR.Y + DrawR.Height);
+    // РІРІРµСЂС…
+    Path.StartFigure;
+    Path.AddLine(R.Width div 2 - 15, R.Y + 45, R.Width div 2 + 15, R.Y + 45);
+    Path.AddLine(R.Width div 2 + 15, R.Y + 45, R.Width div 2, R.Y + 35);
+    Path.CloseFigure;
+    PathMU := Path.Clone;
 
-    DrawR := MakeRect(MouseR.X + 39, MouseR.Y + 68, 22, 22);
-    graphicsGDIPlus.FillPie(BrushWhite, DrawR, 90, 90);
-    graphicsGDIPlus.DrawArc(Pen, DrawR, 105, 75);
+    graphicsGDIPlus.FillPath(Brush, Path);
+    graphicsGDIPlus.DrawPath(Pen, Path);
+    Path.Reset;
 
-    // правая ------------------------------------------------------------------
-    SetPenBrush(dmRightClick, DrawState, Pen, Brush);
+    // РІРЅРёР·
+    Path.StartFigure;
+    Path.AddLine(R.Width div 2 - 15, R.Height - 15, R.Width div 2 + 15, R.Height - 15);
+    Path.AddLine(R.Width div 2 + 15, R.Height - 15, R.Width div 2, R.Height - 5);
+    Path.CloseFigure;
+    PathMD := Path.Clone;
 
-    DrawR := MakeRect(MouseR.X + 7, MouseR.Y + 30, 93, 131);
-    graphicsGDIPlus.FillPie(Brush, DrawR, 270, 90);
-    graphicsGDIPlus.DrawArc(Pen, DrawR, 270, 90);
-    graphicsGDIPlus.DrawLine(Pen, DrawR.X + 46, DrawR.Y + 66, DrawR.X + 93, DrawR.Y + 66);
-    graphicsGDIPlus.DrawLine(Pen, DrawR.X + 46, DrawR.Y + 66, DrawR.X + 46, DrawR.Y);
+    graphicsGDIPlus.FillPath(Brush, Path);
+    graphicsGDIPlus.DrawPath(Pen, Path);
+    Path.Reset;
 
-    // правая - выемка под колесо
-    DrawR := MakeRect(MouseR.X + 39, MouseR.Y + 37, 22, 22);
-    graphicsGDIPlus.FillPie(BrushWhite, DrawR, 285, 75);
-    graphicsGDIPlus.DrawArc(Pen, DrawR, 285, 75);
+    // РЅР°Р»РµРІРѕ
+    Path.StartFigure;
+    Path.AddLine(R.X + 15, R.Height div 2 - 15, R.X + 15, R.Height div 2 + 15);
+    Path.AddLine(R.X + 15, R.Height div 2 + 15, R.X + 5, R.Height div 2);
+    Path.CloseFigure;
+    PathML := Path.Clone;
 
-    DrawR := MakeRect(MouseR.X + 52, MouseR.Y + 47, 9, 33);
-    graphicsGDIPlus.FillRectangle(BrushWhite, DrawR);
-    graphicsGDIPlus.DrawLine(Pen, DrawR.X + DrawR.Width, DrawR.Y, DrawR.X + DrawR.Width,
-      DrawR.Y + DrawR.Height);
+    graphicsGDIPlus.FillPath(Brush, Path);
+    graphicsGDIPlus.DrawPath(Pen, Path);
+    Path.Reset;
 
-    DrawR := MakeRect(MouseR.X + 39, MouseR.Y + 68, 22, 22);
-    graphicsGDIPlus.FillPie(BrushWhite, DrawR, 0, 75);
-    graphicsGDIPlus.DrawArc(Pen, DrawR, 0, 75);
+    // РЅР°РїСЂР°РІРѕ
+    Path.StartFigure;
+    Path.AddLine(R.Width - 15, R.Height div 2 - 15, R.Width - 15, R.Height div 2 + 15);
+    Path.AddLine(R.Width - 15, R.Height div 2 + 15, R.Width - 5, R.Height div 2);
+    Path.CloseFigure;
+    PathMR := Path.Clone;
 
-    // Колесо ------------------------------------------------------------------
-    SetPenBrush(dmWheelClick, DrawState, Pen, Brush);
+    graphicsGDIPlus.FillPath(Brush, Path);
+    graphicsGDIPlus.DrawPath(Pen, Path);
+    Path.Reset;
 
-    DrawR := MakeRect(MouseR.X + 43, MouseR.Y + 40, 14, 14);
-    graphicsGDIPlus.FillEllipse(Brush, DrawR);
-    graphicsGDIPlus.DrawArc(Pen, DrawR, 180, 180);
+    // -------------------------------------------------------------------------
+    // РЎС‚СЂРµР»РѕС‡РєРё РЅР°РїСЂР°РІР»РµРЅРёСЏ РґРІРёР¶РµРЅРёСЏ
+    // -------------------------------------------------------------------------
+    lineCap := Pen.GetEndCap();
+    Pen.SetWidth(3);
+    Pen.SetEndCap(LineCapArrowAnchor);
+    Pen.SetColor(clSelBrush);
 
-    DrawR := MakeRect(MouseR.X + 43, MouseR.Y + 73, 14, 14);
-    graphicsGDIPlus.FillEllipse(Brush, DrawR);
-    graphicsGDIPlus.DrawArc(Pen, DrawR, 0, 180);
+    PathBody.GetBounds(PathBodyRect);
+    j := round(PathBodyRect.Y) div 15 + 1;
 
-    DrawR := MakeRect(MouseR.X + 43, MouseR.Y + 47, 14, 33);
-    graphicsGDIPlus.FillRectangle(Brush, DrawR);
-    graphicsGDIPlus.DrawLine(Pen, DrawR.X, DrawR.Y, DrawR.X, DrawR.Y + DrawR.Height);
-    graphicsGDIPlus.DrawLine(Pen, DrawR.X + DrawR.Width, DrawR.Y, DrawR.X + DrawR.Width,
-      DrawR.Y + DrawR.Height);
+    // РЅР°Р»РµРІРѕ
+    if DrawState = dmMoveLeft then
+      for i := j to j + 10 do
+      begin
+        X := PathBodyRect.X + PathBodyRect.Width;
+        Y := R.Y + 5 + i * 15;
+        while X > PathBodyRect.X do
+        begin
+          if PathBody.IsVisible(X, Y) then
+          begin
+            S := PathBodyRect.X + PathBodyRect.Width - X;
+            graphicsGDIPlus.DrawLine(Pen, R.Width - S - 15, Y, R.Width - S - 30, Y);
+            Break;
+          end;
+          X := X - 1;
+        end;
+      end;
 
-    // тело --------------------------------------------------------------------
-    SetPenBrush(dmNone, DrawState, Pen, Brush);
+    // РЅР°РїСЂР°РІРѕ
+    if DrawState = dmMoveRight then
+      for i := j to j + 10 do
+      begin
+        X := PathBodyRect.X;
+        Y := R.Y + 5 + i * 15;
+        while X < PathBodyRect.X + PathBodyRect.Width do
+        begin
+          if PathBody.IsVisible(X, Y) then
+          begin
+            S := X - PathBodyRect.X;
+            graphicsGDIPlus.DrawLine(Pen, R.X + S + 20, Y, R.X + S + 35, Y);
+            Break;
+          end;
+          X := X + 1;
+        end;
+      end;
 
-    DrawR := MakeRect(MouseR.X, MouseR.Y + 101, 100, 50);
-    graphicsGDIPlus.FillRectangle(Brush, DrawR);
-    graphicsGDIPlus.DrawRectangle(Pen, DrawR);
+    j := round(PathBodyRect.X) div 15 + 1;
+    // РІРЅРёР·
+    if DrawState = dmMoveDown then
+      for i := j to j + 5 do
+      begin
+        X := R.X + 2 + i * 15;
+        Y := PathBodyRect.Y;
 
-    // тело - низ
-    DrawR := MakeRect(MouseR.X, MouseR.Y + 100, 100, 99);
-    graphicsGDIPlus.FillPie(Brush, DrawR, 0, 180);
-    graphicsGDIPlus.DrawArc(Pen, DrawR, 0, 180);
+        while Y < PathBodyRect.Y + PathBodyRect.Height do
+        begin
+          if PathBody.IsVisible(X, Y) then
+          begin
+            S := Y - PathBodyRect.Y;
+            graphicsGDIPlus.DrawLine(Pen, X, R.Y + S + 48, X, R.Y + S + 63);
+            Break;
+          end;
+          Y := Y + 1;
+        end;
+      end;
 
-    // Стрелки -----------------------------------------------------------------
-    SetPenBrush(dmNone, DrawState, Pen, Brush);
+    // РІРІРµСЂС…
+    if DrawState = dmMoveUp then
+      for i := j to j + 5 do
+      begin
+        X := R.X + 2 + i * 15;
+        Y := PathBodyRect.Y + PathBodyRect.Height;
 
-    graphicsGDIPlus.FillEllipse(BrushWhite, MouseR.X + 18, MouseR.Y + 118, 64, 64);
-    graphicsGDIPlus.DrawEllipse(Pen, MouseR.X + 18, MouseR.Y + 118, 64, 64);
+        while Y > PathBodyRect.Y do
+        begin
+          if PathBody.IsVisible(X, Y) then
+          begin
+            S := PathBodyRect.Y + PathBodyRect.Height - Y;
+            graphicsGDIPlus.DrawLine(Pen, X, R.Height - S - 13, X, R.Height - S - 28);
+            Break;
+          end;
+          Y := Y - 1;
+        end;
+      end;
 
-    // Стрелки - вверх ---------------------------------------------------------
-    SetPenBrush(dmMoveUp, DrawState, Pen, Brush);
+    Pen.SetWidth(1);
+    Pen.SetEndCap(lineCap);
 
-    DrawR := MakeRect(MouseR.X + 20 + 20, MouseR.Y + 120 + 0, 64, 64);
-    SetLength(PolygonMoveU, 7);
-    PolygonMoveU[0] := MakePoint(DrawR.X + 20, DrawR.Y + 10);
-    PolygonMoveU[1] := MakePoint(DrawR.X + 10, DrawR.Y + 0);
-    PolygonMoveU[2] := MakePoint(DrawR.X + 0, DrawR.Y + 10);
-    PolygonMoveU[3] := MakePoint(DrawR.X + 5, DrawR.Y + 10);
-    PolygonMoveU[4] := MakePoint(DrawR.X + 5, DrawR.Y + 20);
-    PolygonMoveU[5] := MakePoint(DrawR.X + 15, DrawR.Y + 20);
-    PolygonMoveU[6] := MakePoint(DrawR.X + 15, DrawR.Y + 10);
-    graphicsGDIPlus.FillPolygon(Brush, PGPPoint(@PolygonMoveU[0]), length(PolygonMoveU));
-    graphicsGDIPlus.DrawPolygon(Pen, PGPPoint(@PolygonMoveU[0]), length(PolygonMoveU));
+    // -------------------------------------------------------------------------
+    // РўРµР»Рѕ - РІС‹РІРѕРґ
+    // -------------------------------------------------------------------------
 
-    // Стрелки - вниз ----------------------------------------------------------
-    SetPenBrush(dmMoveDown, DrawState, Pen, Brush);
+    // РџРµСЂРµРґ
+    Path.StartFigure;
+    DrawR := MakeRect(MouseR.X - 50, MouseR.Y + 29, 200, 80);
+    Path.AddArc(DrawR, 216, 4);
+    Path.AddArc(MakeRect(MouseR.X + 7, MouseR.Y - 10, 86, 86), 180, -180);
+    Path.AddArc(DrawR, 320, 4);
+    Path.AddArc(MakeRect(MouseR.X + 96, MouseR.Y - 121, 200, 400), 204, -50); // РїСЂР°РІРѕ
+    Path.AddArc(MakeRect(MouseR.X, MouseR.Y + 79, 100, 120), 343, 214); // РЅРёР·
+    Path.AddArc(MakeRect(MouseR.X - 196, MouseR.Y - 121, 200, 400), 25, -49); // Р»РµРІРѕ
+    Path.CloseFigure;
+    Path.Reset;
 
-    DrawR := MakeRect(MouseR.X + 20 + 20, MouseR.Y + 120 + 40, 64, 64);
-    SetLength(PolygonMoveD, 7);
-    PolygonMoveD[0] := MakePoint(DrawR.X + 0, DrawR.Y + 10);
-    PolygonMoveD[1] := MakePoint(DrawR.X + 10, DrawR.Y + 20);
-    PolygonMoveD[2] := MakePoint(DrawR.X + 20, DrawR.Y + 10);
-    PolygonMoveD[3] := MakePoint(DrawR.X + 15, DrawR.Y + 10);
-    PolygonMoveD[4] := MakePoint(DrawR.X + 15, DrawR.Y + 0);
-    PolygonMoveD[5] := MakePoint(DrawR.X + 5, DrawR.Y + 0);
-    PolygonMoveD[6] := MakePoint(DrawR.X + 5, DrawR.Y + 10);
-    graphicsGDIPlus.FillPolygon(Brush, PGPPoint(@PolygonMoveD[0]), length(PolygonMoveD));
-    graphicsGDIPlus.DrawPolygon(Pen, PGPPoint(@PolygonMoveD[0]), length(PolygonMoveD));
+    Pen.SetColor(MakeColor(255, 90, 90, 90));
+    Brush.SetColor(MakeColor(255, 90, 90, 90));
+    graphicsGDIPlus.FillPath(Brush, PathBody);
+    graphicsGDIPlus.DrawPath(Pen, PathBody);
+    Path.Reset;
 
-    // Стрелки - налево --------------------------------------------------------
-    SetPenBrush(dmMoveLeft, DrawState, Pen, Brush);
+    // 1 Р»РёРЅРёСЏ
+    Path.StartFigure;
+    Path.AddArc(MakeRect(MouseR.X - 50, MouseR.Y + 29, 200, 80), 220, 100); // РїРµСЂРµРґ
+    Path.AddArc(MakeRect(MouseR.X + 7, MouseR.Y - 152, 86, 340), 20, 140); // Р»РёРЅРёСЏ
+    Path.CloseFigure;
 
-    DrawR := MakeRect(MouseR.X + 20 + 0, MouseR.Y + 120 + 20, 64, 64);
-    SetLength(PolygonMoveL, 7);
-    PolygonMoveL[0] := MakePoint(DrawR.X + 10, DrawR.Y + 0);
-    PolygonMoveL[1] := MakePoint(DrawR.X + 0, DrawR.Y + 10);
-    PolygonMoveL[2] := MakePoint(DrawR.X + 10, DrawR.Y + 20);
-    PolygonMoveL[3] := MakePoint(DrawR.X + 10, DrawR.Y + 15);
-    PolygonMoveL[4] := MakePoint(DrawR.X + 20, DrawR.Y + 15);
-    PolygonMoveL[5] := MakePoint(DrawR.X + 20, DrawR.Y + 5);
-    PolygonMoveL[6] := MakePoint(DrawR.X + 10, DrawR.Y + 5);
-    graphicsGDIPlus.FillPolygon(Brush, PGPPoint(@PolygonMoveL[0]), length(PolygonMoveL));
-    graphicsGDIPlus.DrawPolygon(Pen, PGPPoint(@PolygonMoveL[0]), length(PolygonMoveL));
+    Pen.SetColor(MakeColor(255, 225, 225, 225));
+    Brush.SetColor(MakeColor(255, 225, 225, 225));
+    graphicsGDIPlus.FillPath(Brush, Path);
+    graphicsGDIPlus.DrawPath(Pen, Path);
+    Path.Reset;
 
-    // Стрелки - направо -------------------------------------------------------
-    SetPenBrush(dmMoveRight, DrawState, Pen, Brush);
+    // 2 Р»РёРЅРёСЏ
+    Path.StartFigure;
+    Path.AddArc(MakeRect(MouseR.X + 10, MouseR.Y - 132, 80, 300), 66, 48); // Р»РёРЅРёСЏ
+    Path.CloseFigure;
 
-    DrawR := MakeRect(MouseR.X + 20 + 40, MouseR.Y + 120 + 20, 64, 64);
-    SetLength(PolygonMoveR, 7);
-    PolygonMoveR[0] := MakePoint(DrawR.X + 10, DrawR.Y + 20);
-    PolygonMoveR[1] := MakePoint(DrawR.X + 20, DrawR.Y + 10);
-    PolygonMoveR[2] := MakePoint(DrawR.X + 10, DrawR.Y + 0);
-    PolygonMoveR[3] := MakePoint(DrawR.X + 10, DrawR.Y + 5);
-    PolygonMoveR[4] := MakePoint(DrawR.X + 0, DrawR.Y + 5);
-    PolygonMoveR[5] := MakePoint(DrawR.X + 0, DrawR.Y + 15);
-    PolygonMoveR[6] := MakePoint(DrawR.X + 10, DrawR.Y + 15);
-    graphicsGDIPlus.FillPolygon(Brush, PGPPoint(@PolygonMoveR[0]), length(PolygonMoveR));
-    graphicsGDIPlus.DrawPolygon(Pen, PGPPoint(@PolygonMoveR[0]), length(PolygonMoveR));
+    Pen.SetColor(MakeColor(255, 173, 173, 173));
+    Brush.SetColor(MakeColor(255, 173, 173, 173));
+    graphicsGDIPlus.FillPath(Brush, Path);
+    graphicsGDIPlus.DrawPath(Pen, Path);
+    Path.Reset;
 
-    // Стрелки - центр ---------------------------------------------------------
-    SetPenBrush(dmNone, DrawState, Pen, Brush);
+    // -------------------------------------------------------------------------
+    // Р›РµРІР°СЏ РєР»Р°РІРёС€Р°
+    // -------------------------------------------------------------------------
+    Path.StartFigure;
+    Path.AddArc(MakeRect(MouseR.X - 50, MouseR.Y + 29, 200, 80), 224, 45);
+    // РґС‹СЂРєР° РїРѕРґ РєРѕР»РµСЃРѕ
+    Path.AddLine(MouseR.X + 50, MouseR.Y + 29, MouseR.X + 50, MouseR.Y + 29 + 11);
+    Path.AddArc(MakeRect(MouseR.X + 43, MouseR.Y + 40, 14, 14), 270, -90);
+    Path.AddLine(MouseR.X + 43, MouseR.Y + 48, MouseR.X + 43, MouseR.Y + 48 + 26);
+    Path.AddArc(MakeRect(MouseR.X + 43, MouseR.Y + 66, 14, 14), 180, -90);
+    Path.AddLine(MouseR.X + 50, MouseR.Y + 82, MouseR.X + 50, MouseR.Y + 95);
+    // РґС‹СЂРєР° РїРѕРґ РєРѕР»РµСЃРѕ - РєРѕРЅРµС†
+    Path.AddArc(MakeRect(MouseR.X + 10, MouseR.Y - 132, 80, 300), 114, 46);
+    Path.CloseFigure;
+    PathLC := Path.Clone;
 
-    graphicsGDIPlus.FillEllipse(Brush, MouseR.X + 20 + 23, MouseR.Y + 120 + 23, 14, 14);
-    graphicsGDIPlus.DrawEllipse(Pen, MouseR.X + 20 + 23, MouseR.Y + 120 + 23, 14, 14);
-
-    // рамка
-    if DrawPolygon then
+    Pen.SetColor(MakeColor(255, 173, 173, 173));
+    Brush.SetColor(MakeColor(255, 173, 173, 173));
+    if DrawState = dmLeftClick then
     begin
-      graphicsGDIPlus.DrawRectangle(PenRed, r);
+      // Pen.SetColor(clSelBrush);
+      Brush.SetColor(clSelBrush);
     end;
+
+    graphicsGDIPlus.FillPath(Brush, Path);
+    graphicsGDIPlus.DrawPath(Pen, Path);
+    Path.Reset;
+
+    // -------------------------------------------------------------------------
+    // РџСЂР°РІР°СЏ РєР»Р°РІРёС€Р°
+    // -------------------------------------------------------------------------
+    Path.StartFigure;
+    Path.AddArc(MakeRect(MouseR.X - 50, MouseR.Y + 29, 200, 80), 224 + 45 + 45 + 1, -45);
+    // РґС‹СЂРєР° РїРѕРґ РєРѕР»РµСЃРѕ
+    Path.AddLine(MouseR.X + 50, MouseR.Y + 29, MouseR.X + 50, MouseR.Y + 29 + 11);
+    Path.AddArc(MakeRect(MouseR.X + 43, MouseR.Y + 40, 14, 14), 270, 90);
+    Path.AddLine(MouseR.X + 43 + 14, MouseR.Y + 48, MouseR.X + 43 + 14, MouseR.Y + 48 + 26);
+    Path.AddArc(MakeRect(MouseR.X + 43, MouseR.Y + 66, 14, 14), 0, 90);
+    Path.AddLine(MouseR.X + 50, MouseR.Y + 82, MouseR.X + 50, MouseR.Y + 95);
+    // РґС‹СЂРєР° РїРѕРґ РєРѕР»РµСЃРѕ - РєРѕРЅРµС†
+    Path.AddArc(MakeRect(MouseR.X + 10, MouseR.Y - 132, 80, 300), 66, -46);
+    Path.CloseFigure;
+    PathRC := Path.Clone;
+
+    Pen.SetColor(MakeColor(255, 173, 173, 173));
+    Brush.SetColor(MakeColor(255, 173, 173, 173));
+    if DrawState = dmRightClick then
+    begin
+      // Pen.SetColor(clSelBrush);
+      Brush.SetColor(clSelBrush);
+    end;
+
+    graphicsGDIPlus.FillPath(Brush, Path);
+    graphicsGDIPlus.DrawPath(Pen, Path);
+    Path.Reset;
+
+    // -------------------------------------------------------------------------
+    // РљРѕР»РµСЃРѕ
+    // -------------------------------------------------------------------------
+    Path.StartFigure;
+    Path.AddLine(MouseR.X + 50, MouseR.Y + 29, MouseR.X + 50, MouseR.Y + 40);
+    Path.AddArc(MakeRect(MouseR.X + 43, MouseR.Y + 40, 14, 14), 270, -90);
+    Path.AddLine(MouseR.X + 43, MouseR.Y + 48, MouseR.X + 43, MouseR.Y + 48 + 26);
+    Path.AddArc(MakeRect(MouseR.X + 43, MouseR.Y + 66, 14, 14), 180, -90);
+    Path.AddLine(MouseR.X + 50, MouseR.Y + 29 + 54, MouseR.X + 50, MouseR.Y + 29 + 54 + 11);
+    Path.AddArc(MakeRect(MouseR.X + 43, MouseR.Y + 66, 14, 14), 90, -90);
+    Path.AddLine(MouseR.X + 43 + 14, MouseR.Y + 48 + 26, MouseR.X + 43 + 14, MouseR.Y + 48);
+    Path.AddArc(MakeRect(MouseR.X + 43, MouseR.Y + 40, 14, 14), 0, -90);
+    Path.CloseFigure;
+    PathWC := Path.Clone;
+
+    Pen.SetColor(MakeColor(255, 90, 90, 90));
+    Brush.SetColor(MakeColor(255, 225, 225, 225));
+    if DrawState = dmWheelClick then
+      Brush.SetColor(clSelBrush);
+
+    graphicsGDIPlus.FillPath(Brush, Path);
+    graphicsGDIPlus.DrawPath(Pen, Path);
+    Path.Reset;
+
+    // -------------------------------------------------------------------------
+    // РЎС‚СЂРµР»РѕС‡РєРё
+    // -------------------------------------------------------------------------
+    { lineCap := Pen.GetEndCap();
+      Pen.SetWidth(3);
+      Pen.SetEndCap(LineCapArrowAnchor);
+      Pen.SetColor(MakeColor(255, 255, 0, 0));
+
+      PathBody.GetBounds(tt);
+
+      for i := 3 to 13 do
+      begin
+      Y := MouseR.Y + i * 15;
+      X := tt.X + tt.Width;
+      while X > tt.X do
+      begin
+
+      if PathBody.IsVisible(X, Y) then
+      begin
+      graphicsGDIPlus.DrawLine(Pen, X + 20, Y, X + 5, Y);
+      Break;
+      end;
+
+      X := X - 1;
+      end;
+
+
+      // for j := round(tt.Width + tt.X) downto round(tt.X) do
+      // begin
+      // X := round(tt.Width);
+      // Y := MouseR.Y + i * 15;
+      // if PathBody.IsVisible(X, Y) then
+      // begin
+      // FpbMouse.Canvas.Pixels[X, Y] := clRed;
+      // // graphicsGDIPlus.DrawLine(Pen, tt.Width - j - 5, MouseR.Y + i * 15, tt.Width - j - 20,
+      // // MouseR.Y + i * 15);
+      // Break;
+      // end;
+
+      // end;
+
+      end; }
+
+    { if DrawState = dmMoveLeft then
+      for i := 3 to 12 do
+      graphicsGDIPlus.DrawLine(Pen, R.Width - 25, MouseR.Y + i * 15, R.Width - 40,
+      MouseR.Y + i * 15); }
+
+    Pen.SetWidth(1);
+    Pen.SetEndCap(lineCap);
 
   finally
     Pen.Free;
     PenRed.Free;
     Brush.Free;
     BrushWhite.Free;
+    Path.Free;
+    PathBody.Free;
     graphicsGDIPlus.Free;
   end;
 end;
@@ -555,13 +735,6 @@ procedure TfrmOMouse.pMouseClick(Sender: TObject);
 begin
   if Assigned(FpbMouse) then
     pbMouseClick(FpbMouse);
-end;
-
-procedure TfrmOMouse.FormDestroy(Sender: TObject);
-begin
-  FLineTop.Free;
-  FpMouseType.Free;
-  // FLineBottom.Free;
 end;
 
 procedure TfrmOMouse.btnSaveClick(Sender: TObject);
@@ -678,9 +851,9 @@ begin
     LB.Canvas.DrawFocusRect(Rect);
 end;
 
-procedure TfrmOMouse.CreatePolygonMouse(X, Y: Integer);
-begin
-  // Левая
+{ procedure TfrmOMouse.CreatePolygonMouse(X, Y: Integer);
+  begin
+  // Р›РµРІР°СЏ
   SetLength(PolygonLeftClick, 0);
   SetLength(PolygonLeftClick, length(PolygonLeftClick) + 1);
   PolygonLeftClick[length(PolygonLeftClick) - 1] := MakePoint(X + 47, Y + 30);
@@ -705,7 +878,7 @@ begin
   SetLength(PolygonLeftClick, length(PolygonLeftClick) + 1);
   PolygonLeftClick[length(PolygonLeftClick) - 1] := MakePoint(X + 30, Y + 35);
 
-  // Правая
+  // РџСЂР°РІР°СЏ
   SetLength(PolygonRightClick, 0);
   SetLength(PolygonRightClick, length(PolygonRightClick) + 1);
   PolygonRightClick[length(PolygonRightClick) - 1] := MakePoint(X + 53, Y + 30);
@@ -730,7 +903,7 @@ begin
   SetLength(PolygonRightClick, length(PolygonRightClick) + 1);
   PolygonRightClick[length(PolygonRightClick) - 1] := MakePoint(X + 70, Y + 35);
 
-  // Колесо
+  // РљРѕР»РµСЃРѕ
   SetLength(PolygonScrollWheel, 0);
   SetLength(PolygonScrollWheel, length(PolygonScrollWheel) + 1);
   PolygonScrollWheel[length(PolygonScrollWheel) - 1] := MakePoint(X + 43, Y + 47);
@@ -748,7 +921,7 @@ begin
   PolygonScrollWheel[length(PolygonScrollWheel) - 1] := MakePoint(X + 52, Y + 40);
   SetLength(PolygonScrollWheel, length(PolygonScrollWheel) + 1);
   PolygonScrollWheel[length(PolygonScrollWheel) - 1] := MakePoint(X + 48, Y + 40);
-end;
+  end; }
 
 procedure TfrmOMouse.sbtnForApplicationClick(Sender: TObject);
 var
@@ -756,7 +929,7 @@ var
 begin
   OpenDialog := TOpenDialog.Create(self);
   try
-    OpenDialog.Filter := 'Приложении|*.exe';
+    OpenDialog.Filter := 'РџСЂРёР»РѕР¶РµРЅРёРё|*.exe';
     if FileExists(edForApplication.Text) then
       OpenDialog.InitialDir := ExtractFileDir(edForApplication.Text)
     else
@@ -868,7 +1041,7 @@ var
   i: Integer;
 begin
 
-  // Событие
+  // РЎРѕР±С‹С‚РёРµ
   FlEvent := TLabel.Create(pMouse);
   with FlEvent do
   begin
@@ -1047,7 +1220,7 @@ begin
       or (pMouse.Components[i] is TUpDown) then
       pMouse.Components[i].Free;
 
-  // Если не очищать парента, при Free падаем access_violation
+  // Р•СЃР»Рё РЅРµ РѕС‡РёС‰Р°С‚СЊ РїР°СЂРµРЅС‚Р°, РїСЂРё Free РїР°РґР°РµРј access_violation
   FlbEvent.parent := nil;
   FlbEvent.Free;
 
