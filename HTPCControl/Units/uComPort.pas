@@ -282,7 +282,8 @@ begin
             FReadData := '';
           end
           else
-            FReadData := FReadData + chr(Buffer[i]);
+            if (Buffer[i] <> 10) then
+              FReadData := FReadData + chr(Buffer[i]);
 
         SetLength(Buffer, 0);
       end;
