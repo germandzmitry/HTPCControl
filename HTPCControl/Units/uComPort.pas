@@ -56,7 +56,9 @@ type
     FBufferInputSize: Integer;
     FBufferOutputSize: Integer;
     FEvents: TComEvents;
+    FEventChar: Char;
 
+    FOnBeforeOpen: TNotifyEvent;
     FOnAfterOpen: TNotifyEvent;
     FOnAfterClose: TNotifyEvent;
     FOnReadData: TReadDataEvent;
@@ -79,6 +81,7 @@ type
     function WriteStrAsync(var Str: string; var AsyncPtr: PAsync): Integer;
 
     procedure DoReadData; dynamic;
+    procedure DoBeforeOpen; dynamic;
     procedure DoAfterOpen; dynamic;
     procedure DoAfterClose; dynamic;
   public
@@ -91,8 +94,10 @@ type
     property Handle: NativeUInt read FHandle;
     property Connected: boolean read FConnected default False;
     property Events: TComEvents read FEvents write FEvents;
+    property EventChar: Char read FEventChar;
     property OnReadData: TReadDataEvent read FOnReadData write FOnReadData;
 
+    property onBeforeOpen: TNotifyEvent read FOnBeforeOpen write FOnBeforeOpen;
     property onAfterOpen: TNotifyEvent read FOnAfterOpen write FOnAfterOpen;
     property onAfterClose: TNotifyEvent read FOnAfterClose write FOnAfterClose;
   end;
@@ -240,7 +245,7 @@ var
 
   Errors: DWORD;
   ComStat: TComStat;
-  Buffer: array [1 .. 20] of byte;
+  Buffer: array of byte;
   ReadBytes, i: Integer;
 begin
   FillChar(Overlapped, SizeOf(Overlapped), 0);
@@ -257,18 +262,29 @@ begin
     begin
       FEvents := IntToEvents(Mask);
 
-      FillChar(Buffer, SizeOf(Buffer), 0);
-      ClearCommError(FComPort.Handle, Errors, @ComStat);
-      ReadBytes := FComPort.Read(Buffer, ComStat.cbInQue);
-
-      for i := 1 to ReadBytes do
-        if (Buffer[i] <> 10) and (Buffer[i] <> 13) then
-          FReadData := FReadData + chr(Buffer[i]);
-
-      if evRxFlag in FEvents then
+      // пришли данные
+      if evRxChar in FEvents then
       begin
-        Synchronize(FComPort.DoReadData);
-        FReadData := '';
+        // Сколько данных пришло
+        ClearCommError(FComPort.Handle, Errors, @ComStat);
+        if ComStat.cbInQue = 0 then
+          Continue;
+
+        // читаем данные
+        SetLength(Buffer, ComStat.cbInQue);
+        ReadBytes := FComPort.Read(Buffer[0], ComStat.cbInQue);
+
+        // обрабатываем данные
+        for i := 0 to ReadBytes - 1 do
+          if (Buffer[i] = ord(FComPort.EventChar)) then
+          begin
+            Synchronize(FComPort.DoReadData);
+            FReadData := '';
+          end
+          else
+            FReadData := FReadData + chr(Buffer[i]);
+
+        SetLength(Buffer, 0);
       end;
     end;
 
@@ -347,6 +363,7 @@ begin
   FBufferOutputSize := 1024;
   FEvents := [evRxChar, evTxEmpty, evRxFlag, evRing, evBreak, evCTS, evDSR, evError, evRLSD,
     evRx80Full];
+  FEventChar := chr(13);
 end;
 
 destructor TComPort.Destroy;
@@ -400,6 +417,7 @@ begin
   // Если соединеие уже установленно, ничего не делаем
   if not FConnected then
   begin
+    DoBeforeOpen;
     // открытие порта
     CreateHandle;
     FConnected := True;
@@ -471,7 +489,7 @@ begin
     Dcb.Parity := NOPARITY;
     Dcb.ByteSize := 8;
     Dcb.StopBits := ONESTOPBIT;
-    Dcb.EvtChar := chr(13);
+    Dcb.EvtChar := AnsiChar(FEventChar); // chr(13);
 
     if not SetCommState(FHandle, Dcb) then
       raise Exception.Create('Ошибка установки параметров: ' + SysErrorMessage(GetLastError));
@@ -567,7 +585,7 @@ begin
 {$IFDEF Unicode}
     if length(sa) > 0 then
       for i := 1 to length(sa) do
-        Str[i] := char(byte(sa[i]))
+        Str[i] := Char(byte(sa[i]))
 {$ELSE}
     Str := sa;
 {$ENDIF}
@@ -666,7 +684,7 @@ begin
     if length(sa) > 0 then
     begin
       for i := 1 to length(Str) do
-        sa[i] := ansichar(byte(Str[i]));
+        sa[i] := AnsiChar(byte(Str[i]));
       Move(sa[1], Str[1], length(sa));
     end;
 {$ENDIF}
@@ -692,6 +710,12 @@ procedure TComPort.DoAfterClose;
 begin
   if Assigned(FOnAfterClose) then
     FOnAfterClose(Self);
+end;
+
+procedure TComPort.DoBeforeOpen;
+begin
+  if Assigned(FOnBeforeOpen) then
+    FOnBeforeOpen(Self);
 end;
 
 procedure TComPort.DoAfterOpen;

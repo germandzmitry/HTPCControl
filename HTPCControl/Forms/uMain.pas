@@ -173,7 +173,8 @@ type
 
     procedure ShowNotification(const Title, AlertBode: string);
 
-    procedure onComPortOpen(Sender: TObject);
+    procedure onComPortBeforeOpen(Sender: TObject);
+    procedure onComPortAfterOpen(Sender: TObject);
     procedure onComPortClose(Sender: TObject);
     procedure onComPortReadData(Sender: TObject; const Data: string);
 
@@ -1012,7 +1013,8 @@ begin
   if not Assigned(FArduino) or not FArduino.Connected then
   begin
     FArduino := TComPort.Create(FSetting.ComPort.Port);
-    FArduino.onAfterOpen := onComPortOpen;
+    FArduino.onBeforeOpen := onComPortBeforeOpen;
+    FArduino.onAfterOpen := onComPortAfterOpen;
     FArduino.onAfterClose := onComPortClose;
     FArduino.onReadData := onComPortReadData;
     FArduino.Open;
@@ -1596,23 +1598,27 @@ begin
 end;
 {$ENDIF}
 
-procedure TMain.onComPortOpen(Sender: TObject);
+procedure TMain.onComPortBeforeOpen(Sender: TObject);
 var
   i: Integer;
 begin
-  ActComPortOpenClose.ImageIndex := 4;
-  ActComPortOpenClose.Caption := GetLanguageText(Main.Name, 'ActComPortClose', lngRus);
-
   for i := 0 to lvReadComPort.Items.Count - 1 do
     Dispose(lvReadComPort.Items[i].Data);
   lvReadComPort.Items.Clear;
 
-  StatusBar.Panels[0].Text := Format(GetLanguageMsg('msgSatusBarComPortConnected', lngRus),
-    [TComPort(Sender).Port]);
-
   for i := 0 to lbRemoteControl.Items.Count - 1 do
     (lbRemoteControl.Items.Objects[i] as TObjectRemoteCommand).Free;
   lbRemoteControl.Items.Clear();
+end;
+
+procedure TMain.onComPortAfterOpen(Sender: TObject);
+
+begin
+  ActComPortOpenClose.ImageIndex := 4;
+  ActComPortOpenClose.Caption := GetLanguageText(Main.Name, 'ActComPortClose', lngRus);
+
+  StatusBar.Panels[0].Text := Format(GetLanguageMsg('msgSatusBarComPortConnected', lngRus),
+    [TComPort(Sender).Port]);
 
   try
     // Соединение с БД
