@@ -361,36 +361,36 @@ begin
         KeyInputs[Length(KeyInputs) - 1].mi.dx := Operation.X;
         KeyInputs[Length(KeyInputs) - 1].mi.dy := Operation.Y;
         KeyInputs[Length(KeyInputs) - 1].mi.dwFlags := MOUSEEVENTF_MOVE;
-        KeyInputs[Length(KeyInputs) - 1].ki.time := 0;
-        KeyInputs[Length(KeyInputs) - 1].ki.dwExtraInfo := 0;
+        KeyInputs[Length(KeyInputs) - 1].mi.time := 0;
+        KeyInputs[Length(KeyInputs) - 1].mi.dwExtraInfo := 0;
       end;
     meLeftCLick:
       begin
         SetLength(KeyInputs, Length(KeyInputs) + 1);
         KeyInputs[Length(KeyInputs) - 1].Itype := INPUT_MOUSE;
         KeyInputs[Length(KeyInputs) - 1].mi.dwFlags := MOUSEEVENTF_LEFTDOWN;
-        KeyInputs[Length(KeyInputs) - 1].ki.time := 0;
-        KeyInputs[Length(KeyInputs) - 1].ki.dwExtraInfo := 0;
+        KeyInputs[Length(KeyInputs) - 1].mi.time := 0;
+        KeyInputs[Length(KeyInputs) - 1].mi.dwExtraInfo := 0;
 
         SetLength(KeyInputs, Length(KeyInputs) + 1);
         KeyInputs[Length(KeyInputs) - 1].Itype := INPUT_MOUSE;
         KeyInputs[Length(KeyInputs) - 1].mi.dwFlags := MOUSEEVENTF_LEFTUP;
-        KeyInputs[Length(KeyInputs) - 1].ki.time := 0;
-        KeyInputs[Length(KeyInputs) - 1].ki.dwExtraInfo := 0;
+        KeyInputs[Length(KeyInputs) - 1].mi.time := 0;
+        KeyInputs[Length(KeyInputs) - 1].mi.dwExtraInfo := 0;
       end;
     meRightCLick:
       begin
         SetLength(KeyInputs, Length(KeyInputs) + 1);
         KeyInputs[Length(KeyInputs) - 1].Itype := INPUT_MOUSE;
         KeyInputs[Length(KeyInputs) - 1].mi.dwFlags := MOUSEEVENTF_RIGHTDOWN;
-        KeyInputs[Length(KeyInputs) - 1].ki.time := 0;
-        KeyInputs[Length(KeyInputs) - 1].ki.dwExtraInfo := 0;
+        KeyInputs[Length(KeyInputs) - 1].mi.time := 0;
+        KeyInputs[Length(KeyInputs) - 1].mi.dwExtraInfo := 0;
 
         SetLength(KeyInputs, Length(KeyInputs) + 1);
         KeyInputs[Length(KeyInputs) - 1].Itype := INPUT_MOUSE;
         KeyInputs[Length(KeyInputs) - 1].mi.dwFlags := MOUSEEVENTF_RIGHTUP;
-        KeyInputs[Length(KeyInputs) - 1].ki.time := 0;
-        KeyInputs[Length(KeyInputs) - 1].ki.dwExtraInfo := 0;
+        KeyInputs[Length(KeyInputs) - 1].mi.time := 0;
+        KeyInputs[Length(KeyInputs) - 1].mi.dwExtraInfo := 0;
       end;
     meScrollWheel:
       begin
@@ -398,22 +398,22 @@ begin
         KeyInputs[Length(KeyInputs) - 1].Itype := INPUT_MOUSE;
         KeyInputs[Length(KeyInputs) - 1].mi.mouseData := 240;
         KeyInputs[Length(KeyInputs) - 1].mi.dwFlags := MOUSEEVENTF_WHEEL;
-        KeyInputs[Length(KeyInputs) - 1].ki.time := 0;
-        KeyInputs[Length(KeyInputs) - 1].ki.dwExtraInfo := 0;
+        KeyInputs[Length(KeyInputs) - 1].mi.time := 0;
+        KeyInputs[Length(KeyInputs) - 1].mi.dwExtraInfo := 0;
       end;
     meWheelClick:
       begin
         SetLength(KeyInputs, Length(KeyInputs) + 1);
         KeyInputs[Length(KeyInputs) - 1].Itype := INPUT_MOUSE;
         KeyInputs[Length(KeyInputs) - 1].mi.dwFlags := MOUSEEVENTF_MIDDLEDOWN;
-        KeyInputs[Length(KeyInputs) - 1].ki.time := 0;
-        KeyInputs[Length(KeyInputs) - 1].ki.dwExtraInfo := 0;
+        KeyInputs[Length(KeyInputs) - 1].mi.time := 0;
+        KeyInputs[Length(KeyInputs) - 1].mi.dwExtraInfo := 0;
 
         SetLength(KeyInputs, Length(KeyInputs) + 1);
         KeyInputs[Length(KeyInputs) - 1].Itype := INPUT_MOUSE;
         KeyInputs[Length(KeyInputs) - 1].mi.dwFlags := MOUSEEVENTF_MIDDLEUP;
-        KeyInputs[Length(KeyInputs) - 1].ki.time := 0;
-        KeyInputs[Length(KeyInputs) - 1].ki.dwExtraInfo := 0;
+        KeyInputs[Length(KeyInputs) - 1].mi.time := 0;
+        KeyInputs[Length(KeyInputs) - 1].mi.dwExtraInfo := 0;
       end;
   end;
 
