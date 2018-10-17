@@ -132,6 +132,14 @@ begin
         if s <> '' then
           (AForm.Components[i] as TPanel).Caption := s
       end
+      { CategoryPanel }
+      else if AForm.Components[i] is TCategoryPanel then
+      begin
+        s := lng.ReadString(AForm.Name, AForm.Components[i].Name, '');
+        if s <> '' then
+          (AForm.Components[i] as TCategoryPanel).Caption := s
+      end
+
       { GroupBox }
       else if AForm.Components[i] is TGroupBox then
       begin

@@ -14,7 +14,8 @@ uses
   uShellApplication, uSettings, uDataBase, uEventKodi, uComPort, Vcl.Menus,
   Vcl.ActnPopup, CommCtrl, uExecuteCommand, System.Notification, Vcl.AppEvnts,
   MMDevApi, Winapi.ActiveX, Vcl.ActnMenus, uTypes, Vcl.Grids, Vcl.Themes,
-  uCustomListBox, Vcl.GraphUtil;
+  uCustomListBox, Vcl.GraphUtil, uCustomCategoryPanelGroup, Vcl.Tabs,
+  Vcl.DockTabSet, uLine;
 
 type
   TMain = class(TForm)
@@ -59,34 +60,17 @@ type
     ActKodiStart: TAction;
     ActKodiStop: TAction;
     SplitterBottom: TSplitter;
-    scrbFooter: TScrollBox;
     plvReadComPort: TPanel;
-    pKodiPlayingFile: TPanel;
-    pKodiHeader: TPanel;
-    pKodiPlayingLabel: TPanel;
-    pShellApplicationHeader: TPanel;
-    pShellApplication_x86: TPanel;
-    pShellApplicationFile: TPanel;
-    pRemoteControlHeader: TPanel;
-    pRemoteControlLast: TPanel;
-    mShellApplicationFileV: TMemo;
-    mShellApplication_x86V: TMemo;
-    mKodiPlayingLabelV: TMemo;
-    mKodiPlayingFileV: TMemo;
-    mRemoteControlLastV: TMemo;
-    mRemoteControlLastL: TMemo;
-    mRemoteControlH: TMemo;
-    mShellApplicationH: TMemo;
-    mKodiH: TMemo;
+
     AppNotification: TNotificationCenter;
-    mShellApplicationFileL: TMemo;
-    mShellApplication_x86L: TMemo;
-    mKodiPlayingLabelL: TMemo;
-    mKodiPlayingFileL: TMemo;
-    Label1: TLabel;
+    pClientBottom: TPanel;
+    Memo1: TMemo;
     procedure FormCreate(Sender: TObject);
-    procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure FormShow(Sender: TObject);
+    procedure FormCloseQuery(Sender: TObject; var CanClose: Boolean);
+    procedure FormClose(Sender: TObject; var Action: TCloseAction);
+    procedure FormDestroy(Sender: TObject);
+
     procedure ActHelpAboutExecute(Sender: TObject);
     procedure ActToolsSettingExecute(Sender: TObject);
     procedure ActToolsDeviceManagerExecute(Sender: TObject);
@@ -99,11 +83,9 @@ type
     procedure ActRCEditExecute(Sender: TObject);
     procedure ActRCDeleteExecute(Sender: TObject);
     procedure lvReadComPortContextPopup(Sender: TObject; MousePos: TPoint; var Handled: Boolean);
-    procedure FormDestroy(Sender: TObject);
     procedure ActRCRCommandsControlExecute(Sender: TObject);
     procedure AppEventsMinimize(Sender: TObject);
     procedure TrayDblClick(Sender: TObject);
-    procedure FormCloseQuery(Sender: TObject; var CanClose: Boolean);
     procedure ActFileExecute(Sender: TObject);
     procedure ActFileExitExecute(Sender: TObject);
     procedure ActComPortExecute(Sender: TObject);
@@ -120,16 +102,17 @@ type
       SubItem: Integer; State: TCustomDrawState; var DefaultDraw: Boolean);
     procedure ActKodiStartExecute(Sender: TObject);
     procedure ActKodiStopExecute(Sender: TObject);
-    procedure scrbFooterResize(Sender: TObject);
     procedure lvReadComPortDblClick(Sender: TObject);
-    procedure scrbFooterMouseWheelDown(Sender: TObject; Shift: TShiftState; MousePos: TPoint;
-      var Handled: Boolean);
-    procedure scrbFooterMouseWheelUp(Sender: TObject; Shift: TShiftState; MousePos: TPoint;
-      var Handled: Boolean);
     procedure lvReadComPortDrawItem(Sender: TCustomListView; Item: TListItem; Rect: TRect;
       State: TOwnerDrawState);
     procedure lvReadComPortCustomDraw(Sender: TCustomListView; const ARect: TRect;
       var DefaultDraw: Boolean);
+    procedure cpgStateMouseWheelDown(Sender: TObject; Shift: TShiftState; MousePos: TPoint;
+      var Handled: Boolean);
+    procedure cpgStateMouseWheelUp(Sender: TObject; Shift: TShiftState; MousePos: TPoint;
+      var Handled: Boolean);
+    procedure pClientBottomResize(Sender: TObject);
+    procedure cpRemoteControlExpand(Sender: TObject);
   private
     { Private declarations }
     plvRemoteControl: TPanel;
@@ -139,6 +122,31 @@ type
     lbRemoteControl: TCustomListBoxRC;
     lvShellApplication: TListView;
     lvEventKodi: TListView;
+
+    cpgState: TCustomCategoryPanelGroup;
+    cpRemoteControl: TCustomCategoryPanel;
+    cpShellApplication: TCustomCategoryPanel;
+    cpKodi: TCustomCategoryPanel;
+
+    pRemoteControlLast: TPanel;
+    mRemoteControlLastL: TMemo;
+    mRemoteControlLastV: TMemo;
+{$IFDEF WIN64}
+    pShellApplication_x86: TPanel;
+    mShellApplication_x86L: TMemo;
+    mShellApplication_x86V: TMemo;
+{$ENDIF}
+    pShellApplicationFile: TPanel;
+    mShellApplicationFileL: TMemo;
+    mShellApplicationFileV: TMemo;
+
+    pKodiPlayingLabel: TPanel;
+    mKodiPlayingLabelL: TMemo;
+    mKodiPlayingLabelV: TMemo;
+
+    pKodiPlayingFile: TPanel;
+    mKodiPlayingFileL: TMemo;
+    mKodiPlayingFileV: TMemo;
 
     FArduino: TComPort;
     FExecuteCommand: TExecuteCommand;
@@ -204,6 +212,7 @@ type
     function Processing: Boolean;
     procedure SetMemoHeight(AMemo: TMemo);
     procedure SetMemoValue(AMemo: TMemo; Value: string);
+    procedure SetCategoryPanelHeight(ACPanel: TCategoryPanel);
 
 {$IFDEF DEBUG}
     procedure edTestReadDataKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
@@ -242,7 +251,6 @@ procedure TMain.FormCreate(Sender: TObject);
   end;
 
 begin
-
   CreateComponent;
   SettingComponent;
 
@@ -363,6 +371,32 @@ begin
     plvShellApplication.Free;
   if Assigned(plvEventKodi) then
     plvEventKodi.Free;
+
+  FreeAndNil(mRemoteControlLastL);
+  FreeAndNil(mRemoteControlLastV);
+  FreeAndNil(pRemoteControlLast);
+  FreeAndNil(cpRemoteControl);
+
+{$IFDEF WIN64}
+  FreeAndNil(mShellApplication_x86L);
+  FreeAndNil(mShellApplication_x86V);
+  FreeAndNil(pShellApplication_x86);
+{$ENDIF}
+  FreeAndNil(mShellApplicationFileL);
+  FreeAndNil(mShellApplicationFileV);
+  FreeAndNil(pShellApplicationFile);
+  FreeAndNil(cpShellApplication);
+
+  FreeAndNil(mKodiPlayingLabelL);
+  FreeAndNil(mKodiPlayingLabelV);
+  FreeAndNil(pKodiPlayingLabel);
+
+  FreeAndNil(mKodiPlayingFileL);
+  FreeAndNil(mKodiPlayingFileV);
+  FreeAndNil(pKodiPlayingFile);
+  FreeAndNil(cpKodi);
+
+  FreeAndNil(cpgState);
 
   FPageClient.Free;
 
@@ -665,6 +699,7 @@ procedure TMain.btnTestReadDataClick(Sender: TObject);
 begin
   onComPortReadData(FArduino, edTestReadData.Text);
 end;
+
 {$ENDIF}
 
 procedure TMain.AppEventsMessage(var Msg: tagMSG; var Handled: Boolean);
@@ -689,6 +724,7 @@ begin
     ActComPortSend.Enabled := LComPortConnected;
     ActComPortClose.Enabled := LComPortConnected;
 {$IFDEF DEBUG}
+    edTestReadData.Enabled := LComPortConnected;
     btnTestReadData.Enabled := LComPortConnected;
 {$ENDIF}
     { DataBase }
@@ -709,6 +745,14 @@ begin
   end;
 end;
 
+procedure TMain.SetMemoValue(AMemo: TMemo; Value: string);
+begin
+  AMemo.Lines.Clear;
+  AMemo.Lines.Text := Value;
+  // AMemo.Lines.Add(Value);
+  SetMemoHeight(AMemo);
+end;
+
 procedure TMain.SetMemoHeight(AMemo: TMemo);
 var
   Can: TCanvas;
@@ -725,14 +769,29 @@ begin
     Can.Free;
   end;
 
-  scrbFooter.Realign;
+  if AMemo.Parent.Parent.Parent is TCategoryPanel then
+    SetCategoryPanelHeight(AMemo.Parent.Parent.Parent as TCategoryPanel);
+  // scrbFooter.Realign;
 end;
 
-procedure TMain.SetMemoValue(AMemo: TMemo; Value: string);
+procedure TMain.SetCategoryPanelHeight(ACPanel: TCategoryPanel);
+var
+  i, H: Integer;
 begin
-  AMemo.Lines.Clear;
-  AMemo.Lines.Text := Value;
-  SetMemoHeight(AMemo);
+  SendMessage(cpgState.Handle, WM_SETREDRAW, 0, 0);
+  try
+    H := 0;
+    for i := 0 to ACPanel.ComponentCount - 1 do
+      if ACPanel.Components[i] is TPanel then
+        H := H + TPanel(ACPanel.Components[i]).Height + TPanel(ACPanel.Components[i]).Margins.Top +
+          TPanel(ACPanel.Components[i]).Margins.Bottom;
+
+    ACPanel.Height := cpgState.HeaderHeight + H;
+  finally
+    SendMessage(cpgState.Handle, WM_SETREDRAW, 1, 0);
+    RedrawWindow(cpgState.Handle, nil, 0, RDW_ERASE or RDW_FRAME or RDW_INVALIDATE or
+      RDW_ALLCHILDREN);
+  end;
 end;
 
 procedure TMain.LoadWindowSetting;
@@ -749,8 +808,14 @@ begin
       Main.WindowState := wsMaximized;
 
     Main.pLeft.Width := IniFile.ReadInteger('Window', 'SplitterLeft', Main.pLeft.Width);
-    Main.scrbFooter.Height := IniFile.ReadInteger('Window', 'SplitterBottom',
-      Main.scrbFooter.Height);
+    Main.pClientBottom.Height := IniFile.ReadInteger('Window', 'SplitterBottom',
+      Main.pClientBottom.Height);
+
+    Main.cpRemoteControl.Collapsed := IniFile.ReadBool('Window', 'RemoteControlCollapsed',
+      Main.cpRemoteControl.Collapsed);
+    Main.cpShellApplication.Collapsed := IniFile.ReadBool('Window', 'ShellApplicationCollapsed',
+      Main.cpShellApplication.Collapsed);
+    Main.cpKodi.Collapsed := IniFile.ReadBool('Window', 'KodiCollapsed', Main.cpKodi.Collapsed);
   finally
     IniFile.Free;
   end;
@@ -773,35 +838,13 @@ begin
       IniFile.WriteInteger('Window', 'Height', Main.Height);
     end;
     IniFile.WriteInteger('Window', 'SplitterLeft', Main.pLeft.Width);
-    IniFile.WriteInteger('Window', 'SplitterBottom', Main.scrbFooter.Height);
+    IniFile.WriteInteger('Window', 'SplitterBottom', Main.pClientBottom.Height);
+    IniFile.WriteBool('Window', 'RemoteControlCollapsed', Main.cpRemoteControl.Collapsed);
+    IniFile.WriteBool('Window', 'ShellApplicationCollapsed', Main.cpShellApplication.Collapsed);
+    IniFile.WriteBool('Window', 'KodiCollapsed', Main.cpKodi.Collapsed);
   finally
     IniFile.Free;
   end;
-end;
-
-procedure TMain.scrbFooterMouseWheelDown(Sender: TObject; Shift: TShiftState; MousePos: TPoint;
-  var Handled: Boolean);
-begin
-  (Sender as TScrollBox).VertScrollBar.Position := (Sender as TScrollBox)
-    .VertScrollBar.Position + 4;
-end;
-
-procedure TMain.scrbFooterMouseWheelUp(Sender: TObject; Shift: TShiftState; MousePos: TPoint;
-  var Handled: Boolean);
-begin
-  (Sender as TScrollBox).VertScrollBar.Position := (Sender as TScrollBox)
-    .VertScrollBar.Position - 4;
-end;
-
-procedure TMain.scrbFooterResize(Sender: TObject);
-begin
-  SetMemoHeight(mRemoteControlLastV);
-
-  SetMemoHeight(mShellApplication_x86V);
-  SetMemoHeight(mShellApplicationFileV);
-
-  SetMemoHeight(mKodiPlayingLabelV);
-  SetMemoHeight(mKodiPlayingFileV);
 end;
 
 procedure TMain.lvShellApplicationCustomDrawSubItem(Sender: TCustomListView; Item: TListItem;
@@ -1000,6 +1043,19 @@ begin
   Main.Visible := True;
 end;
 
+procedure TMain.pClientBottomResize(Sender: TObject);
+begin
+  SetMemoHeight(mRemoteControlLastV);
+
+{$IFDEF WIN64}
+  SetMemoHeight(mShellApplication_x86V);
+{$ENDIF}
+  SetMemoHeight(mShellApplicationFileV);
+
+  SetMemoHeight(mKodiPlayingLabelV);
+  SetMemoHeight(mKodiPlayingFileV);
+end;
+
 function TMain.Processing: Boolean;
 begin
   Result := True;
@@ -1030,6 +1086,25 @@ begin
     finally
       FreeAndNil(FArduino);
     end;
+end;
+
+procedure TMain.cpgStateMouseWheelDown(Sender: TObject; Shift: TShiftState; MousePos: TPoint;
+  var Handled: Boolean);
+begin
+  (Sender as TCategoryPanelGroup).VertScrollBar.Position := (Sender as TCategoryPanelGroup)
+    .VertScrollBar.Position + 4;
+end;
+
+procedure TMain.cpgStateMouseWheelUp(Sender: TObject; Shift: TShiftState; MousePos: TPoint;
+  var Handled: Boolean);
+begin
+  (Sender as TCategoryPanelGroup).VertScrollBar.Position := (Sender as TCategoryPanelGroup)
+    .VertScrollBar.Position - 4;
+end;
+
+procedure TMain.cpRemoteControlExpand(Sender: TObject);
+begin
+  SetCategoryPanelHeight(Sender as TCategoryPanel);
 end;
 
 procedure TMain.StartEventApplication();
@@ -1192,7 +1267,9 @@ var
   tabRemoteControl, tabShellApplication, tabEventKodi: TTabSheet;
   LColumn: TListColumn;
 begin
-  // Панель
+  // ---------------------------------------------------------------------------
+  // Панель с вкладками
+  // ---------------------------------------------------------------------------
   FPageClient := TCustomPageControl.Create(self);
   with FPageClient do
   begin
@@ -1214,7 +1291,9 @@ begin
   end;
   SendMessage(FPageClient.Handle, WM_UPDATEUISTATE, MakeLong(UIS_SET, UISF_HIDEFOCUS), 0);
 
+  // ---------------------------------------------------------------------------
   // Вкладка - RemoteControl
+  // ---------------------------------------------------------------------------
   tabRemoteControl := CreateTab(FPageClient, 'TabRemoteControl',
     GetLanguageText(Main.Name, 'TabRemoteControl', lngRus));
 
@@ -1247,7 +1326,9 @@ begin
     Title := GetLanguageText(self.Name, 'lbRemoteControlTitle', lngRus);
   end;
 
+  // ---------------------------------------------------------------------------
   // Вкладка - ShellApplication
+  // ---------------------------------------------------------------------------
   tabShellApplication := CreateTab(FPageClient, 'TabShellApplication',
     GetLanguageText(Main.Name, 'TabShellApplication', lngRus));
 
@@ -1294,7 +1375,9 @@ begin
   end;
   SendMessage(lvShellApplication.Handle, WM_UPDATEUISTATE, MakeLong(UIS_SET, UISF_HIDEFOCUS), 0);
 
+  // ---------------------------------------------------------------------------
   // Вкладка - EventKodi
+  // ---------------------------------------------------------------------------
   tabEventKodi := CreateTab(FPageClient, 'TabEventKodi',
     GetLanguageText(Main.Name, 'TabEventKodi', lngRus));
 
@@ -1340,7 +1423,202 @@ begin
   end;
   SendMessage(lvEventKodi.Handle, WM_UPDATEUISTATE, MakeLong(UIS_SET, UISF_HIDEFOCUS), 0);
 
+  // ---------------------------------------------------------------------------
+  // Состояние приложения
+  // ---------------------------------------------------------------------------
+  cpgState := TCustomCategoryPanelGroup.Create(pClientBottom);
+  with cpgState do
+  begin
+    Parent := pClientBottom;
+    Align := alClient;
+    Color := clWhite;
+    Ctl3D := False;
+    HeaderFont.style := HeaderFont.style + [fsBold];
+    GradientBaseColor := clWhite;
+    GradientColor := clWhite;
+    DoubleBuffered := True;
+
+    onMouseWheelDown := cpgStateMouseWheelDown;
+    onMouseWheelUp := cpgStateMouseWheelUp;
+  end;
+
+  // ---------------------------------------------------------------------------
+  // Состояние приложения - Управление
+  // ---------------------------------------------------------------------------
+  cpRemoteControl := TCustomCategoryPanel.Create(cpgState);
+  with cpRemoteControl do
+  begin
+    Parent := cpgState;
+    PanelGroup := cpgState;
+    Caption := GetLanguageText(Main.Name, 'cpRemoteControl', lngRus);
+    Color := cpgState.Color;
+    Height := 100;
+    Name := 'cpRemoteControl';
+    FullRepaint := False;
+    DoubleBuffered := True;
+    onExpand := cpRemoteControlExpand;
+  end;
+
+  // ---------------------------------------------------------------------------
+  // Состояние приложения - Управление - Последняя команда
+  // ---------------------------------------------------------------------------
+
+  pRemoteControlLast := TPanel.Create(cpRemoteControl);
+  with pRemoteControlLast do
+  begin
+    Parent := cpRemoteControl;
+    Align := alTop;
+  end;
+
+  mRemoteControlLastL := TMemo.Create(pRemoteControlLast);
+  with mRemoteControlLastL do
+  begin
+    Parent := pRemoteControlLast;
+    Text := GetLanguageText(self.Name, 'mRemoteControlLastL', lngRus);
+  end;
+
+  mRemoteControlLastV := TMemo.Create(pRemoteControlLast);
+  with mRemoteControlLastV do
+  begin
+    Parent := pRemoteControlLast;
+    Lines.Add('mRemoteControlLastV');
+  end;
+
+  // ---------------------------------------------------------------------------
+  // Состояние приложения - Приложения
+  // ---------------------------------------------------------------------------
+  cpShellApplication := TCustomCategoryPanel.Create(cpgState);
+  with cpShellApplication do
+  begin
+    Parent := cpgState;
+    PanelGroup := cpgState;
+    Caption := GetLanguageText(Main.Name, 'cpShellApplication', lngRus);
+    Color := cpgState.Color;
+    Height := 100;
+    Name := 'cpShellApplication';
+    FullRepaint := False;
+    DoubleBuffered := True;
+    onExpand := cpRemoteControlExpand;
+  end;
+
+  // ---------------------------------------------------------------------------
+  // Состояние приложения - Приложения - File
+  // ---------------------------------------------------------------------------
+  pShellApplicationFile := TPanel.Create(cpShellApplication);
+  with pShellApplicationFile do
+  begin
+    Parent := cpShellApplication;
+    Align := alTop;
+  end;
+
+  mShellApplicationFileL := TMemo.Create(pShellApplicationFile);
+  with mShellApplicationFileL do
+  begin
+    Parent := pShellApplicationFile;
+    Text := GetLanguageText(self.Name, 'mShellApplicationFileL', lngRus);
+  end;
+
+  mShellApplicationFileV := TMemo.Create(pShellApplicationFile);
+  with mShellApplicationFileV do
+  begin
+    Parent := pShellApplicationFile;
+    Lines.Add('mShellApplicationFileV');
+  end;
+
+{$IFDEF WIN64}
+  // ---------------------------------------------------------------------------
+  // Состояние приложения - Приложения - x86
+  // ---------------------------------------------------------------------------
+  pShellApplication_x86 := TPanel.Create(cpShellApplication);
+  with pShellApplication_x86 do
+  begin
+    Parent := cpShellApplication;
+    Align := alTop;
+    Top := 0;
+  end;
+
+  mShellApplication_x86L := TMemo.Create(pShellApplication_x86);
+  with mShellApplication_x86L do
+  begin
+    Parent := pShellApplication_x86;
+    Text := GetLanguageText(self.Name, 'mShellApplication_x86L', lngRus);
+  end;
+
+  mShellApplication_x86V := TMemo.Create(pShellApplication_x86);
+  with mShellApplication_x86V do
+  begin
+    Parent := pShellApplication_x86;
+    Lines.Add('mShellApplication_x86V');
+  end;
+{$ENDIF}
+  // ---------------------------------------------------------------------------
+  // Состояние приложения - Kodi
+  // ---------------------------------------------------------------------------
+  cpKodi := TCustomCategoryPanel.Create(cpgState);
+  with cpKodi do
+  begin
+    Parent := cpgState;
+    PanelGroup := cpgState;
+    Caption := GetLanguageText(Main.Name, 'cpKodi', lngRus);
+    Color := cpgState.Color;
+    Height := 100;
+    Name := 'cpKodi';
+    FullRepaint := False;
+    DoubleBuffered := True;
+    onExpand := cpRemoteControlExpand;
+  end;
+  // ---------------------------------------------------------------------------
+  // Состояние приложения - Kodi - Label
+  // ---------------------------------------------------------------------------
+  pKodiPlayingLabel := TPanel.Create(cpKodi);
+  with pKodiPlayingLabel do
+  begin
+    Parent := cpKodi;
+    Align := alTop;
+  end;
+
+  mKodiPlayingLabelL := TMemo.Create(pKodiPlayingLabel);
+  with mKodiPlayingLabelL do
+  begin
+    Parent := pKodiPlayingLabel;
+    Text := GetLanguageText(self.Name, 'mKodiPlayingLabelL', lngRus);
+  end;
+
+  mKodiPlayingLabelV := TMemo.Create(pKodiPlayingLabel);
+  with mKodiPlayingLabelV do
+  begin
+    Parent := pKodiPlayingLabel;
+    Lines.Add('mKodiPlayingLabelV');
+  end;
+
+  // ---------------------------------------------------------------------------
+  // Состояние приложения - Kodi - File
+  // ---------------------------------------------------------------------------
+  pKodiPlayingFile := TPanel.Create(cpKodi);
+  with pKodiPlayingFile do
+  begin
+    Parent := cpKodi;
+    Align := alTop;
+  end;
+
+  mKodiPlayingFileL := TMemo.Create(pKodiPlayingFile);
+  with mKodiPlayingFileL do
+  begin
+    Parent := pKodiPlayingFile;
+    Text := GetLanguageText(self.Name, 'mKodiPlayingFileL', lngRus);
+  end;
+
+  mKodiPlayingFileV := TMemo.Create(pKodiPlayingFile);
+  with mKodiPlayingFileV do
+  begin
+    Parent := pKodiPlayingFile;
+    Lines.Add('mKodiPlayingFileV');
+  end;
+
 {$IFDEF DEBUG}
+  // ---------------------------------------------------------------------------
+  // Поле ввода + кнопка для теста принятых данных
+  // ---------------------------------------------------------------------------
   pTestReadData := TPanel.Create(pLeft);
   with pTestReadData do
   begin
@@ -1383,35 +1661,6 @@ procedure TMain.SettingComponent();
 var
   LLeft, LWidth, i: Integer;
 
-  procedure SettingPanelHeader(APanel: TPanel);
-  begin
-    with APanel do
-    begin
-      AutoSize := True;
-      Enabled := False;
-      BevelOuter := bvNone;
-      AlignWithMargins := True;
-      ParentBackground := True;
-      Margins.Bottom := 0;
-      Margins.left := 0;
-      Margins.Right := 0;
-      Margins.Top := 6;
-    end;
-  end;
-
-  procedure SettingMemoHeader(AMemo: TMemo);
-  begin
-    with AMemo do
-    begin
-      Top := 0;
-      left := LLeft;
-      Width := Parent.Width - LLeft;
-      Height := 13;
-      Font.style := [fsBold];
-      BorderStyle := bsNone;
-    end;
-  end;
-
   procedure SettingPanel(APanel: TPanel);
   begin
     with APanel do
@@ -1424,7 +1673,7 @@ var
       Margins.Bottom := 0;
       Margins.left := 0;
       Margins.Right := 3;
-      Margins.Top := 6;
+      Margins.Top := 3;
     end;
   end;
 
@@ -1434,7 +1683,7 @@ var
     begin
       Alignment := taRightJustify;
       Top := 0;
-      left := LLeft * 2;
+      left := LLeft * 3;
       Width := LWidth;
       Height := 13;
       BorderStyle := bsNone;
@@ -1450,8 +1699,8 @@ var
     with AMemo do
     begin
       Top := 0;
-      left := (LLeft * 2) + LWidth + 4;
-      Width := scrbFooter.Width - AMemo.left - 10;
+      left := (LLeft * 3) + LWidth + 4;
+      Width := Parent.Width - AMemo.left - 5;
       Height := 13;
       Anchors := [akLeft, akTop, akRight];
       BorderStyle := bsNone;
@@ -1467,23 +1716,15 @@ begin
   LWidth := 150;
 
   // RemoteControl
-  SettingPanelHeader(pRemoteControlHeader);
-  SettingMemoHeader(mRemoteControlH);
-
   SettingPanel(pRemoteControlLast);
   SettingLabel(mRemoteControlLastL);
   SettingValue(mRemoteControlLastV);
 
   // ShellApplication
-  SettingPanelHeader(pShellApplicationHeader);
-  SettingMemoHeader(mShellApplicationH);
-  //
 {$IFDEF WIN64}
   SettingPanel(pShellApplication_x86);
   SettingLabel(mShellApplication_x86L);
   SettingValue(mShellApplication_x86V);
-{$ELSE}
-  pShellApplication_x86.Visible := False;
 {$ENDIF}
   //
   SettingPanel(pShellApplicationFile);
@@ -1491,9 +1732,6 @@ begin
   SettingValue(mShellApplicationFileV);
 
   // Kodi
-  SettingPanelHeader(pKodiHeader);
-  SettingMemoHeader(mKodiH);
-  //
   SettingPanel(pKodiPlayingLabel);
   SettingLabel(mKodiPlayingLabelL);
   SettingValue(mKodiPlayingLabelV);
@@ -1501,8 +1739,6 @@ begin
   SettingPanel(pKodiPlayingFile);
   SettingLabel(mKodiPlayingFileL);
   SettingValue(mKodiPlayingFileV);
-
-  pKodiPlayingFile.Constraints.MinHeight := mKodiPlayingFileL.Height + 5;
 
   plvReadComPort.Align := alClient;
   lvReadComPort.Align := alClient;
@@ -1518,8 +1754,8 @@ begin
     // if self.Components[i] is TLabel then
     // TLabel(self.Components[i]).Caption := '';
     // Memo
-    if self.Components[i] is TMemo then
-      TMemo(self.Components[i]).Lines.Clear;
+    // if self.Components[i] is TMemo then
+    // TMemo(self.Components[i]).Lines.Clear;
     // Panel
     if self.Components[i] is TPanel then
       TPanel(self.Components[i]).Caption := '';
@@ -1584,7 +1820,10 @@ begin
     StatusBar.Panels[1].Text := GetLanguageMsg('msgSatusBarAppWorking', lngRus)
   else
   begin
+{$IFDEF WIN64}
     SetMemoValue(mShellApplication_x86V, '');
+{$ENDIF}
+    SetMemoValue(mShellApplicationFileV, '');
     StatusBar.Panels[1].Text := GetLanguageMsg('msgSatusBarAppNotWorking', lngRus);
   end;
 end;

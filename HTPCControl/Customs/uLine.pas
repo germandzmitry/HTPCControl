@@ -48,7 +48,7 @@ begin
   FLine := TPaintBox.Create(Parent);
   FLine.Parent := Parent;
   FLine.Align := alTop;
-  FLine.Height := 1;
+  FLine.Height := FSize;
   FLine.OnPaint := LinePaint;
 end;
 
@@ -68,7 +68,7 @@ end;
 constructor TLine.Create(Parent: TPanel; Align: TAlign; ColorFrom, ColorTo: TColor);
 begin
   Create(Parent);
-  FLine.Align := alBottom;
+  SetAlign(Align);
   FColorFrom := ColorFrom;
   FColorTo := ColorTo;
 end;
@@ -110,6 +110,7 @@ procedure TLine.SetAlign(const Value: TAlign);
 begin
   FAlign := Value;
   FLine.Align := FAlign;
+  SetSize(FSize);
 end;
 
 procedure TLine.SetColorFrom(const Value: TColor);
