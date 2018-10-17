@@ -396,7 +396,7 @@ begin
       begin
         SetLength(KeyInputs, Length(KeyInputs) + 1);
         KeyInputs[Length(KeyInputs) - 1].Itype := INPUT_MOUSE;
-        KeyInputs[Length(KeyInputs) - 1].mi.mouseData := 240;
+        KeyInputs[Length(KeyInputs) - 1].mi.mouseData := Operation.Wheel;
         KeyInputs[Length(KeyInputs) - 1].mi.dwFlags := MOUSEEVENTF_WHEEL;
         KeyInputs[Length(KeyInputs) - 1].mi.time := 0;
         KeyInputs[Length(KeyInputs) - 1].mi.dwExtraInfo := 0;
