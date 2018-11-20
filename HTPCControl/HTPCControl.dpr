@@ -28,7 +28,8 @@ uses
   uCustomListBox in 'Customs\uCustomListBox.pas',
   uFastRCommand in 'Forms\CommandsControl\uFastRCommand.pas' {frmFastRCommand},
   uIcon in 'Units\uIcon.pas',
-  uOMouse in 'Forms\CommandsControl\uOMouse.pas' {frmOMouse};
+  uOMouse in 'Forms\CommandsControl\uOMouse.pas' {frmOMouse},
+  uCustomCategoryPanelGroup in 'Customs\uCustomCategoryPanelGroup.pas';
 
 {$R *.res}
 

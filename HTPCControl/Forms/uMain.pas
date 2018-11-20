@@ -128,6 +128,10 @@ type
     cpShellApplication: TCustomCategoryPanel;
     cpKodi: TCustomCategoryPanel;
 
+    pRemoteControlInQueue: TPanel;
+    mRemoteControlInQueueL: TMemo;
+    mRemoteControlInQueueV: TMemo;
+
     pRemoteControlLast: TPanel;
     mRemoteControlLastL: TMemo;
     mRemoteControlLastV: TMemo;
@@ -194,11 +198,13 @@ type
     procedure onShellApplicationWindowsHook(Sender: TObject; const HSHELL: NativeInt;
       const ApplicationData: TEXEVersionData);
 
-    procedure onExecuteCommandBegin(EIndex: Integer; RCommand: TRemoteCommand; Operations: string;
-      OWait: Integer; RepeatPrevious: Boolean);
-    procedure onExecuteCommandEnd(EIndex: Integer);
+    procedure onExecuteCommandCreating(EIndex: Integer; RCommand: TRemoteCommand;
+      Operations: string; OWait: Integer; RepeatPrevious: Boolean);
+    procedure onExecuteCommandWaiting(EIndex: Integer);
     procedure onExecuteCommandExecuting(EIndex: Integer; Step: Integer);
+    procedure onExecuteCommandEnd(EIndex: Integer);
     procedure onExecuteCommandPrevious(Operations: string);
+    procedure onExecuteCommandQueue(Queue: Integer);
 
     procedure onKodiRunning(Running: Boolean);
     procedure onKodiPlayer(Player: string);
@@ -251,11 +257,13 @@ procedure TMain.FormCreate(Sender: TObject);
   end;
 
 begin
+
+  FSetting := uSettings.getSetting();
+
   CreateComponent;
   SettingComponent;
 
   LoadWindowSetting;
-  FSetting := uSettings.getSetting();
   UpdateLanguage(self, lngRus);
 
   // Обработка настроек запуска
@@ -673,6 +681,9 @@ begin
     LSettings.Free;
     FSetting := uSettings.getSetting();
   end;
+
+  lbRemoteControl.UserInterface := FSetting.RemoteControl.UserInterface;
+  FExecuteCommand.InCurrentThread := FSetting.RemoteControl.InCurrentThread;
 end;
 
 procedure TMain.AppEventsMinimize(Sender: TObject);
@@ -1324,6 +1335,9 @@ begin
     BorderStyle := bsNone;
 
     Title := GetLanguageText(self.Name, 'lbRemoteControlTitle', lngRus);
+    UserInterface := FSetting.RemoteControl.UserInterface;
+    ilSmall.GetIcon(21, IconWaiting);
+    ilSmall.GetIcon(22, IconExecuting);
   end;
 
   // ---------------------------------------------------------------------------
@@ -1482,6 +1496,31 @@ begin
   begin
     Parent := pRemoteControlLast;
     Lines.Add('mRemoteControlLastV');
+  end;
+
+  // ---------------------------------------------------------------------------
+  // Состояние приложения - Управление - Команд в очереди
+  // ---------------------------------------------------------------------------
+
+  pRemoteControlInQueue := TPanel.Create(cpRemoteControl);
+  with pRemoteControlInQueue do
+  begin
+    Parent := cpRemoteControl;
+    Align := alTop;
+  end;
+
+  mRemoteControlInQueueL := TMemo.Create(pRemoteControlInQueue);
+  with mRemoteControlInQueueL do
+  begin
+    Parent := pRemoteControlInQueue;
+    Text := GetLanguageText(self.Name, 'mRemoteControlInQueueL', lngRus);
+  end;
+
+  mRemoteControlInQueueV := TMemo.Create(pRemoteControlInQueue);
+  with mRemoteControlInQueueV do
+  begin
+    Parent := pRemoteControlInQueue;
+    Lines.Add('mRemoteControlInQueueV');
   end;
 
   // ---------------------------------------------------------------------------
@@ -1716,6 +1755,11 @@ begin
   LWidth := 150;
 
   // RemoteControl
+
+  SettingPanel(pRemoteControlInQueue);
+  SettingLabel(mRemoteControlInQueueL);
+  SettingValue(mRemoteControlInQueueV);
+
   SettingPanel(pRemoteControlLast);
   SettingLabel(mRemoteControlLastL);
   SettingValue(mRemoteControlLastV);
@@ -1871,10 +1915,13 @@ begin
     if not Assigned(FExecuteCommand) then
       FExecuteCommand := TExecuteCommand.Create(FDataBase);
 
-    FExecuteCommand.onExecuteBegin := onExecuteCommandBegin;
+    FExecuteCommand.InCurrentThread := FSetting.RemoteControl.InCurrentThread;
+    FExecuteCommand.onCreating := onExecuteCommandCreating;
+    FExecuteCommand.OnWaiting := onExecuteCommandWaiting;
     FExecuteCommand.OnExecuting := onExecuteCommandExecuting;
     FExecuteCommand.onExecuteEnd := onExecuteCommandEnd;
     FExecuteCommand.OnPreviousCommand := onExecuteCommandPrevious;
+    FExecuteCommand.OnCommandInQueue := onExecuteCommandQueue;
   except
     on E: Exception do
       MessageDlg(E.Message, mtError, [mbOK], 0);
@@ -1889,6 +1936,7 @@ begin
 
   StatusBar.Panels[0].Text := GetLanguageMsg('msgSatusBarComPortNotConnected', lngRus);
   SetMemoValue(mRemoteControlLastV, '');
+  SetMemoValue(mRemoteControlInQueueV, '');
 
   try
     if Assigned(FDataBase) and FDataBase.Connected then
@@ -1914,11 +1962,13 @@ begin
   lvReadComPort.Items.BeginUpdate;
   try
 
-    if lvReadComPort.Items.Count >= FSetting.ComPort.ShowLast then
-    begin
-      Dispose(lvReadComPort.Items[0].Data);
-      lvReadComPort.Items.Delete(0);
-    end;
+    if (FSetting.ComPort.ShowLast > 0) and (lvReadComPort.Items.Count >= FSetting.ComPort.ShowLast)
+    then
+      while lvReadComPort.Items.Count >= FSetting.ComPort.ShowLast do
+      begin
+        Dispose(lvReadComPort.Items[0].Data);
+        lvReadComPort.Items.Delete(0);
+      end;
 
     if lvReadComPort.Items.Count = 0 then
       Num := 1
@@ -1968,23 +2018,24 @@ begin
   end;
 end;
 
-procedure TMain.onExecuteCommandBegin(EIndex: Integer; RCommand: TRemoteCommand; Operations: string;
-  OWait: Integer; RepeatPrevious: Boolean);
+procedure TMain.onExecuteCommandCreating(EIndex: Integer; RCommand: TRemoteCommand;
+  Operations: string; OWait: Integer; RepeatPrevious: Boolean);
 var
   ObjRCommand: TObjectRemoteCommand;
 begin
 
   lbRemoteControl.Items.BeginUpdate;
   try
-    if (lbRemoteControl.Items.Count > 0) and
-      (lbRemoteControl.Items.Count >= FSetting.RemoteControl.ShowLast) and
-      ((lbRemoteControl.Items.Objects[0] as TObjectRemoteCommand).State = ecEnd) then
-    begin
-      (lbRemoteControl.Items.Objects[0] as TObjectRemoteCommand).Free;
-      lbRemoteControl.Items.Delete(0);
-    end;
+    if (FSetting.RemoteControl.ShowLast > 0) and (lbRemoteControl.Items.Count > 0) and
+      (lbRemoteControl.Items.Count >= FSetting.RemoteControl.ShowLast) then
+      while (lbRemoteControl.Items.Count >= FSetting.RemoteControl.ShowLast) and
+        ((lbRemoteControl.Items.Objects[0] as TObjectRemoteCommand).State = ecEnd) do
+      begin
+        (lbRemoteControl.Items.Objects[0] as TObjectRemoteCommand).Free;
+        lbRemoteControl.Items.Delete(0);
+      end;
 
-    ObjRCommand := TObjectRemoteCommand.Create(EIndex, string(RCommand.Command), OWait);
+    ObjRCommand := TObjectRemoteCommand.Create(EIndex, string(RCommand.Command), Operations, OWait);
     if RepeatPrevious then
       ilSmall.GetIcon(13, ObjRCommand.Icon);
     lbRemoteControl.Items.AddObject(Operations, ObjRCommand);
@@ -1993,6 +2044,54 @@ begin
   end;
 
   lbRemoteControl.ItemIndex := lbRemoteControl.Items.Count - 1;
+end;
+
+procedure TMain.onExecuteCommandWaiting(EIndex: Integer);
+var
+  i: Integer;
+  ObjRCommand: TObjectRemoteCommand;
+begin
+  ObjRCommand := nil;
+
+  for i := 0 to lbRemoteControl.Items.Count - 1 do
+    if TObjectRemoteCommand(lbRemoteControl.Items.Objects[i]).EIndex = EIndex then
+    begin
+      ObjRCommand := (lbRemoteControl.Items.Objects[i] as TObjectRemoteCommand);
+      break;
+    end;
+
+  if ObjRCommand = nil then
+    exit;
+
+  ObjRCommand.State := ecWaiting;
+
+  InvalidateRect(lbRemoteControl.Handle, lbRemoteControl.ItemRect(i), True);
+end;
+
+procedure TMain.onExecuteCommandExecuting(EIndex: Integer; Step: Integer);
+var
+  i: Integer;
+  ObjRCommand: TObjectRemoteCommand;
+begin
+
+  if FSetting.RemoteControl.UserInterface = uiNone then
+    exit;
+
+  ObjRCommand := nil;
+
+  for i := 0 to lbRemoteControl.Items.Count - 1 do
+    if TObjectRemoteCommand(lbRemoteControl.Items.Objects[i]).EIndex = EIndex then
+    begin
+      ObjRCommand := (lbRemoteControl.Items.Objects[i] as TObjectRemoteCommand);
+      break;
+    end;
+
+  if ObjRCommand = nil then
+    exit;
+
+  ObjRCommand.State := ecExecuting;
+  ObjRCommand.Current := Step;
+  InvalidateRect(lbRemoteControl.Handle, lbRemoteControl.ItemRect(i), True);
 end;
 
 procedure TMain.onExecuteCommandEnd(EIndex: Integer);
@@ -2016,7 +2115,7 @@ begin
 
   InvalidateRect(lbRemoteControl.Handle, lbRemoteControl.ItemRect(i), True);
 
-  if (lbRemoteControl.Items.Count > 0) and
+  if (FSetting.RemoteControl.ShowLast > 0) and (lbRemoteControl.Items.Count > 0) and
     (lbRemoteControl.Items.Count >= FSetting.RemoteControl.ShowLast + 1) and
     ((lbRemoteControl.Items.Objects[0] as TObjectRemoteCommand).State = ecEnd) then
   begin
@@ -2025,31 +2124,14 @@ begin
   end;
 end;
 
-procedure TMain.onExecuteCommandExecuting(EIndex: Integer; Step: Integer);
-var
-  i: Integer;
-  ObjRCommand: TObjectRemoteCommand;
-begin
-  ObjRCommand := nil;
-
-  for i := 0 to lbRemoteControl.Items.Count - 1 do
-    if TObjectRemoteCommand(lbRemoteControl.Items.Objects[i]).EIndex = EIndex then
-    begin
-      ObjRCommand := (lbRemoteControl.Items.Objects[i] as TObjectRemoteCommand);
-      break;
-    end;
-
-  if ObjRCommand = nil then
-    exit;
-
-  ObjRCommand.State := ecExecuting;
-  ObjRCommand.Current := Step;
-  InvalidateRect(lbRemoteControl.Handle, lbRemoteControl.ItemRect(i), True);
-end;
-
 procedure TMain.onExecuteCommandPrevious(Operations: string);
 begin
   SetMemoValue(mRemoteControlLastV, Operations);
+end;
+
+procedure TMain.onExecuteCommandQueue(Queue: Integer);
+begin
+  SetMemoValue(mRemoteControlInQueueV, inttostr(Queue));
 end;
 
 procedure TMain.onKodiPlayer(Player: string);

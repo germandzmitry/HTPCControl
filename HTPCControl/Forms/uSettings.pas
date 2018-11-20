@@ -8,7 +8,7 @@ uses
   Vcl.CheckLst, System.Win.Registry, System.IniFiles, Data.DB, Data.Win.ADODB,
   IdBaseComponent, IdComponent, IdTCPConnection, IdTCPClient, IdHTTP, IdStack, uSuperObject,
   Vcl.Buttons, System.ImageList, Vcl.ImgList, ShellAPI, Winapi.CommCtrl, Vcl.GraphUtil,
-  System.UITypes;
+  System.UITypes, uTypes;
 
 type
   TApplication = Record
@@ -53,6 +53,8 @@ type
 
   TRemoteControl = Record
     ShowLast: integer;
+    InCurrentThread: boolean;
+    UserInterface: TuiType;
     DB: TDB;
     procedure Default;
   End;
@@ -149,6 +151,8 @@ type
     sbtnKodiSelectFile: TSpeedButton;
     gbComPortData: TGroupBox;
     pLeft: TPanel;
+    rgRemoteControlInterface: TRadioGroup;
+    cbRemoteControlInCurrentThread: TCheckBox;
     procedure btnCloseClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure FormShow(Sender: TObject);
@@ -186,7 +190,7 @@ implementation
 
 {$R *.dfm}
 
-uses uLanguage, uTypes, uComPort, uDataBase, uIcon;
+uses uLanguage, uComPort, uDataBase, uIcon;
 
 function getSetting(): TSetting;
 var
@@ -227,8 +231,12 @@ begin
     // Удаленное управление
     Result.RemoteControl.ShowLast := IniFile.ReadInteger('RemoteControl', 'ShowLast',
       Result.RemoteControl.ShowLast);
+    Result.RemoteControl.InCurrentThread := IniFile.ReadBool('RemoteControl', 'InCurrentThread',
+      Result.RemoteControl.InCurrentThread);
+    Result.RemoteControl.UserInterface :=
+      TuiType(IniFile.ReadInteger('RemoteControl', 'UserInterface', 0));
 
-    // База данных
+    // Удаленное управление - База данных
     Result.RemoteControl.DB.FileName := IniFile.ReadString('DB', 'FileName',
       Result.RemoteControl.DB.FileName);
 
@@ -325,6 +333,8 @@ end;
 procedure TRemoteControl.Default;
 begin
   self.ShowLast := 50;
+  self.InCurrentThread := false;
+  self.UserInterface := TuiType(0);
   self.DB.Default;
 end;
 
@@ -412,8 +422,17 @@ begin
 
   // Удаленное управление
   udRemoteControlShowLast.Position := LSetting.RemoteControl.ShowLast;
+  cbRemoteControlInCurrentThread.Checked := LSetting.RemoteControl.InCurrentThread;
+  case LSetting.RemoteControl.UserInterface of
+    uiAnimation:
+      rgRemoteControlInterface.ItemIndex := 0;
+    uiIcon:
+      rgRemoteControlInterface.ItemIndex := 1;
+    uiNone:
+      rgRemoteControlInterface.ItemIndex := 2;
+  end;
 
-  // База данных
+  // Удаленное управление - База данных
   edDBFileName.Text := LSetting.RemoteControl.DB.FileName;
 
   // Kodi
@@ -470,8 +489,10 @@ begin
 
     // Удаленное управление
     IniFile.WriteInteger('RemoteControl', 'ShowLast', udRemoteControlShowLast.Position);
+    IniFile.WriteBool('RemoteControl', 'InCurrentThread', cbRemoteControlInCurrentThread.Checked);
+    IniFile.WriteInteger('RemoteControl', 'UserInterface', rgRemoteControlInterface.ItemIndex);
 
-    // База данных
+    // Удаленное управление - База данных
     IniFile.WriteString('DB', 'FileName', edDBFileName.Text);
 
     // Kodi

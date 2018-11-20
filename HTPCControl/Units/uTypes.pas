@@ -7,6 +7,7 @@ const
 
 type
   TopType = (opKyeboard, opApplication, opMouse);
+  TuiType = (uiAnimation, uiIcon, uiNone);
 
 type
   TReadComPort = Record

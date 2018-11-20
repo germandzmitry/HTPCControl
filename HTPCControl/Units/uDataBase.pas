@@ -163,7 +163,8 @@ type
       const ForApplication: string);
     procedure DeleteMouse(const id: integer);
 
-    function GetOperation(const Command: string): TOperations;
+    function GetOperation(const Command: string): TOperations; overload;
+    function GetOperation(const Command: string; var TotalWait: integer): TOperations; overload;
 
   private
     FConnection: TADOConnection;
@@ -1060,10 +1061,19 @@ end;
 
 function TDataBase.GetOperation(const Command: string): TOperations;
 var
+  LTotalWait: integer;
+begin
+  Result := GetOperation(Command, LTotalWait);
+end;
+
+function TDataBase.GetOperation(const Command: string; var TotalWait: integer): TOperations;
+var
   Query: TADOQuery;
 begin
   if not FConnection.Connected then
     exit;
+
+  TotalWait := 0;
 
   Query := TADOQuery.Create(nil);
   try
@@ -1186,6 +1196,8 @@ begin
         Result[Query.RecNo - 1].PressKeyboard.ForApplication :=
           Query.FieldByName('forApplication').AsString;
       end;
+
+      inc(TotalWait, Result[Query.RecNo - 1].OWait);
 
       Query.Next;
     end;

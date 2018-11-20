@@ -139,13 +139,27 @@ begin
         if s <> '' then
           (AForm.Components[i] as TCategoryPanel).Caption := s
       end
-
       { GroupBox }
       else if AForm.Components[i] is TGroupBox then
       begin
         s := lng.ReadString(AForm.Name, AForm.Components[i].Name, '');
         if s <> '' then
           (AForm.Components[i] as TGroupBox).Caption := s
+      end
+      { RadioGroup }
+      else if AForm.Components[i] is TRadioGroup then
+      begin
+        s := lng.ReadString(AForm.Name, AForm.Components[i].Name, '');
+        if s <> '' then
+          (AForm.Components[i] as TRadioGroup).Caption := s;
+
+        for j := 0 to TRadioGroup(AForm.Components[i]).Items.Count - 1 do
+        begin
+          s := lng.ReadString(AForm.Name,
+            Format('%s:%d', [TRadioGroup(AForm.Components[i]).Name, j]), '');
+          if s <> '' then
+            TRadioGroup(AForm.Components[i]).Items[j] := s;
+        end;
       end
       { TTabSheet }
       else if AForm.Components[i] is TTabSheet then

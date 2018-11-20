@@ -4,7 +4,7 @@ object Settings: TSettings
   BorderStyle = bsDialog
   Caption = 'Settings'
   ClientHeight = 410
-  ClientWidth = 645
+  ClientWidth = 663
   Color = clBtnFace
   DoubleBuffered = True
   Font.Charset = DEFAULT_CHARSET
@@ -17,12 +17,12 @@ object Settings: TSettings
   OnCreate = FormCreate
   OnShow = FormShow
   DesignSize = (
-    645
+    663
     410)
   PixelsPerInch = 96
   TextHeight = 13
   object btnApply: TButton
-    Left = 481
+    Left = 499
     Top = 377
     Width = 75
     Height = 25
@@ -30,10 +30,10 @@ object Settings: TSettings
     Caption = 'btnApply'
     TabOrder = 2
     OnClick = btnApplyClick
-    ExplicitTop = 391
+    ExplicitLeft = 481
   end
   object btnClose: TButton
-    Left = 562
+    Left = 580
     Top = 377
     Width = 75
     Height = 25
@@ -42,10 +42,10 @@ object Settings: TSettings
     Default = True
     TabOrder = 3
     OnClick = btnCloseClick
-    ExplicitTop = 367
+    ExplicitLeft = 562
   end
   object btnSave: TButton
-    Left = 400
+    Left = 418
     Top = 377
     Width = 75
     Height = 25
@@ -53,13 +53,13 @@ object Settings: TSettings
     Caption = 'btnSave'
     TabOrder = 1
     OnClick = btnSaveClick
-    ExplicitTop = 367
+    ExplicitLeft = 400
   end
   object pClient: TPanel
     AlignWithMargins = True
     Left = 185
     Top = 3
-    Width = 457
+    Width = 475
     Height = 367
     Margins.Bottom = 40
     Align = alClient
@@ -71,101 +71,98 @@ object Settings: TSettings
     ParentBackground = False
     ParentCtl3D = False
     TabOrder = 0
-    ExplicitLeft = 175
-    ExplicitWidth = 467
-    ExplicitHeight = 357
+    ExplicitWidth = 457
     DesignSize = (
-      455
+      473
       365)
     object pcSettings: TPageControl
       Left = 4
       Top = 7
-      Width = 441
+      Width = 459
       Height = 345
       Margins.Left = 8
       Margins.Top = 8
       Margins.Right = 8
       Margins.Bottom = 40
-      ActivePage = TabKodi
+      ActivePage = TabComPort
       Anchors = [akLeft, akTop, akRight, akBottom]
       MultiLine = True
       Style = tsFlatButtons
       TabHeight = 21
       TabOrder = 0
-      ExplicitWidth = 432
+      ExplicitWidth = 441
       object TabApplication: TTabSheet
         Caption = 'TabApplication'
-        ExplicitWidth = 443
-        ExplicitHeight = 283
+        ExplicitWidth = 433
         DesignSize = (
-          433
+          451
           290)
         object gbAplication: TGroupBox
           Left = 3
           Top = 3
-          Width = 427
+          Width = 445
           Height = 166
           Anchors = [akLeft, akTop, akRight]
           Caption = 'gbAplication'
           TabOrder = 0
-          ExplicitWidth = 437
+          ExplicitWidth = 427
           DesignSize = (
-            427
+            445
             166)
           object cbApplicationAutoRun: TCheckBox
             Left = 16
             Top = 24
-            Width = 393
+            Width = 411
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = 'cbApplicationAutoRun'
             TabOrder = 0
             OnClick = cbApplicationAutoRunClick
-            ExplicitWidth = 403
+            ExplicitWidth = 393
           end
           object cbApplicationAutoRunTray: TCheckBox
             Left = 32
             Top = 47
-            Width = 377
+            Width = 395
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = 'cbApplicationAutoRunTray'
             TabOrder = 1
-            ExplicitWidth = 387
+            ExplicitWidth = 377
           end
           object cbApplicationAutoRunSetVolume: TCheckBox
             Left = 32
             Top = 70
-            Width = 278
+            Width = 296
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = 'cbApplicationAutoRunSetVolume'
             TabOrder = 2
             OnClick = cbApplicationAutoRunSetVolumeClick
-            ExplicitWidth = 288
+            ExplicitWidth = 278
           end
           object cbApplicationTurnTray: TCheckBox
             Left = 16
             Top = 116
-            Width = 393
+            Width = 411
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = 'cbApplicationTurnTray'
             TabOrder = 3
-            ExplicitWidth = 403
+            ExplicitWidth = 393
           end
           object cbApplicationCloseTray: TCheckBox
             Left = 16
             Top = 139
-            Width = 393
+            Width = 411
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = 'cbApplicationCloseTray'
             TabOrder = 4
-            ExplicitWidth = 403
+            ExplicitWidth = 393
           end
           object edApplicationAutoRunVolume: TEdit
-            Left = 355
+            Left = 373
             Top = 68
             Width = 38
             Height = 19
@@ -173,49 +170,48 @@ object Settings: TSettings
             Anchors = [akTop, akRight]
             TabOrder = 5
             Text = '0'
-            ExplicitLeft = 365
+            ExplicitLeft = 355
           end
           object udApplicationAutoRunVolume: TUpDown
-            Left = 393
+            Left = 411
             Top = 68
             Width = 16
             Height = 19
             Anchors = [akTop, akRight]
             Associate = edApplicationAutoRunVolume
             TabOrder = 6
-            ExplicitLeft = 403
+            ExplicitLeft = 393
           end
           object cbApplicationAutoRunNotificationCenter: TCheckBox
             Left = 32
             Top = 93
-            Width = 377
+            Width = 395
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = 'cbApplicationAutoRunNotificationCenter'
             TabOrder = 7
-            ExplicitWidth = 387
+            ExplicitWidth = 377
           end
         end
       end
       object TabComPort: TTabSheet
         Caption = 'TabComPort'
         ImageIndex = 1
-        ExplicitWidth = 443
-        ExplicitHeight = 283
+        ExplicitWidth = 433
         DesignSize = (
-          433
+          451
           290)
         object gbComPort: TGroupBox
           Left = 3
           Top = 3
-          Width = 427
+          Width = 445
           Height = 102
           Anchors = [akLeft, akTop, akRight]
           Caption = 'gbComPort'
           TabOrder = 0
-          ExplicitWidth = 437
+          ExplicitWidth = 427
           DesignSize = (
-            427
+            445
             102)
           object lComPortPort: TLabel
             Left = 16
@@ -254,37 +250,38 @@ object Settings: TSettings
           object cbComPortOpenRun: TCheckBox
             Left = 16
             Top = 24
-            Width = 397
+            Width = 415
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = 'cbComPortOpenRun'
             TabOrder = 2
-            ExplicitWidth = 407
+            ExplicitWidth = 397
           end
         end
         object gbComPortData: TGroupBox
           Left = 3
           Top = 111
-          Width = 427
+          Width = 445
           Height = 50
           Anchors = [akLeft, akTop, akRight]
           Caption = 'gbComPortData'
           TabOrder = 1
-          ExplicitWidth = 437
+          ExplicitWidth = 427
           DesignSize = (
-            427
+            445
             50)
           object lComPortShowLast: TLabel
             Left = 16
             Top = 24
-            Width = 344
+            Width = 352
             Height = 13
             AutoSize = False
             Caption = 'lComPortShowLast'
             Layout = tlCenter
+            WordWrap = True
           end
           object edComPortShowLast: TEdit
-            Left = 356
+            Left = 374
             Top = 22
             Width = 41
             Height = 19
@@ -294,10 +291,10 @@ object Settings: TSettings
             TabOrder = 0
             Text = '100'
             OnChange = edComPortShowLastChange
-            ExplicitLeft = 366
+            ExplicitLeft = 356
           end
           object udComPortShowLast: TUpDown
-            Left = 397
+            Left = 415
             Top = 22
             Width = 16
             Height = 19
@@ -306,72 +303,70 @@ object Settings: TSettings
             Max = 1000
             Position = 100
             TabOrder = 1
-            ExplicitLeft = 407
+            ExplicitLeft = 397
           end
         end
       end
       object TabEventApplication: TTabSheet
         Caption = 'TabEventApplication'
         ImageIndex = 2
-        ExplicitWidth = 443
-        ExplicitHeight = 283
+        ExplicitWidth = 433
         DesignSize = (
-          433
+          451
           290)
         object gbEventApplication: TGroupBox
           Left = 3
           Top = 3
-          Width = 427
+          Width = 445
           Height = 270
           Anchors = [akLeft, akTop, akRight]
           Caption = 'gbEventApplication'
           TabOrder = 0
-          ExplicitWidth = 437
+          ExplicitWidth = 427
           DesignSize = (
-            427
+            445
             270)
           object clbEventApplication: TCheckListBox
             Left = 24
             Top = 47
-            Width = 385
+            Width = 403
             Height = 210
             Anchors = [akLeft, akTop, akRight]
             ItemHeight = 13
             TabOrder = 0
-            ExplicitWidth = 395
+            ExplicitWidth = 385
           end
           object cbEventAppicationUsing: TCheckBox
             Left = 16
             Top = 24
-            Width = 393
+            Width = 411
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = 'cbEventAppicationUsing'
             TabOrder = 1
             OnClick = cbEventAppicationUsingClick
-            ExplicitWidth = 403
+            ExplicitWidth = 393
           end
         end
       end
       object TabDB: TTabSheet
         Caption = 'TabDB'
         ImageIndex = 3
-        ExplicitWidth = 443
-        ExplicitHeight = 283
+        ExplicitWidth = 433
         DesignSize = (
-          433
+          451
           290)
         object gbDBAccess: TGroupBox
           Left = 3
           Top = 3
-          Width = 427
+          Width = 445
           Height = 86
           Anchors = [akLeft, akTop, akRight]
           Caption = 'gbDBAccess'
           TabOrder = 0
-          ExplicitWidth = 437
+          ExplicitWidth = 427
           DesignSize = (
-            427
+            445
             86)
           object lDBFilleName: TLabel
             Left = 16
@@ -384,7 +379,7 @@ object Settings: TSettings
           object lDBTestConnection: TLabel
             Left = 143
             Top = 49
-            Width = 266
+            Width = 284
             Height = 25
             Anchors = [akLeft, akTop, akRight]
             AutoSize = False
@@ -394,7 +389,7 @@ object Settings: TSettings
             ExplicitWidth = 276
           end
           object sbtnDBSelectFile: TSpeedButton
-            Left = 367
+            Left = 385
             Top = 22
             Width = 23
             Height = 23
@@ -405,7 +400,7 @@ object Settings: TSettings
             ExplicitLeft = 377
           end
           object sbtnDBCreate: TSpeedButton
-            Left = 396
+            Left = 414
             Top = 22
             Width = 23
             Height = 23
@@ -418,13 +413,13 @@ object Settings: TSettings
           object edDBFileName: TEdit
             Left = 95
             Top = 24
-            Width = 266
+            Width = 284
             Height = 19
             Anchors = [akLeft, akTop, akRight]
             ReadOnly = True
             TabOrder = 0
             Text = 'edDBFileName'
-            ExplicitWidth = 276
+            ExplicitWidth = 266
           end
           object btnDBTestConnection: TButton
             Left = 16
@@ -439,19 +434,19 @@ object Settings: TSettings
         object gbDBHelp: TGroupBox
           Left = 3
           Top = 95
-          Width = 427
+          Width = 445
           Height = 74
           Anchors = [akLeft, akTop, akRight]
           Caption = 'gbDBHelp'
           TabOrder = 1
-          ExplicitWidth = 437
+          ExplicitWidth = 427
           DesignSize = (
-            427
+            445
             74)
           object llDBDriver1: TLinkLabel
             Left = 16
             Top = 24
-            Width = 393
+            Width = 411
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             AutoSize = False
@@ -460,12 +455,12 @@ object Settings: TSettings
             ShowHint = True
             TabOrder = 0
             OnClick = llDBDriverClick
-            ExplicitWidth = 403
+            ExplicitWidth = 393
           end
           object llDBDriver2: TLinkLabel
             Left = 16
             Top = 47
-            Width = 393
+            Width = 411
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             AutoSize = False
@@ -474,34 +469,33 @@ object Settings: TSettings
             ShowHint = True
             TabOrder = 1
             OnClick = llDBDriverClick
-            ExplicitWidth = 403
+            ExplicitWidth = 393
           end
         end
       end
       object TabKodi: TTabSheet
         Caption = 'TabKodi'
         ImageIndex = 4
-        ExplicitWidth = 443
-        ExplicitHeight = 283
+        ExplicitWidth = 433
         DesignSize = (
-          433
+          451
           290)
         object gbKodiConnect: TGroupBox
           Left = 3
           Top = 63
-          Width = 427
+          Width = 445
           Height = 226
           Anchors = [akLeft, akTop, akRight]
           Caption = 'gbKodiConnect'
           TabOrder = 0
-          ExplicitWidth = 437
+          ExplicitWidth = 427
           DesignSize = (
-            427
+            445
             226)
           object lKodiHelp: TLabel
             Left = 16
             Top = 24
-            Width = 393
+            Width = 411
             Height = 41
             Anchors = [akLeft, akTop, akRight]
             AutoSize = False
@@ -519,7 +513,7 @@ object Settings: TSettings
             Caption = 'lKodiIP'
           end
           object lKodiPort: TLabel
-            Left = 294
+            Left = 312
             Top = 121
             Width = 42
             Height = 13
@@ -550,7 +544,7 @@ object Settings: TSettings
           object lKodiTestConnection: TLabel
             Left = 151
             Top = 193
-            Width = 273
+            Width = 291
             Height = 25
             Anchors = [akLeft, akTop, akRight]
             AutoSize = False
@@ -569,17 +563,17 @@ object Settings: TSettings
           object edKodiIP: TEdit
             Left = 128
             Top = 119
-            Width = 160
+            Width = 178
             Height = 19
             Alignment = taCenter
             Anchors = [akLeft, akTop, akRight]
             MaxLength = 15
             TabOrder = 0
             Text = 'edKodiIP'
-            ExplicitWidth = 170
+            ExplicitWidth = 160
           end
           object edKodiPort: TEdit
-            Left = 342
+            Left = 360
             Top = 119
             Width = 67
             Height = 19
@@ -589,27 +583,27 @@ object Settings: TSettings
             NumbersOnly = True
             TabOrder = 1
             Text = 'edKodiPort'
-            ExplicitLeft = 352
+            ExplicitLeft = 342
           end
           object edKodiUser: TEdit
             Left = 128
             Top = 144
-            Width = 281
+            Width = 299
             Height = 19
             Anchors = [akLeft, akTop, akRight]
             TabOrder = 2
             Text = 'edKodiUser'
-            ExplicitWidth = 291
+            ExplicitWidth = 281
           end
           object edKodiPassword: TEdit
             Left = 128
             Top = 169
-            Width = 281
+            Width = 299
             Height = 19
             Anchors = [akLeft, akTop, akRight]
             TabOrder = 3
             Text = 'edKodiPassword'
-            ExplicitWidth = 291
+            ExplicitWidth = 281
           end
           object btnKodiTestConnect: TButton
             Left = 24
@@ -623,16 +617,16 @@ object Settings: TSettings
           object cbKodiUsing: TCheckBox
             Left = 16
             Top = 71
-            Width = 393
+            Width = 411
             Height = 17
             Anchors = [akLeft, akTop, akRight]
             Caption = 'cbKodiUsing'
             TabOrder = 5
             OnClick = cbKodiUsingClick
-            ExplicitWidth = 403
+            ExplicitWidth = 393
           end
           object edKodiUpdateInterval: TEdit
-            Left = 355
+            Left = 373
             Top = 94
             Width = 38
             Height = 19
@@ -641,30 +635,30 @@ object Settings: TSettings
             NumbersOnly = True
             TabOrder = 6
             Text = '0'
-            ExplicitLeft = 365
+            ExplicitLeft = 355
           end
           object udKodiUpdateInterval: TUpDown
-            Left = 393
+            Left = 411
             Top = 94
             Width = 16
             Height = 19
             Anchors = [akTop, akRight]
             Associate = edKodiUpdateInterval
             TabOrder = 7
-            ExplicitLeft = 403
+            ExplicitLeft = 393
           end
         end
         object gbKodi: TGroupBox
           Left = 3
           Top = 3
-          Width = 427
+          Width = 445
           Height = 54
           Anchors = [akLeft, akTop, akRight]
           Caption = 'gbKodi'
           TabOrder = 1
-          ExplicitWidth = 437
+          ExplicitWidth = 427
           DesignSize = (
-            427
+            445
             54)
           object lKodiFileName: TLabel
             Left = 16
@@ -675,7 +669,7 @@ object Settings: TSettings
             Caption = 'lKodiFileName'
           end
           object sbtnKodiSelectFile: TSpeedButton
-            Left = 396
+            Left = 414
             Top = 22
             Width = 23
             Height = 23
@@ -683,45 +677,44 @@ object Settings: TSettings
             ParentShowHint = False
             ShowHint = True
             OnClick = sbtnKodiSelectFileClick
-            ExplicitLeft = 406
+            ExplicitLeft = 396
           end
           object edKodiFileName: TEdit
             Left = 95
             Top = 24
-            Width = 295
+            Width = 313
             Height = 19
             Anchors = [akLeft, akTop, akRight]
             ReadOnly = True
             TabOrder = 0
             Text = 'edKodiFileName'
-            ExplicitWidth = 305
+            ExplicitWidth = 295
           end
         end
       end
       object TabRemoteControl: TTabSheet
         Caption = 'TabRemoteControl'
         ImageIndex = 5
-        ExplicitWidth = 443
-        ExplicitHeight = 283
+        ExplicitWidth = 433
         DesignSize = (
-          433
+          451
           290)
         object gbRemoteControl: TGroupBox
           Left = 3
           Top = 3
-          Width = 427
-          Height = 54
+          Width = 445
+          Height = 78
           Anchors = [akLeft, akTop, akRight]
           Caption = 'gbRemoteControl'
           TabOrder = 0
-          ExplicitWidth = 437
+          ExplicitWidth = 427
           DesignSize = (
-            427
-            54)
+            445
+            78)
           object lRemoteControlShowLast: TLabel
             Left = 17
             Top = 24
-            Width = 333
+            Width = 351
             Height = 13
             Anchors = [akLeft, akTop, akRight]
             AutoSize = False
@@ -730,7 +723,7 @@ object Settings: TSettings
             ExplicitWidth = 343
           end
           object edRemoteControlShowLast: TEdit
-            Left = 356
+            Left = 374
             Top = 22
             Width = 41
             Height = 19
@@ -740,10 +733,10 @@ object Settings: TSettings
             TabOrder = 0
             Text = '100'
             OnChange = edComPortShowLastChange
-            ExplicitLeft = 366
+            ExplicitLeft = 356
           end
           object udRemoteControlShowLast: TUpDown
-            Left = 397
+            Left = 415
             Top = 22
             Width = 16
             Height = 19
@@ -752,8 +745,32 @@ object Settings: TSettings
             Max = 1000
             Position = 100
             TabOrder = 1
-            ExplicitLeft = 407
+            ExplicitLeft = 397
           end
+          object cbRemoteControlInCurrentThread: TCheckBox
+            Left = 17
+            Top = 47
+            Width = 414
+            Height = 17
+            Anchors = [akLeft, akTop, akRight]
+            Caption = 'cbRemoteControlInCurrentThread'
+            TabOrder = 2
+            ExplicitWidth = 396
+          end
+        end
+        object rgRemoteControlInterface: TRadioGroup
+          Left = 3
+          Top = 87
+          Width = 445
+          Height = 81
+          Anchors = [akLeft, akTop, akRight]
+          Caption = 'rgRemoteControlInterface'
+          Items.Strings = (
+            'User interface 1'
+            'User interface 2'
+            'User interface 3')
+          TabOrder = 1
+          ExplicitWidth = 427
         end
       end
     end
@@ -801,7 +818,7 @@ object Settings: TSettings
     Left = 16
     Top = 344
     Bitmap = {
-      494C0101010008004C0010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
+      494C010101000800600010001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000001000000001002000000000000010
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000

@@ -5,10 +5,11 @@ interface
 uses
   Winapi.Windows, Winapi.Messages, Vcl.StdCtrls, Vcl.Controls, Vcl.Graphics,
   Vcl.Themes, Vcl.Dialogs, Vcl.GraphUtil, Vcl.ExtCtrls, System.Classes,
-  System.SysUtils, uExecuteCommand, System.UITypes;
+  System.SysUtils, uExecuteCommand, System.UITypes, uTypes;
 
 const
   NumberWidth = 30;
+  CommandWidth = 90;
 
 type
   TCustomListBox = class(TListBox)
@@ -29,8 +30,21 @@ type
   protected
     procedure MeasureItem(Control: TWinControl; Index: Integer; var Height: Integer);
     procedure DrawItem(Index: Integer; Rect: TRect; State: TOwnerDrawState); override;
+  private
+
+    FUserInterface: TuiType;
+    FIconWaiting, FIconExecuting: TIcon;
+
+    procedure DrawItemAnimation(ObjRCommand: TObjectRemoteCommand; Rect: TRect);
+    procedure DrawItemIcon(ObjRCommand: TObjectRemoteCommand; Rect: TRect);
+    procedure DrawItemNone(ObjRCommand: TObjectRemoteCommand; Rect: TRect);
   public
     constructor Create(AOwner: TComponent); override;
+    destructor Destroy; override;
+
+    property UserInterface: TuiType read FUserInterface write FUserInterface;
+    property IconWaiting: TIcon read FIconWaiting write FIconWaiting;
+    property IconExecuting: TIcon read FIconExecuting write FIconExecuting;
   end;
 
 implementation
@@ -81,7 +95,12 @@ begin
 
   if Items.Count = 0 then
   begin
-    GradientFillCanvas(Self.Canvas, clBtnFace, clWhite, DrawRect, gdHorizontal);
+    // GradientFillCanvas(Self.Canvas, clBtnFace, clWhite, DrawRect, gdHorizontal);
+
+    // Self.Canvas.Brush.Color := GetShadowColor(clSilver, 55);
+    // GetShadowColor(rgb(217, 217, 220), 30); // clBtnFace;
+
+    // Self.Canvas.FillRect(DrawRect);
     // Self.Canvas.MoveTo(NumberWidth, 0);
     // Self.Canvas.LineTo(NumberWidth, Self.ClientHeight);
 
@@ -117,10 +136,12 @@ begin
 
   if y < h then
   begin
-    DrawRect.Top := y;
-    GradientFillCanvas(Self.Canvas, clBtnFace, clWhite, DrawRect, gdHorizontal);
-    // Self.Canvas.MoveTo(NumberWidth, y);
-    // Self.Canvas.LineTo(NumberWidth, Self.ClientHeight);
+    // DrawRect.Top := y;
+    // GradientFillCanvas(Self.Canvas, clBtnFace, clWhite, DrawRect, gdHorizontal);
+    Self.Canvas.Pen.Color := clSilver;
+    Self.Canvas.MoveTo(NumberWidth, y);
+    Self.Canvas.LineTo(NumberWidth, Self.ClientHeight);
+    Self.Canvas.Pen.Color := clBlack;
   end;
 
 end;
@@ -133,6 +154,17 @@ begin
 
   Style := lbOwnerDrawVariable;
   OnMeasureItem := MeasureItem;
+  UserInterface := TuiType(0);
+
+  FIconWaiting := TIcon.Create;
+  FIconExecuting := TIcon.Create;
+end;
+
+destructor TCustomListBoxRC.Destroy;
+begin
+  FIconWaiting.Destroy;
+  FIconExecuting.Destroy;
+  inherited;
 end;
 
 procedure TCustomListBoxRC.MeasureItem(Control: TWinControl; Index: Integer; var Height: Integer);
@@ -140,7 +172,7 @@ var
   Rect: TRect;
   S: string;
 begin
-  Rect.left := 135;
+  Rect.left := NumberWidth + CommandWidth + 2 + 4;
   Rect.Top := 0;
   Rect.Right := TCustomListBoxRC(Control).ClientWidth - 4;
   Rect.Bottom := TCustomListBoxRC(Control).ItemHeight;
@@ -152,12 +184,9 @@ end;
 
 procedure TCustomListBoxRC.DrawItem(Index: Integer; Rect: TRect; State: TOwnerDrawState);
 var
+  ObjRCommand: TObjectRemoteCommand;
   DrawRect: TRect;
   LDetails: TThemedElementDetails;
-  ObjRCommand: TObjectRemoteCommand;
-  LRight: Integer;
-  LColorZebra: TColor;
-  ColorGradientTo: TColor;
 begin
   ObjRCommand := (Self.Items.Objects[Index] as TObjectRemoteCommand);
 
@@ -165,144 +194,200 @@ begin
     exit;
 
   Self.Canvas.Font.Color := clBlack;
-  ColorGradientTo := clWhite;
 
   // зебра
-  if (ObjRCommand.EIndex mod 2) <> 0 then
+  if (ObjRCommand.EIndex mod 2) = 1 then
     Self.Canvas.Brush.Color := clWhite
   else
     Self.Canvas.Brush.Color := clBtnFace;
-  LColorZebra := Self.Canvas.Brush.Color;
 
+  // выделенная строка
+  if odSelected in State then
+    Self.Canvas.Brush.Color := GetShadowColor(clHighlight, 115);
+
+  case FUserInterface of
+    uiAnimation:
+      DrawItemAnimation(ObjRCommand, Rect);
+    uiIcon:
+      DrawItemIcon(ObjRCommand, Rect);
+    uiNone:
+      DrawItemNone(ObjRCommand, Rect);
+  end;
+
+  // Рамка выделенной строки
   if odSelected in State then
   begin
-    Self.Canvas.Brush.Color := GetShadowColor(clHighlight, 115);
-    ColorGradientTo := Self.Canvas.Brush.Color;
+    DrawRect := Rect;
+    DrawRect.Right := NumberWidth;
+    Self.Canvas.Pen.Color := clHighlight;
+    Self.Canvas.Brush.Color := clHighlight;
+    Self.Canvas.Rectangle(DrawRect);
+
+    DrawRect := Rect;
+    dec(DrawRect.Right);
+    dec(DrawRect.Bottom);
+    Self.Canvas.MoveTo(DrawRect.left, DrawRect.Top);
+    Self.Canvas.LineTo(DrawRect.left, DrawRect.Bottom);
+    Self.Canvas.LineTo(DrawRect.Right, DrawRect.Bottom);
+    Self.Canvas.LineTo(DrawRect.Right, DrawRect.Top);
+    Self.Canvas.LineTo(DrawRect.left, DrawRect.Top);
+    Self.Canvas.Pen.Color := clBlack;
+
+    Self.Canvas.Font.Color := clWhite;
   end;
 
-  Rect.left := NumberWidth;
-
-  case ObjRCommand.State of
-    ecBegin:
-      begin
-        Self.Canvas.Brush.Color := GetShadowColor(clYellow, 80);
-        Self.Canvas.FillRect(Rect);
-
-        ColorGradientTo := Self.Canvas.Brush.Color;
-      end;
-    ecExecuting:
-      begin
-        LRight := 0;
-        if ObjRCommand.All > 0 then
-          LRight := round((Rect.Right - Rect.left) / ObjRCommand.All * ObjRCommand.Current);
-
-        DrawRect := Rect;
-        DrawRect.left := DrawRect.left + LRight + 10;
-        Self.Canvas.FillRect(DrawRect);
-
-        DrawRect := Rect;
-        DrawRect.Right := DrawRect.left + LRight + 10;
-        DrawRect.left := DrawRect.Right - 20;
-        GradientFillCanvas(Self.Canvas, GetShadowColor(clLime, 80), Self.Canvas.Brush.Color,
-          DrawRect, gdHorizontal);
-
-        DrawRect := Rect;
-        DrawRect.Right := DrawRect.left + LRight - 10;
-        Self.Canvas.Brush.Color := GetShadowColor(clLime, 80);
-        Self.Canvas.FillRect(DrawRect);
-
-        ColorGradientTo := Self.Canvas.Brush.Color;
-      end;
-    ecEnd:
-      begin
-        if odSelected in State then
-          Self.Canvas.FillRect(Rect)
-        else
-        begin
-          DrawRect := Rect;
-          DrawRect.Right := DrawRect.left + 98;
-          GradientFillCanvas(Self.Canvas, clWhite, LColorZebra, DrawRect, gdHorizontal);
-          DrawRect := Rect;
-          DrawRect.left := DrawRect.left + 98;
-          GradientFillCanvas(Self.Canvas, LColorZebra, LColorZebra, DrawRect, gdHorizontal);
-        end;
-      end;
-  end;
-
-  // Градиент порядкового номера
-  DrawRect := Rect;
-  DrawRect.left := 0;
-  DrawRect.Right := NumberWidth;
-  GradientFillCanvas(Self.Canvas, clBtnFace, ColorGradientTo, DrawRect, gdHorizontal);
-  // Self.Canvas.MoveTo(NumberWidth, DrawRect.Top);
-  // Self.Canvas.LineTo(NumberWidth, DrawRect.Bottom);
-
-  // Номер команды
-  DrawRect := Rect;
-  DrawRect.left := 4;
-  inc(DrawRect.Top, 4);
-  DrawRect.Right := NumberWidth - 4;
-  dec(DrawRect.Bottom, 4);
-  Self.Canvas.Font.Size := 6;
+  // прозрачный фон текста
   SetBkMode(Self.Canvas.Handle, TRANSPARENT);
+
+  // Порядковый номер
+  DrawRect := Rect;
+  DrawRect.Right := NumberWidth;
+  DrawRect.Inflate(-4, -4);
+  Self.Canvas.Font.Size := 6;
   DrawText(Self.Canvas.Handle, PChar(inttostr(ObjRCommand.EIndex)), -1, DrawRect,
     DT_VCENTER or DT_SINGLELINE or DT_CENTER);
-  SetBkMode(Self.Canvas.Handle, OPAQUE);
   Self.Canvas.Font.Size := 8;
+  Self.Canvas.Font.Color := clBlack;
+
+  // Веритакальная лини после порядкового номера
+  DrawRect := Rect;
+  if odSelected in State then
+    DrawRect.Inflate(0, -1, 0, -1);
+  Self.Canvas.Pen.Color := clSilver;
+  Self.Canvas.MoveTo(NumberWidth, DrawRect.Top);
+  Self.Canvas.LineTo(NumberWidth, DrawRect.Bottom);
+  Self.Canvas.Pen.Color := clBlack;
 
   // Команда
   DrawRect := Rect;
-  inc(DrawRect.left, 4);
-  inc(DrawRect.Top, 4);
-  DrawRect.Right := DrawRect.left + 90;
-  dec(DrawRect.Bottom, 4);
-
-  SetBkMode(Self.Canvas.Handle, TRANSPARENT);
+  DrawRect.Right := NumberWidth + CommandWidth;
+  DrawRect.Inflate(-4, -4);
   Self.Canvas.Font.Style := Self.Canvas.Font.Style + [fsBold];
   DrawText(Self.Canvas.Handle, PChar(ObjRCommand.Command), -1, DrawRect,
     DT_VCENTER or DT_SINGLELINE or DT_RIGHT);
   Self.Canvas.Font.Style := Self.Canvas.Font.Style - [fsBold];
-  SetBkMode(Self.Canvas.Handle, OPAQUE);
 
-  // Иконка
-  Self.Canvas.Draw(Rect.left + 5, Rect.Top + round(Rect.Height / 2) -
+  // Иконка повтора предыдущем команды
+  // Self.Canvas.Draw(Rect.left + NumberWidth + 5, Rect.Top + round(Rect.Height / 2) -
+  // round(ObjRCommand.FIcon.Height / 2), ObjRCommand.FIcon);
+  Self.Canvas.Draw(Rect.Right - ObjRCommand.FIcon.Width - 4, Rect.Top + round(Rect.Height / 2) -
     round(ObjRCommand.FIcon.Height / 2), ObjRCommand.FIcon);
 
   // Разделитель
   DrawRect := Rect;
-  inc(DrawRect.left, 98);
-  inc(DrawRect.Top, 2);
+  DrawRect.left := NumberWidth + CommandWidth;
   DrawRect.Right := DrawRect.left + 2;
-  dec(DrawRect.Bottom, 2);
+  DrawRect.Inflate(0, -2, 0, -2);
   LDetails := StyleServices.GetElementDetails(ttbSeparatorDisabled);
   StyleServices.DrawElement(Self.Canvas.Handle, LDetails, DrawRect);
 
   // Текст операции
   DrawRect := Rect;
-  inc(DrawRect.left, 105);
-  inc(DrawRect.Top, 4);
-  dec(DrawRect.Right, 4);
-  dec(DrawRect.Bottom, 4);
-
-  SetBkMode(Self.Canvas.Handle, TRANSPARENT);
-  DrawText(Self.Canvas.Handle, PChar(Self.Items[Index]), -1, DrawRect,
+  DrawRect.left := NumberWidth + CommandWidth + 2;
+  DrawRect.Inflate(-4, -4);
+  DrawText(Self.Canvas.Handle, PChar(ObjRCommand.Operations), -1, DrawRect,
     DT_WORDBREAK or DT_EDITCONTROL);
+
   SetBkMode(Self.Canvas.Handle, OPAQUE);
 
-  // Рамка
-  { if odSelected in State then
-    begin
-    DrawRect := Rect;
-    DrawRect.Left:= 1;
-    dec(DrawRect.Right, 1);
-    inc(DrawRect.Bottom, 1);
-    LDetails := StyleServices.GetElementDetails(ttbButtonPressed);
-    StyleServices.DrawElement(Self.Canvas.Handle, LDetails, DrawRect);
-    end; }
-
-  Rect.left := 0;
   if odFocused in State then
     Self.Canvas.DrawFocusRect(Rect);
+end;
+
+procedure TCustomListBoxRC.DrawItemNone(ObjRCommand: TObjectRemoteCommand; Rect: TRect);
+begin
+  Self.Canvas.FillRect(Rect);
+end;
+
+procedure TCustomListBoxRC.DrawItemIcon(ObjRCommand: TObjectRemoteCommand; Rect: TRect);
+begin
+  Self.Canvas.FillRect(Rect);
+  case ObjRCommand.State of
+    ecCreating:
+      ;
+    ecWaiting:
+      Self.Canvas.Draw(Rect.left + NumberWidth + 2, Rect.Top + 2, IconWaiting);
+    ecExecuting:
+      Self.Canvas.Draw(Rect.left + NumberWidth + 2, Rect.Top + 2, IconExecuting);
+    ecEnd:
+      ;
+  end;
+end;
+
+procedure TCustomListBoxRC.DrawItemAnimation(ObjRCommand: TObjectRemoteCommand; Rect: TRect);
+var
+  DrawRect: TRect;
+  LRight: Integer;
+  bColor: TColor;
+begin
+
+  case ObjRCommand.State of
+    ecCreating:
+      begin
+        Self.Canvas.FillRect(Rect);
+      end;
+    ecWaiting:
+      begin
+        bColor := Self.Canvas.Brush.Color;
+        Self.Canvas.Brush.Color := GetShadowColor(clYellow, 80);
+        Self.Canvas.FillRect(Rect);
+        Self.Canvas.Brush.Color := bColor;
+      end;
+    ecExecuting:
+      begin
+        LRight := 0;
+        if ObjRCommand.All > 0 then
+          LRight := round((Rect.Right - NumberWidth - CommandWidth) / ObjRCommand.All *
+            ObjRCommand.Current);
+
+        DrawRect := Rect;
+        DrawRect.Right := NumberWidth + CommandWidth + 1;
+        Self.Canvas.FillRect(DrawRect);
+
+        bColor := Self.Canvas.Brush.Color;
+        Self.Canvas.Brush.Color := GetShadowColor(clLime, 80);
+
+        { DrawRect := Rect;
+          DrawRect.left := NumberWidth + CommandWidth + 1;
+          Self.Canvas.Pen.Color := Self.Canvas.Brush.Color;
+          Self.Canvas.Pen.Width := 2;
+          Self.Canvas.MoveTo(DrawRect.left + 1, DrawRect.Top + 1);
+          Self.Canvas.LineTo(DrawRect.left + 1, DrawRect.Bottom - 1);
+          Self.Canvas.LineTo(DrawRect.Right - 1, DrawRect.Bottom - 1);
+          Self.Canvas.LineTo(DrawRect.Right - 1, DrawRect.Top + 1);
+          Self.Canvas.LineTo(DrawRect.left + 1, DrawRect.Top + 1);
+          Self.Canvas.Pen.Width := 1;
+          Self.Canvas.Pen.Color := clBlack; }
+
+        // полоса выполнения
+        DrawRect := Rect;
+        DrawRect.left := NumberWidth + CommandWidth + 1;
+        DrawRect.Right := NumberWidth + CommandWidth + 1 + LRight - 10;
+        // DrawRect.Inflate(-2, -2, 0, -2);
+        Self.Canvas.FillRect(DrawRect);
+
+        // градиентный переход от выполненного процента к оставшемуся
+        DrawRect := Rect;
+        DrawRect.left := NumberWidth + CommandWidth + 1 + LRight - 10;
+        DrawRect.Right := DrawRect.left + 20;
+        // DrawRect.Inflate(0, -1, 0, -1);
+        GradientFillCanvas(Self.Canvas, Self.Canvas.Brush.Color, bColor, DrawRect, gdHorizontal);
+
+        Self.Canvas.Brush.Color := bColor;
+
+        // невыполненная часть
+        DrawRect := Rect;
+        DrawRect.left := NumberWidth + CommandWidth + 1 + LRight;
+        // DrawRect.Inflate(0, -2, -2, -2);
+        Self.Canvas.FillRect(DrawRect);
+
+      end;
+    ecEnd:
+      begin
+        Self.Canvas.FillRect(Rect);
+      end;
+  end;
+
 end;
 
 end.
