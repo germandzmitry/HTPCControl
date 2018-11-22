@@ -326,12 +326,22 @@ object Main: TMain
       ImageIndex = 9
       OnExecute = ActKodiStopExecute
     end
+    object ActTrayOpen: TAction
+      Category = 'Tray'
+      Caption = 'ActTrayOpen'
+      OnExecute = ActTrayOpenExecute
+    end
+    object ActTrayExit: TAction
+      Category = 'Tray'
+      Caption = 'ActTrayExit'
+      OnExecute = ActTrayExitExecute
+    end
   end
   object ilSmall: TImageList
     Left = 376
     Top = 128
     Bitmap = {
-      494C010117002001400210001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
+      494C010117002001480210001000FFFFFFFFFF10FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000400000006000000001002000000000000060
       0000000000000000000000000000000000000000000000000000000000000000
       00000000000000000000DCDCDC3C7D7D7DEB727272FF727272FF727272FF8585
@@ -1163,6 +1173,7 @@ object Main: TMain
     end
   end
   object Tray: TTrayIcon
+    PopupMenu = PopupTray
     OnDblClick = TrayDblClick
     Left = 448
     Top = 128
@@ -1176,5 +1187,19 @@ object Main: TMain
   object AppNotification: TNotificationCenter
     Left = 536
     Top = 128
+  end
+  object PopupTray: TPopupMenu
+    Left = 640
+    Top = 56
+    object ActTrayOpen1: TMenuItem
+      Action = ActTrayOpen
+      Default = True
+    end
+    object N1: TMenuItem
+      Caption = '-'
+    end
+    object ActTrayExit1: TMenuItem
+      Action = ActTrayExit
+    end
   end
 end

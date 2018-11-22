@@ -65,6 +65,12 @@ type
     AppNotification: TNotificationCenter;
     pClientBottom: TPanel;
     Memo1: TMemo;
+    PopupTray: TPopupMenu;
+    ActTrayOpen: TAction;
+    ActTrayExit: TAction;
+    ActTrayOpen1: TMenuItem;
+    N1: TMenuItem;
+    ActTrayExit1: TMenuItem;
     procedure FormCreate(Sender: TObject);
     procedure FormShow(Sender: TObject);
     procedure FormCloseQuery(Sender: TObject; var CanClose: Boolean);
@@ -113,6 +119,8 @@ type
       var Handled: Boolean);
     procedure pClientBottomResize(Sender: TObject);
     procedure cpRemoteControlExpand(Sender: TObject);
+    procedure ActTrayExitExecute(Sender: TObject);
+    procedure ActTrayOpenExecute(Sender: TObject);
   private
     { Private declarations }
     plvRemoteControl: TPanel;
@@ -684,6 +692,17 @@ begin
 
   lbRemoteControl.UserInterface := FSetting.RemoteControl.UserInterface;
   FExecuteCommand.InCurrentThread := FSetting.RemoteControl.InCurrentThread;
+end;
+
+procedure TMain.ActTrayExitExecute(Sender: TObject);
+begin
+  FSureExit := True;
+  Close;
+end;
+
+procedure TMain.ActTrayOpenExecute(Sender: TObject);
+begin
+  OpenTray;
 end;
 
 procedure TMain.AppEventsMinimize(Sender: TObject);
