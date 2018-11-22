@@ -217,12 +217,14 @@ begin
   // Рамка выделенной строки
   if odSelected in State then
   begin
+    // прямоугольник
     DrawRect := Rect;
     DrawRect.Right := NumberWidth;
     Self.Canvas.Pen.Color := clHighlight;
     Self.Canvas.Brush.Color := clHighlight;
     Self.Canvas.Rectangle(DrawRect);
 
+    // рамка
     DrawRect := Rect;
     dec(DrawRect.Right);
     dec(DrawRect.Bottom);
@@ -328,9 +330,16 @@ begin
       end;
     ecWaiting:
       begin
+        DrawRect := Rect;
+        DrawRect.Right := NumberWidth + CommandWidth + 1;
+        Self.Canvas.FillRect(DrawRect);
+
         bColor := Self.Canvas.Brush.Color;
         Self.Canvas.Brush.Color := GetShadowColor(clYellow, 80);
-        Self.Canvas.FillRect(Rect);
+        DrawRect := Rect;
+        DrawRect.left := NumberWidth + CommandWidth + 1;
+        Self.Canvas.FillRect(DrawRect);
+
         Self.Canvas.Brush.Color := bColor;
       end;
     ecExecuting:
@@ -346,18 +355,6 @@ begin
 
         bColor := Self.Canvas.Brush.Color;
         Self.Canvas.Brush.Color := GetShadowColor(clLime, 80);
-
-        { DrawRect := Rect;
-          DrawRect.left := NumberWidth + CommandWidth + 1;
-          Self.Canvas.Pen.Color := Self.Canvas.Brush.Color;
-          Self.Canvas.Pen.Width := 2;
-          Self.Canvas.MoveTo(DrawRect.left + 1, DrawRect.Top + 1);
-          Self.Canvas.LineTo(DrawRect.left + 1, DrawRect.Bottom - 1);
-          Self.Canvas.LineTo(DrawRect.Right - 1, DrawRect.Bottom - 1);
-          Self.Canvas.LineTo(DrawRect.Right - 1, DrawRect.Top + 1);
-          Self.Canvas.LineTo(DrawRect.left + 1, DrawRect.Top + 1);
-          Self.Canvas.Pen.Width := 1;
-          Self.Canvas.Pen.Color := clBlack; }
 
         // полоса выполнения
         DrawRect := Rect;
@@ -377,7 +374,7 @@ begin
 
         // невыполненная часть
         DrawRect := Rect;
-        DrawRect.left := NumberWidth + CommandWidth + 1 + LRight;
+        DrawRect.left := NumberWidth + CommandWidth + 1 + LRight + 10;
         // DrawRect.Inflate(0, -2, -2, -2);
         Self.Canvas.FillRect(DrawRect);
 
